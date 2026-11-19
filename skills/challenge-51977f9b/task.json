@@ -1,0 +1,43 @@
+{
+  "challenge_id": "challenge-51977f9b",
+  "family": "research",
+  "mode": "systematic-review",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "系统性文献综述",
+  "work_file": "work/research-plan.json",
+  "deliverable": "output/research-report.md",
+  "output_files": [
+    "output/research-report.md",
+    "output/evidence-matrix.json",
+    "output/references.json"
+  ],
+  "required_fields": [
+    "question",
+    "findings",
+    "evidence"
+  ],
+  "focus": "系统综述协议、检索/纳排、质量评价与证据综合",
+  "checks": "PRISMA 式计数闭合；纳排理由可查；质量评价有依据",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-51977f9b",
+    "mode": "systematic-review",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

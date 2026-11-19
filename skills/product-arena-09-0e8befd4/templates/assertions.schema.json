@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://period4.local/schemas/assertions.schema.json",
+  "title": "work/assertions.json — atomic assertions with evidence",
+  "description": "模型写入 /app/work/assertions.json 的字段契约。finalize 读取 case_id、source_metadata、assertions、unresolved。relation 必须在受控词表中；每条断言必须有 subject/object label 与可回查的 evidence。",
+  "type": "object",
+  "required": [
+    "case_id",
+    "assertions"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "必须与 /input/case.json 的 case_id 一致"
+    },
+    "source_metadata": {
+      "type": "object",
+      "description": "优先复制 work/paragraphs.json 的 metadata；缺失时 finalize 回退到 prepare 生成的 metadata",
+      "properties": {
+        "paper_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "year": {
+          "type": "string"
+        },
+        "doi": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "source_path": {
+          "type": "string",
+          "description": "例如 paper.md"
+        }
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/assertion"
+      }
+    },
+    "unresolved": {
+      "type": "array",
+      "description": "无法绑定证据或无法判断的候选；不得混入 assertions",
+      "items": {
+        "type": "object",
+        "required": [
+          "item",
+          "reason"
+        ],
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "entity": {
+      "type": "object",
+      "required": [
+        "label"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "名词短语，不要写整句"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "material",
+            "method",
+            "finding",
+            "metric",
+            "organism",
+            "process"
+          ],
+          "description": "实体类型；不强校验，但必须语义合理且全文一致"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "path",
+        "locator",
+        "quote"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "paragraphs.source_path，例如 paper.md"
+        },
+        "locator": {
+          "type": "string",
+          "description": "paragraphs[].locator（paper.md P010）或 paragraph_id（P010）；必须指向单一段落"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "该段中逐字出现的连续片段；可用 ... 连接同一段内的两段逐字片段"
+        }
+      }
+    },
+    "assertion": {
+      "type": "object",
+      "required": [
+        "id",
+        "assertion",
+        "subject",
+        "relation",
+        "object",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^A[0-9]{3,}$",
+          "description": "A001 起，唯一"
+        },
+        "assertion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 420,
+          "description": "单条可判真假的断言；避免多个 and/but/while/whereas/although 与分号"
+        },
+        "subject": {
+          "$ref": "#/$defs/entity"
+        },
+        "relation": {
+          "type": "string",
+          "enum": [
+            "CAUSES",
+            "ASSOCIATED_WITH",
+            "CORRELATES_WITH",
+            "INHIBITS",
+            "ACTIVATES",
+            "INCREASES",
+            "DECREASES",
+            "REGULATES",
+            "BINDS",
+            "EXPRESSED_IN",
+            "LOCATED_IN",
+            "IS_A",
+            "PART_OF",
+            "USES",
+            "MEASURED_BY",
+            "PREDICTS",
+            "SUPPORTS",
+            "CONTRADICTS",
+            "COMPARES_WITH",
+            "OUTPERFORMS",
+            "DERIVED_FROM",
+            "ENHANCES",
+            "REDUCES",
+            "MODULATES",
+            "INTERACTS_WITH",
+            "CO_OCCURS_WITH",
+            "HAS_PART",
+            "HAS_PROPERTY",
+            "MEASURED_AS",
+            "EXPRESSES",
+            "ENCODES",
+            "TREATS",
+            "PREVENTS",
+            "INDUCES",
+            "REPRESSES"
+          ],
+          "description": "35 个受控关系；大小写不敏感，非字母数字会规范为 _"
+        },
+        "object": {
+          "$ref": "#/$defs/entity"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "断言成立的条件，例如温度、压力、循环数、剂量"
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "evidence_type": {
+          "type": "string",
+          "enum": [
+            "direct",
+            "indirect",
+            "inferred"
+          ],
+          "description": "direct=原文直接报告；indirect=需结合上下文；inferred=推论"
+        },
+        "confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "moderate",
+            "low"
+          ],
+          "description": "high=直接证据且条件清晰；low=间接/推断或边界不明"
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "证据边界、未测量项、单一实验等"
+        }
+      }
+    }
+  }
+}

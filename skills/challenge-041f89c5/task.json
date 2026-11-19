@@ -1,0 +1,43 @@
+{
+  "challenge_id": "challenge-041f89c5",
+  "family": "research",
+  "mode": "topic-selection",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "科研选题与创新性评估",
+  "work_file": "work/research-plan.json",
+  "deliverable": "output/research-report.md",
+  "output_files": [
+    "output/research-report.md",
+    "output/evidence-matrix.json",
+    "output/references.json"
+  ],
+  "required_fields": [
+    "question",
+    "findings",
+    "evidence"
+  ],
+  "focus": "选题评估、创新性/可行性/证据缺口与风险",
+  "checks": "每个评分有依据；创新性不夸大；可行性条件明确",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-041f89c5",
+    "mode": "topic-selection",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

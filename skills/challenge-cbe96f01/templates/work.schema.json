@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "引用与事实核验 work file",
+  "type": "object",
+  "required": [
+    "case_id",
+    "summary",
+    "findings",
+    "evidence"
+  ],
+  "properties": {
+    "findings": {
+      "description": "required by task.json"
+    },
+    "evidence": {
+      "description": "required by task.json"
+    }
+  }
+}

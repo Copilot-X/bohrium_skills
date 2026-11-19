@@ -1,0 +1,17 @@
+{
+  "case_id": "EXAMPLE-GA-001",
+  "workorder": "graphical_abstract",
+  "paper": "paper.txt",
+  "journal": {
+    "width_px": 1200,
+    "height_px": 600,
+    "dpi": 300,
+    "min_font_pt": 8
+  },
+  "reading_order": "left-to-right",
+  "layout_type": "linear-progression",
+  "not_claimed": [
+    "This synthetic example does not claim commercial manufacturing feasibility."
+  ],
+  "note": "Synthetic invocation example only - not a formal case and not a prepared answer. run_case.py derives the claim and elements from paper.txt."
+}

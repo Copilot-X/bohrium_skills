@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-8354c69a",
+  "family": "experiment",
+  "mode": "result-interpretation",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "实验结果解释与异常分析",
+  "work_file": "work/experiment-plan.json",
+  "deliverable": "output/experiment-report.md",
+  "output_files": [
+    "output/experiment-report.md",
+    "output/plan.json",
+    "output/parameter-recommendations.json",
+    "output/risk-assessment.json"
+  ],
+  "required_fields": [
+    "steps",
+    "parameters",
+    "evidence"
+  ],
+  "focus": "结果解释、异常识别、替代解释与后续实验",
+  "checks": "解释区分观测/推断；异常有证据；不把相关当因果",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-8354c69a",
+    "mode": "result-interpretation",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

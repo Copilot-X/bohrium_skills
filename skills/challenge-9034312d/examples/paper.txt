@@ -1,0 +1,39 @@
+SYNTHETIC EXAMPLE MATERIAL — written for the skill examples only.
+This is not a real paper, not an official case, and not a formal answer.
+
+Title: Synthetic CO2 hydrogenation test rig and technical route (demo only)
+
+1. Apparatus
+1.1 The rig starts from a gas manifold (A1) that supplies the CO2/H2 feed.
+1.2 A mass flow controller (A2) sets the total feed to 50 mL/min.
+1.3 The two streams are combined in a static mixer (A3).
+1.4 The mixed gas passes through a preheater (A4).
+1.5 The preheated feed enters the fixed-bed reactor (A5).
+1.6 The effluent is cooled in a condenser (A6).
+1.7 The gas phase is routed to a GC analyzer (A7) for analysis.
+1.8 The condensed liquid is drained to a vent line (A8) as waste.
+
+2. Working conditions
+2.1 The manifold outlet (A1.out) feeds the controller inlet (A2.in).
+2.2 The preheater is held at 180 °C.
+2.3 The reactor is held at 350 °C and 1 bar with GHSV = 12 000 h^-1.
+2.4 The gas chromatograph reports CO2 conversion and CH4 selectivity.
+
+3. Technical route
+3.1 S1 Define target; S2 Prepare catalyst.
+3.2 D1 asks whether CO2 conversion is at least 80% at 350 °C after 12 h.
+    If yes, continue to S3 Stability test 100 h; if no, go to S2b Reformulate
+    catalyst and return to S2.
+3.3 S3 leads to T1 Report and scale-up.
+
+4. Ports and media
+K1 A1.out -> A2.in, medium CO2/H2
+K2 A2.out -> A3.in, medium mixed gas
+K3 A3.out -> A4.in, medium mixed gas
+K4 A4.out -> A5.in, medium preheated feed
+K5 A5.out -> A6.in, medium effluent
+K6 A6.gas_out -> A7.inlet, medium gas sample
+K7 A6.liquid_out -> A8.drain, medium condensate (waste)
+
+All labels, port names, conditions, branch criteria and material flows above
+are the complete evidence scope of this synthetic example.

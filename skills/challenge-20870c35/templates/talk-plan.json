@@ -1,0 +1,457 @@
+{
+  "case_id": "<case_id，与 /input/case.json 一致>",
+  "talk": {
+    "occasion": "group meeting",
+    "audience": "<听众画像：人数、专业背景、方法熟悉度>",
+    "audience_level": "expert",
+    "listener_question": "<听众坐下时最想问的一句话>",
+    "desired_outcome": "<讲完后听众应能复述/相信/决定什么>",
+    "language": "zh",
+    "total_min": 15,
+    "qa_min": 4,
+    "buffer_min": 1,
+    "throughline": "<一句听众结果句：条件 + 判断 + 边界>",
+    "must_cover": ["研究问题", "方法", "关键结果", "局限"],
+    "nice_to_have": ["文献对比", "实现细节"],
+    "forbidden": ["未发表数据", "未经证实的因果表述"]
+  },
+  "budget": {
+    "slide_budget": 12,
+    "backup_slides": 2,
+    "time_tolerance": 0.15,
+    "deck_required": true
+  },
+  "sections": [
+    {
+      "id": "S1",
+      "name": "开场与问题",
+      "minutes": 1.5,
+      "purpose": "让听众在意这个缺口，并记住唯一研究问题",
+      "slides": [1, 2, 3]
+    },
+    {
+      "id": "S2",
+      "name": "方法与设计",
+      "minutes": 3.0,
+      "purpose": "说明为什么这样答，建立方法可信度",
+      "slides": [4, 5, 6]
+    },
+    {
+      "id": "S3",
+      "name": "关键结果",
+      "minutes": 3.0,
+      "purpose": "用逐层加码的证据支撑主结论",
+      "slides": [7, 8, 9]
+    },
+    {
+      "id": "S4",
+      "name": "边界与结论",
+      "minutes": 2.5,
+      "purpose": "主动说明边界，给出听众可带走的判断",
+      "slides": [10, 11, 12]
+    }
+  ],
+  "slides": [
+    {
+      "no": 1,
+      "role": "title",
+      "section": "S1",
+      "title": "<报告标题：结论式，不用问句>",
+      "claim": "",
+      "covers": [],
+      "evidence": [],
+      "visual": "",
+      "layout": "cover",
+      "seconds": 15,
+      "notes": "开场 15 秒：我是谁、这篇报告回答哪一个问题；不念目录。",
+      "transition": "先用一个具体失效场景说明为什么这个问题值得现在解决。",
+      "page_rhythm": "breathing",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 2,
+      "role": "motivation",
+      "section": "S1",
+      "title": "<现有方法在什么条件下失效，代价是什么>",
+      "claim": "<一句可被证据支持的现状判断>",
+      "covers": ["研究问题"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<Fig.1b 或 §2.1>",
+          "strength": "moderate",
+          "note": "<该证据说明了什么>"
+        }
+      ],
+      "visual": "<Fig.1b>",
+      "layout": "assertion-evidence",
+      "seconds": 45,
+      "notes": "为什么这页在这里：把问题具体化。怎么说：只讲失效条件和代价，不展开文献史。过渡：于是我们问一个更窄的问题。",
+      "transition": "所以本次只回答一个问题：<研究问题>。",
+      "page_rhythm": "dense",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 3,
+      "role": "question",
+      "section": "S1",
+      "title": "<一句话写出唯一研究问题与预期答案>",
+      "claim": "<研究问题 + 本次给出的答案方向>",
+      "covers": ["研究问题"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<§1 研究目标>",
+          "strength": "strong",
+          "note": "<问题来自何处>"
+        }
+      ],
+      "visual": "",
+      "layout": "statement",
+      "seconds": 30,
+      "notes": "为什么这页在这里：收窄范围。怎么说：读出问题，停 2 秒。过渡：下面说明为什么这个设计能回答它。",
+      "transition": "要回答它，需要把 A 与 B 分开测量。",
+      "page_rhythm": "breathing",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 4,
+      "role": "approach",
+      "section": "S2",
+      "title": "<用一句话说明总体研究策略及排除的替代解释>",
+      "claim": "<策略 + 它能区分什么>",
+      "covers": ["方法"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<Fig.2 设计示意>",
+          "strength": "moderate",
+          "note": "<设计为何能区分竞争解释>"
+        }
+      ],
+      "visual": "<Fig.2 实验设计示意>",
+      "layout": "diagram",
+      "seconds": 60,
+      "notes": "为什么这页在这里：先给设计逻辑，再给细节。怎么说：指图讲三条对照。过渡：具体测量如下。",
+      "transition": "具体测量与样本如下。",
+      "page_rhythm": "breathing",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 5,
+      "role": "method",
+      "section": "S2",
+      "title": "<关键测量方法及其分辨率足以区分什么>",
+      "claim": "<方法能力 + 关键参数>",
+      "covers": ["方法"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<§3.2; Table 1>",
+          "strength": "strong",
+          "note": "<参数与对照设置>"
+        }
+      ],
+      "visual": "<Table 1 关键参数>",
+      "layout": "assertion-evidence",
+      "seconds": 60,
+      "notes": "为什么这页在这里：证明测量能分辨目标差异。怎么说：只讲一个关键参数与一个对照。过渡：样本与数据处理见下一页一句带过。",
+      "transition": "样本与数据处理只占一句：……",
+      "page_rhythm": "dense",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 6,
+      "role": "method",
+      "section": "S2",
+      "title": "<样本/数据规模与处理方式足以支持主比较>",
+      "claim": "<样本量、重复数、统计口径>",
+      "covers": ["方法"],
+      "evidence": [
+        {
+          "source": "<materials/data/measurements.csv>",
+          "locator": "<列名 + 行数，或 §3.3>",
+          "strength": "strong",
+          "note": "<重复数与缺失处理>"
+        }
+      ],
+      "visual": "",
+      "layout": "two-column",
+      "seconds": 60,
+      "notes": "为什么这页在这里：回答可信度。怎么说：给样本量、重复数、误差定义。过渡：现在看结果。",
+      "transition": "先看最能区分两种解释的那组结果。",
+      "page_rhythm": "breathing",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 7,
+      "role": "result",
+      "section": "S3",
+      "title": "<主结果：条件 + 数值/方向 + 对照>",
+      "claim": "<主结论的完整一句话>",
+      "covers": ["关键结果"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<Fig.3a>",
+          "strength": "strong",
+          "note": "<数值、误差、对照>"
+        }
+      ],
+      "visual": "<Fig.3a>",
+      "layout": "assertion-evidence",
+      "seconds": 60,
+      "notes": "为什么这页在这里：全篇最高点。怎么说：先给结论，再指图上的差值，停 2 秒。过渡：这个结果还留下一个替代解释。",
+      "transition": "但比表面积也可能解释这个差值。",
+      "page_rhythm": "dense",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 8,
+      "role": "result",
+      "section": "S3",
+      "title": "<对照实验排除最有力的替代解释>",
+      "claim": "<替代解释被排除的条件与幅度>",
+      "covers": ["关键结果"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<Fig.3c>",
+          "strength": "strong",
+          "note": "<对照组的差异>"
+        }
+      ],
+      "visual": "<Fig.3c>",
+      "layout": "assertion-evidence",
+      "seconds": 60,
+      "notes": "为什么这页在这里：堵住最大质疑。怎么说：说清对照如何匹配，再给差异。过渡：还有一项一致性检验。",
+      "transition": "另一条独立证据给出同样的方向。",
+      "page_rhythm": "dense",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 9,
+      "role": "result",
+      "section": "S3",
+      "title": "<独立证据与主结果方向一致，结论不是单点>",
+      "claim": "<一致性证据 + 强度>",
+      "covers": ["关键结果"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<Fig.4b>",
+          "strength": "moderate",
+          "note": "<独立方法/独立样本>"
+        }
+      ],
+      "visual": "<Fig.4b>",
+      "layout": "assertion-evidence",
+      "seconds": 60,
+      "notes": "为什么这页在这里：把单点结果变成可相信的模式。怎么说：只讲方向一致性，不念全部数据。过渡：接下来说边界。",
+      "transition": "在推广之前，有两个边界必须说清。",
+      "page_rhythm": "dense",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 10,
+      "role": "limitation",
+      "section": "S4",
+      "title": "<结论的适用边界与未验证条件>",
+      "claim": "<两条边界 + 对结论强度的影响>",
+      "covers": ["局限"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<§5.2 局限>",
+          "strength": "moderate",
+          "note": "<哪些条件未覆盖>"
+        }
+      ],
+      "visual": "",
+      "layout": "two-column",
+      "seconds": 45,
+      "notes": "为什么这页在这里：主动交出边界，回答'凭什么可信'。怎么说：两条，每条一句，不辩解。过渡：在这些边界内，结论是什么。",
+      "transition": "在这些边界内，结论可以收成一句话。",
+      "page_rhythm": "breathing",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 11,
+      "role": "conclusion",
+      "section": "S4",
+      "title": "<回到 throughline：本次证明了什么，证据是什么>",
+      "claim": "<主结论 + 最强证据>",
+      "covers": ["关键结果", "局限"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<Fig.3a; Fig.3c>",
+          "strength": "strong",
+          "note": "<主结论的支撑组合>"
+        }
+      ],
+      "visual": "<Fig.3a 缩略>",
+      "layout": "summary",
+      "seconds": 45,
+      "notes": "为什么这页在这里：收束。怎么说：只重复一次 takeaway，不引入新信息。过渡：最后给出一个明确动作。",
+      "transition": "如果这个解释成立，下一步应该先做这个对照。",
+      "page_rhythm": "breathing",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 12,
+      "role": "summary",
+      "section": "S4",
+      "title": "<下一步动作/决策请求，一句话>",
+      "claim": "<明确行动 + 成功判据>",
+      "covers": ["关键结果"],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<§6 展望>",
+          "strength": "weak",
+          "note": "<为什么这是合理的下一步>"
+        }
+      ],
+      "visual": "",
+      "layout": "statement",
+      "seconds": 60,
+      "notes": "为什么这页在这里：把汇报变成决策。怎么说：一个动作、一个判据、一个时间点。过渡：进入提问。",
+      "transition": "",
+      "page_rhythm": "breathing",
+      "backup": false,
+      "optional": false
+    },
+    {
+      "no": 13,
+      "role": "method",
+      "section": "",
+      "title": "<backup：方法细节与参数表>",
+      "claim": "<细节页的唯一结论>",
+      "covers": [],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<Table S1>",
+          "strength": "strong",
+          "note": "<补充参数>"
+        }
+      ],
+      "visual": "<Table S1>",
+      "layout": "table",
+      "seconds": 0,
+      "notes": "仅在被问到参数设置时跳转；30 秒内讲完。",
+      "transition": "",
+      "page_rhythm": "dense",
+      "backup": true,
+      "optional": false
+    },
+    {
+      "no": 14,
+      "role": "result",
+      "section": "",
+      "title": "<backup：次要结果/稳健性检验>",
+      "claim": "<次要结果的方向>",
+      "covers": [],
+      "evidence": [
+        {
+          "source": "<materials/paper.pdf>",
+          "locator": "<Fig.S2>",
+          "strength": "moderate",
+          "note": "<稳健性检验>"
+        }
+      ],
+      "visual": "<Fig.S2>",
+      "layout": "assertion-evidence",
+      "seconds": 0,
+      "notes": "仅在质疑样本稳定性时跳转；说明与主结果方向一致。",
+      "transition": "",
+      "page_rhythm": "dense",
+      "backup": true,
+      "optional": false
+    }
+  ],
+  "qa": [
+    {
+      "question": "<为什么选择方法 A 而不是 B？>",
+      "class": "method",
+      "answer_seconds": 30,
+      "evidence": "slide 5; Table 1",
+      "backup_slide": 13
+    },
+    {
+      "question": "<对照是否充分排除了替代解释？>",
+      "class": "method",
+      "answer_seconds": 30,
+      "evidence": "slide 8; Fig.3c",
+      "backup_slide": 0
+    },
+    {
+      "question": "<误差与显著性如何计算？>",
+      "class": "data",
+      "answer_seconds": 30,
+      "evidence": "slide 6; §3.3",
+      "backup_slide": 14
+    },
+    {
+      "question": "<样本量是否足以支持这个效应？>",
+      "class": "data",
+      "answer_seconds": 30,
+      "evidence": "slide 6; measurements.csv",
+      "backup_slide": 14
+    },
+    {
+      "question": "<换一个条件/体系还成立吗？>",
+      "class": "scope",
+      "answer_seconds": 30,
+      "evidence": "slide 10; §5.2",
+      "backup_slide": 0
+    },
+    {
+      "question": "<与已有工作 X 相比，新在哪里？>",
+      "class": "literature",
+      "answer_seconds": 30,
+      "evidence": "slide 2; §2.1",
+      "backup_slide": 0
+    },
+    {
+      "question": "<这个结果能直接应用吗？成本如何？>",
+      "class": "application",
+      "answer_seconds": 30,
+      "evidence": "slide 12; §6",
+      "backup_slide": 0
+    },
+    {
+      "question": "<如果结果无法复现，最可能的原因是什么？>",
+      "class": "hostile",
+      "answer_seconds": 30,
+      "evidence": "slide 13; Table S1",
+      "backup_slide": 13
+    }
+  ],
+  "tradeoffs": [
+    {
+      "cut": "文献对比细节（含实现细节）",
+      "reason": "15 分钟组会，听众已熟悉该方向；留在 backup 备问。",
+      "disposition": "backup",
+      "target": 13
+    },
+    {
+      "cut": "第二组消融实验",
+      "reason": "与主结论方向重复，讲述时间不够；写入 uncertainty。",
+      "disposition": "dropped",
+      "target": 0
+    }
+  ]
+}

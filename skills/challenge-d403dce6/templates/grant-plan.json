@@ -1,0 +1,35 @@
+{
+  "case_id": "replace-with-case-id",
+  "scheme": "not_a_real_agency",
+  "requirements": [
+    {"id": "R1", "type": "Section", "text": "…", "source_location": "workorder#E2",
+     "status": "covered|partial|missing"}
+  ],
+  "elements": [
+    {"id": "E1", "title": "研究背景与科学问题", "status": "written|partial|missing",
+     "claims": ["C01"]},
+    {"id": "E2", "title": "研究目标", "status": "written", "claims": ["C02"]},
+    {"id": "E3", "title": "研究内容", "status": "written", "claims": ["C03"]},
+    {"id": "E4", "title": "方法与技术路线", "status": "written", "claims": ["C04"]},
+    {"id": "E5", "title": "创新点", "status": "written", "claims": ["C05"]},
+    {"id": "E6", "title": "可行性", "status": "written", "claims": ["C06"]},
+    {"id": "E7", "title": "预期成果与进度", "status": "written",
+     "indicators": [{"name": "论文", "value": "2 篇", "source": "workorder#E7"}]}
+  ],
+  "objectives": [
+    {"objective_id": "O1", "text": "…", "tasks": ["T1"], "methods": ["M1"],
+     "outcomes": ["D1"], "indicator": "…"}
+  ],
+  "consistency": {"matrix_complete": true, "breaks": []},
+  "applicant_evidence": {
+    "provided": ["materials/prior_work.pdf"],
+    "missing": ["申请人简历", "依托单位信息", "经费预算依据"]
+  },
+  "budget": {"total": null, "currency": "CNY", "items": [], "status": "to_be_confirmed"},
+  "timeline": [{"phase": "Q1", "period": "M1-M3", "tasks": ["…"],
+                "milestone": "…", "deliverable": "…"}],
+  "eligibility_screen": {"passed": null, "risks": []},
+  "gaps": [{"item": "经费预算", "why_needed": "E7 要求", "owner": "申请人"}],
+  "uncertainty": [],
+  "change_log": []
+}

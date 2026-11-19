@@ -1,0 +1,43 @@
+{
+  "challenge_id": "challenge-e97137c9",
+  "family": "research",
+  "mode": "review-generation",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "文献综述生成",
+  "work_file": "work/research-plan.json",
+  "deliverable": "output/research-report.md",
+  "output_files": [
+    "output/research-report.md",
+    "output/evidence-matrix.json",
+    "output/references.json"
+  ],
+  "required_fields": [
+    "question",
+    "findings",
+    "evidence"
+  ],
+  "focus": "主题综述、分组比较、证据矩阵与研究空白",
+  "checks": "按维度分组；每篇转述准确；空白由证据推出",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-e97137c9",
+    "mode": "review-generation",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-9ec929fe",
+  "family": "analysis",
+  "mode": "code-generation",
+  "module": "fam_tracks",
+  "profile": "both",
+  "status_success": "completed",
+  "title": "科研代码生成与执行",
+  "work_file": "work/analysis-plan.json",
+  "deliverable": "output/analysis-report.md",
+  "output_files": [
+    "output/analysis-report.md",
+    "output/results.json",
+    "output/results.csv",
+    "output/execution.log"
+  ],
+  "required_fields": [
+    "analysis",
+    "results",
+    "evidence"
+  ],
+  "focus": "可执行代码、输入输出、依赖、错误处理与运行日志",
+  "checks": "代码真实运行；结果文件生成；异常/限制说明",
+  "run_python": true,
+  "work_template": {
+    "case_id": "challenge-9ec929fe",
+    "mode": "code-generation",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

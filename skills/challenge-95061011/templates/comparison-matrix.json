@@ -1,0 +1,250 @@
+{
+  "case_id": "REPLACE_WITH_CASE_ID",
+  "status": "answered|partial|insufficient_evidence|input_error",
+  "task_family": "reading",
+  "workorder": {
+    "path": "/input/comparison-workorder.json",
+    "loaded": true,
+    "source_document_ids": ["REPLACE_WITH_DOC_A", "REPLACE_WITH_DOC_B", "REPLACE_WITH_DOC_C"],
+    "paragraph_id_scheme": "REPLACE_WITH_PARAGRAPH_SCHEME",
+    "comparison_dimensions": ["REPLACE_WITH_DIMENSION_1", "REPLACE_WITH_DIMENSION_2"],
+    "target_material": "REPLACE_WITH_TARGET_MATERIAL",
+    "target_pollutant": "REPLACE_WITH_TARGET_POLLUTANT",
+    "incomparability_rules": ["REPLACE_WITH_RULE_1", "REPLACE_WITH_RULE_2"],
+    "key_map": {}
+  },
+  "documents": [
+    {
+      "source_document_id": "REPLACE_WITH_DOC_A",
+      "title": "REPLACE_WITH_TITLE",
+      "type": "research|review|standard|dataset",
+      "read_scope": ["p1", "pN"],
+      "included": true,
+      "reason": "REPLACE_WITH_INCLUSION_REASON"
+    }
+  ],
+  "dimensions": ["REPLACE_WITH_DIMENSION_1", "REPLACE_WITH_DIMENSION_2"],
+  "comparison_table": [
+    {
+      "dimension": "REPLACE_WITH_DIMENSION_1",
+      "cells": [
+        {
+          "source_document_id": "REPLACE_WITH_DOC_A",
+          "paragraph_id": "p1",
+          "dimension": "REPLACE_WITH_DIMENSION_1",
+          "value": "REPLACE_WITH_VALUE_OR_NULL",
+          "unit": "REPLACE_WITH_UNIT_OR_NULL",
+          "condition": "REPLACE_WITH_CONDITION_OR_NULL",
+          "status": "reported|not_reported|incomparable|unreadable",
+          "reason": "REPLACE_WITH_REASON_FOR_NON_REPORTED_INCOMPARABLE_OR_UNREADABLE",
+          "quote": "REPLACE_WITH_VERBATIM_QUOTE"
+        },
+        {
+          "source_document_id": "REPLACE_WITH_DOC_B",
+          "paragraph_id": "p2",
+          "dimension": "REPLACE_WITH_DIMENSION_1",
+          "value": "REPLACE_WITH_VALUE_OR_NULL",
+          "unit": "REPLACE_WITH_UNIT_OR_NULL",
+          "condition": "REPLACE_WITH_CONDITION_OR_NULL",
+          "status": "reported|not_reported|incomparable|unreadable",
+          "reason": null,
+          "quote": "REPLACE_WITH_VERBATIM_QUOTE"
+        },
+        {
+          "source_document_id": "REPLACE_WITH_DOC_C",
+          "paragraph_id": null,
+          "dimension": "REPLACE_WITH_DIMENSION_1",
+          "value": null,
+          "unit": null,
+          "condition": null,
+          "status": "not_reported",
+          "reason": "REPLACE_WITH_MISSING_REASON",
+          "quote": null
+        }
+      ]
+    }
+  ],
+  "comparability_gate": [
+    {
+      "item": "task",
+      "verdict": "comparable|incomparable|unknown",
+      "reason": "REPLACE_WITH_REASON",
+      "affected_documents": ["REPLACE_WITH_DOC_A", "REPLACE_WITH_DOC_B"],
+      "evidence": [
+        {
+          "source_document_id": "REPLACE_WITH_DOC_A",
+          "paragraph_id": "p1"
+        }
+      ]
+    },
+    {
+      "item": "metric",
+      "verdict": "comparable|incomparable|unknown",
+      "reason": "REPLACE_WITH_REASON",
+      "affected_documents": [],
+      "evidence": []
+    },
+    {
+      "item": "units",
+      "verdict": "comparable|incomparable|unknown",
+      "reason": "REPLACE_WITH_REASON",
+      "affected_documents": [],
+      "evidence": []
+    },
+    {
+      "item": "material",
+      "verdict": "comparable|incomparable|unknown",
+      "reason": "REPLACE_WITH_REASON",
+      "affected_documents": [],
+      "evidence": []
+    },
+    {
+      "item": "pollutant",
+      "verdict": "comparable|incomparable|unknown",
+      "reason": "REPLACE_WITH_REASON",
+      "affected_documents": [],
+      "evidence": []
+    },
+    {
+      "item": "budget",
+      "verdict": "comparable|incomparable|unknown",
+      "reason": "REPLACE_WITH_REASON",
+      "affected_documents": [],
+      "evidence": []
+    }
+  ],
+  "gate_summary": {
+    "quantitative_synthesis": "allowed|restricted|blocked",
+    "permitted_subset": [
+      {
+        "dimension": "REPLACE_WITH_DIMENSION",
+        "source_document_ids": ["REPLACE_WITH_DOC_A", "REPLACE_WITH_DOC_B"],
+        "reason": "REPLACE_WITH_SUBSET_REASON"
+      }
+    ],
+    "reason": "REPLACE_WITH_GATE_SUMMARY_REASON"
+  },
+  "multi_document": {
+    "document_count": 3,
+    "satisfied": true,
+    "basis": "REPLACE_WITH_MULTI_DOCUMENT_BASIS"
+  },
+  "synthesis": {
+    "agreements": [
+      {
+        "text": "REPLACE_WITH_AGREEMENT_TEXT",
+        "support": [
+          {
+            "source_document_id": "REPLACE_WITH_DOC_A",
+            "paragraph_id": "p1"
+          },
+          {
+            "source_document_id": "REPLACE_WITH_DOC_B",
+            "paragraph_id": "p2"
+          }
+        ]
+      }
+    ],
+    "divergences": [
+      {
+        "text": "REPLACE_WITH_DIVERGENCE_TEXT",
+        "sides": [
+          {
+            "source_document_id": "REPLACE_WITH_DOC_A",
+            "paragraph_id": "p1",
+            "claim": "REPLACE_WITH_SIDE_A_CLAIM"
+          },
+          {
+            "source_document_id": "REPLACE_WITH_DOC_B",
+            "paragraph_id": "p2",
+            "claim": "REPLACE_WITH_SIDE_B_CLAIM"
+          }
+        ],
+        "resolution": "unresolved|explained_by_condition",
+        "reason": "REPLACE_WITH_DIVERGENCE_REASON"
+      }
+    ],
+    "gaps": [
+      {
+        "text": "REPLACE_WITH_GAP_TEXT",
+        "affected_dimension": "REPLACE_WITH_DIMENSION",
+        "support": [
+          {
+            "source_document_id": "REPLACE_WITH_DOC_A",
+            "paragraph_id": "p1"
+          }
+        ]
+      }
+    ],
+    "noncomparable": [
+      {
+        "item": "task|metric|units|material|pollutant|budget",
+        "dimension": "REPLACE_WITH_DIMENSION",
+        "source_document_ids": ["REPLACE_WITH_DOC_A", "REPLACE_WITH_DOC_B"],
+        "reason": "REPLACE_WITH_NONCOMPARABLE_REASON",
+        "evidence": [
+          {
+            "source_document_id": "REPLACE_WITH_DOC_B",
+            "paragraph_id": "p2"
+          }
+        ]
+      }
+    ],
+    "nonreported": [
+      {
+        "source_document_id": "REPLACE_WITH_DOC_C",
+        "dimension": "REPLACE_WITH_DIMENSION",
+        "paragraph_id": null,
+        "search_scope": "REPLACE_WITH_SEARCH_SCOPE",
+        "reason": "REPLACE_WITH_MISSING_REASON"
+      }
+    ],
+    "single_document_only": [
+      {
+        "text": "REPLACE_WITH_SINGLE_DOCUMENT_CONCLUSION",
+        "source_document_id": "REPLACE_WITH_DOC_A",
+        "paragraph_id": "p1",
+        "note": "仅单篇支持，不作为领域共识"
+      }
+    ]
+  },
+  "conflicts": [],
+  "uncertainty": [],
+  "change_log": [
+    {
+      "step": 1,
+      "action": "REPLACE_WITH_ACTION",
+      "evidence": "REPLACE_WITH_EVIDENCE"
+    }
+  ],
+  "support_files_used": [
+    "references/multi-doc-synthesis-playbook.md",
+    "scripts/check_synthesis.py"
+  ],
+  "result": {
+    "summary": "REPLACE_WITH_RESULT_SUMMARY",
+    "matrix_location": "top-level comparison_table",
+    "agreement_count": 1,
+    "divergence_count": 1,
+    "noncomparable_count": 1,
+    "nonreported_count": 1,
+    "single_document_only_count": 1,
+    "quantitative_synthesis": "allowed|restricted|blocked"
+  },
+  "claims": [
+    {
+      "claim_id": "C1",
+      "kind": "agreement|divergence|gap|noncomparable|nonreported|single_document",
+      "text": "REPLACE_WITH_CLAIM_TEXT",
+      "evidence": [
+        {
+          "source_document_id": "REPLACE_WITH_DOC_A",
+          "paragraph_id": "p1"
+        }
+      ],
+      "source_id": "REPLACE_WITH_DOC_A",
+      "location": "p1"
+    }
+  ],
+  "uncertainties": []
+}

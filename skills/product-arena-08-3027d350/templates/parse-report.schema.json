@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Parse coverage report (work/document.json -> report)",
+  "type": "object",
+  "required": ["case_id", "source_path", "page_count", "readable_pages",
+               "ocr_pages", "empty_pages", "sections", "paragraphs",
+               "tables", "figures", "equations", "references"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "source_path": {"type": "string"},
+    "page_count": {"type": "integer", "minimum": 0},
+    "readable_pages": {"type": "integer", "minimum": 0},
+    "ocr_pages": {"type": "array", "items": {"type": "integer"}},
+    "empty_pages": {
+      "type": "array",
+      "items": {"type": "integer"},
+      "description": "无法提取文字且 OCR 失败的页；不得用猜测文本填充"
+    },
+    "sections": {"type": "integer", "minimum": 0},
+    "paragraphs": {"type": "integer", "minimum": 0},
+    "tables": {"type": "integer", "minimum": 0},
+    "figures": {"type": "integer", "minimum": 0},
+    "equations": {"type": "integer", "minimum": 0},
+    "references": {"type": "integer", "minimum": 0},
+    "warnings": {"type": "array", "items": {"type": "string"}}
+  }
+}

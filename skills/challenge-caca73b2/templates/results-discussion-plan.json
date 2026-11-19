@@ -1,0 +1,31 @@
+{
+  "case_id": "replace-with-case-id",
+  "sections": [
+    {"id": "results", "path": "results-discussion.md#results", "words": 0,
+     "results": ["R01"], "figures": ["Fig.2a"]},
+    {"id": "discussion", "path": "results-discussion.md#discussion", "words": 0,
+     "answers": "Q1", "citations": ["ref3"]}
+  ],
+  "results": [
+    {"result_id": "R01", "statement": "Catalyst A reached 92.1% conversion",
+     "quantity": "conversion", "value": "92.1", "unit": "%",
+     "group": "catalyst A", "condition": "350 °C, 1 bar", "n": 3,
+     "error": {"type": "SD", "value": "1.8"},
+     "significance": {"test": "Tukey", "p": "0.003", "mark": "**"},
+     "source": {"path": "materials/results.csv", "locator": "rows 4-6"},
+     "figure": "Fig.2a", "kind": "reported"}
+  ],
+  "interpretations": [
+    {"interpretation_id": "I01", "text": "Oxygen vacancies likely stabilize the intermediate",
+     "based_on": ["R01"], "strength": "suggested", "citations": ["ref3"]}
+  ],
+  "limitations": [
+    {"limitation": "仅测试 300–400 °C 区间", "impact": "不能外推到更高温度", "mitigation": "下一轮扩展温度范围"}
+  ],
+  "artifacts": [
+    {"role": "editable", "path": "results-discussion.md"},
+    {"role": "evidence", "path": "claim-table.json"}
+  ],
+  "uncertainty": [],
+  "change_log": []
+}

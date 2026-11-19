@@ -1,0 +1,33 @@
+{
+  "figure_id": "Fig.2",
+  "width_mm": 180,
+  "height_mm": 90,
+  "font_family": "Liberation Sans",
+  "font_size_pt": 8,
+  "journal_preset": "nature|science|cell|custom",
+  "layout": {"cols": 2},
+  "panels": [
+    {
+      "id": "a",
+      "type": "bar",
+      "title": "Conversion vs catalyst",
+      "x": {"label": "Catalyst", "categories": ["A", "B", "C"]},
+      "y": {"label": "Conversion", "unit": "%", "min": 0, "max": 100},
+      "series": [
+        {"name": "350 °C", "values": [84.3, 61.2, 55.0],
+         "errors": [1.8, 2.0, 1.5], "source": "results.csv#rows2-4"}
+      ]
+    },
+    {
+      "id": "b",
+      "type": "line",
+      "title": "Selectivity vs temperature",
+      "x": {"label": "Temperature", "unit": "°C", "values": [300, 350, 400]},
+      "y": {"label": "Selectivity", "unit": "%", "min": 0, "max": 100},
+      "series": [
+        {"name": "A", "values": [88.0, 92.1, 90.4], "marker": "circle",
+         "errors": [1.2, 0.9, 1.4], "source": "results.csv#colsC-E"}
+      ]
+    }
+  ]
+}

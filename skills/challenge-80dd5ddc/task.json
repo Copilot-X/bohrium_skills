@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-80dd5ddc",
+  "family": "library",
+  "mode": "kb-qa",
+  "module": "fam_tracks",
+  "profile": "reading",
+  "status_success": "answered",
+  "title": "科研知识库问答",
+  "work_file": "work/library-plan.json",
+  "deliverable": "output/library-results.json",
+  "output_files": [
+    "output/library-results.json",
+    "output/library-index.json",
+    "output/operations.log.json"
+  ],
+  "required_fields": [
+    "items",
+    "evidence"
+  ],
+  "focus": "知识库问答、检索增强、引用定位与拒答边界",
+  "checks": "答案每句有来源；无证据时拒答；冲突材料并列",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-80dd5ddc",
+    "mode": "kb-qa",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "challenge_id": "product-arena-08-3027d350",
+  "family": "document-parsing",
+  "module": "fam_parse",
+  "profile": "reading",
+  "title": "阅读01｜文献文档解析",
+  "description": "PDF document parsing",
+  "version": "1.0.0"
+}

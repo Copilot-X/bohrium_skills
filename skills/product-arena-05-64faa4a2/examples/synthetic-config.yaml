@@ -1,0 +1,27 @@
+# Synthetic example only. 不是正式案例，也不代表任何真实实验。
+model:
+  name: NiCo-200
+  hidden_dim: 128
+  layers: 3
+training:
+  learning_rate: 0.0005
+  batch_size: 64
+  epochs: 50
+  seed: 7
+  optimizer: Adam
+  weight_decay: 0.00001
+dataset:
+  name: CH4-sim
+  version: v2.0
+  split: "train:val:test = 70:15:15"
+  size: 8000
+evaluation:
+  metrics: [yield, stability]
+  repeats: 5
+hardware:
+  device: NVIDIA RTX 4090
+  precision: fp16
+software:
+  python: "3.11.4"
+  torch: "2.2.0"
+  cuda: "12.4"

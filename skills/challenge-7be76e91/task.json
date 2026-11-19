@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-7be76e91",
+  "family": "experiment",
+  "mode": "plan-comparison",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "实验方案比较与选择",
+  "work_file": "work/experiment-plan.json",
+  "deliverable": "output/experiment-report.md",
+  "output_files": [
+    "output/experiment-report.md",
+    "output/plan.json",
+    "output/parameter-recommendations.json",
+    "output/risk-assessment.json"
+  ],
+  "required_fields": [
+    "steps",
+    "parameters",
+    "evidence"
+  ],
+  "focus": "方案比较维度、成本/风险/产出、评分与选择理由",
+  "checks": "同维度比较；评分可复算；不隐瞒劣势",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-7be76e91",
+    "mode": "plan-comparison",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

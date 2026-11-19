@@ -1,0 +1,36 @@
+{
+  "case_id": "replace-with-case-id",
+  "formulas": [
+    {
+      "eq_id": "Eq.3",
+      "latex": "\\eta = \\frac{P_{out}}{P_{in}}",
+      "type": "definition",
+      "symbols": [
+        {"symbol": "\\eta", "meaning": "效率", "unit": "1", "range": [0, 1], "status": "defined", "source": "Eq.3"},
+        {"symbol": "P_{out}", "meaning": "输出功率", "unit": "W", "range": null, "status": "defined", "source": "Eq.3"},
+        {"symbol": "P_{in}", "meaning": "输入功率", "unit": "W", "range": null, "status": "defined", "source": "Eq.3"}
+      ],
+      "source": {"paragraph_id": "p5", "quote": "..."},
+      "assumptions": ["稳态"]
+    }
+  ],
+  "derivation": [
+    {"step": 1, "from": "Eq.3", "to": "Eq.4", "operation": "代入 Eq.2", "justification": "能量守恒", "latex": "..."}
+  ],
+  "numeric_check": {
+    "inputs": [
+      {"symbol": "P_{out}", "value": 40, "unit": "W"},
+      {"symbol": "P_{in}", "value": 50, "unit": "W"}
+    ],
+    "computation": "40/50",
+    "result": {"value": 0.8, "unit": "1"},
+    "dimensional_check": "W/W = 1",
+    "plausibility": "0.8 在 [0,1] 内，合理"
+  },
+  "render_target": "latex",
+  "package_dependencies": ["amsmath"],
+  "compile_boundary": "syntax_only",
+  "glyph_substitution": [],
+  "uncertainty": [],
+  "change_log": [{"step": 1, "action": "读公式与符号表", "evidence": "Eq.3"}]
+}

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "科研资料库与文件管理 work file",
+  "type": "object",
+  "required": [
+    "case_id",
+    "summary",
+    "items",
+    "evidence"
+  ],
+  "properties": {
+    "items": {
+      "description": "required by task.json"
+    },
+    "evidence": {
+      "description": "required by task.json"
+    }
+  }
+}

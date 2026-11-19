@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Executed graph queries (work/graph.json -> queries)",
+  "type": "object",
+  "required": ["queries"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "minimum_queries": {"type": "integer", "const": 3},
+    "queries": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["id", "question", "answer", "evidence", "uncertain"],
+        "anyOf": [
+          {"required": ["start_node_ids"],
+           "properties": {"start_node_ids": {"type": "array", "minItems": 1}}},
+          {"required": ["result_node_ids"],
+           "properties": {"result_node_ids": {"type": "array", "minItems": 1}}}
+        ],
+        "properties": {
+          "id": {"type": "string", "pattern": "^Q[0-9]+$"},
+          "question": {
+            "type": "string", "minLength": 3,
+            "description": "真实问题；允许第一次查询无结果后改写，但最终必须可执行"
+          },
+          "start_node_ids": {
+            "type": "array", "items": {"type": "string"},
+            "description": "遍历起点；与 result_node_ids 至少给一个非空数组"
+          },
+          "edge_types": {
+            "type": "array",
+            "description": "为空表示不按边类型过滤；类型必须来自 EDGE_TYPES",
+            "items": {"type": "string"}
+          },
+          "result_node_ids": {
+            "type": "array", "items": {"type": "string"},
+            "description": "显式结果子图；必须已存在于 nodes；与 start_node_ids 至少给一个非空数组"
+          },
+          "answer": {"type": "string", "minLength": 1},
+          "evidence": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["source_id", "paragraph_id", "quote"],
+              "properties": {
+                "source_id": {"type": "string"},
+                "paragraph_id": {"type": "string"},
+                "quote": {"type": "string"}
+              }
+            }
+          },
+          "uncertain": {
+            "type": "array", "items": {"type": "string"},
+            "description": "图谱无法确定、跨篇不可比或证据冲突的部分"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "meta": {
+    "spec_version": "1.0",
+    "task": "academic-template-adaptation",
+    "template": "/input/materials/template.pptx",
+    "aspect_ratio": "16:9",
+    "usage": "复制到 /app/work/ppt-format-spec.json。优先用 audit_ppt_template.py --emit-spec 依据真实模板生成，再逐字段核对；不要保留与本模板不符的示例值。"
+  },
+  "template": {
+    "required": true,
+    "fidelity": "master+layouts+theme",
+    "slide_size": {
+      "cx": 12192000,
+      "cy": 6858000
+    }
+  },
+  "roles": {
+    "title": {
+      "layout": "Title Slide",
+      "title_size": 40,
+      "body_size": 20,
+      "notes_required": true
+    },
+    "section": {
+      "layout": "Section Header",
+      "title_size": 32,
+      "body_size": 18,
+      "notes_required": false
+    },
+    "content": {
+      "layout": "Title and Content",
+      "title_size": 28,
+      "body_size": 18,
+      "notes_required": true
+    },
+    "two-column": {
+      "layout": "Two Content",
+      "title_size": 28,
+      "body_size": 18,
+      "notes_required": true
+    },
+    "figure": {
+      "layout": "Picture with Caption",
+      "title_size": 28,
+      "body_size": 16,
+      "notes_required": true
+    },
+    "closing": {
+      "layout": "Title Slide",
+      "title_size": 32,
+      "body_size": 20,
+      "notes_required": true
+    }
+  },
+  "typography": {
+    "title_size": 32,
+    "body_size": 18,
+    "caption_size": 12,
+    "footer_size": 10,
+    "min_title_pt": 24,
+    "min_body_pt": 14,
+    "min_caption_pt": 10,
+    "min_footer_pt": 9,
+    "max_title_lines": 2,
+    "max_bullets": 6
+  },
+  "fonts": {
+    "theme": {
+      "majorFont": {
+        "latin": "Liberation Sans",
+        "ea": "SimHei"
+      },
+      "minorFont": {
+        "latin": "Liberation Sans",
+        "ea": "SimSun"
+      }
+    },
+    "allowed": [
+      "Liberation Sans",
+      "SimHei",
+      "SimSun"
+    ],
+    "unavailable": [],
+    "substitutions": [
+      {
+        "original": "Arial",
+        "substitute": "Liberation Sans",
+        "reason": "示例：同族无衬线替代；实际替换必须以 font-discovery 结果为准",
+        "face": "minorFont.latin"
+      }
+    ]
+  },
+  "colors": {
+    "theme": {
+      "dk1": "000000",
+      "lt1": "FFFFFF",
+      "dk2": "1F3864",
+      "lt2": "E7E6E6",
+      "accent1": "4472C4"
+    },
+    "allowed": [
+      "1F3864",
+      "595959",
+      "808080"
+    ],
+    "exceptions": []
+  },
+  "content": {
+    "preserve_from_baseline": true,
+    "min_retention": 0.85,
+    "numbers_must_match": true,
+    "must_contain": [
+      {
+        "slide": 2,
+        "text": "示例：该页必须逐字保留的结论句或关键数字"
+      }
+    ],
+    "notes_required": true
+  },
+  "images": {
+    "aspect_tolerance": 0.02,
+    "allow_crop": false
+  },
+  "validation": {
+    "require_placeholders": true,
+    "require_title_placeholder": true,
+    "require_body_placeholder": true,
+    "allow_free_text": [
+      "Caption",
+      "Footer",
+      "Source"
+    ],
+    "must_use_roles": [
+      "title",
+      "content"
+    ],
+    "overflow": "warn",
+    "strict_fonts": false,
+    "strict_colors": false
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "_note": "SYNTHETIC / 示例解析结果，不是正式案例答案。对应 examples/synthetic-page.txt；正式运行时必须解析 /input 的真实 PDF，并用真实页码与区块。",
+  "case_id": "SYNTHETIC-PAGE-DEMO",
+  "document": {
+    "case_id": "SYNTHETIC-PAGE-DEMO",
+    "source_path": "synthetic-page.pdf",
+    "title": "Synthetic Coating Study",
+    "authors": ["Example Author One", "Example Author Two"],
+    "abstract": "Coating improves capacity in this synthetic example, but the dataset is not real.",
+    "page_count": 1,
+    "readable_pages": 1,
+    "ocr_pages": [],
+    "empty_pages": [],
+    "sections": [
+      {"id": "S001", "heading": "1 Introduction", "level": 1,
+       "paragraphs": [
+         {"id": "P001",
+          "text": "Coating is widely used to improve rate capability in synthetic examples.",
+          "page": 1, "block_id": 2, "bbox": [72.0, 300.0, 290.0, 330.0],
+          "locator": "p1 b2", "kind": "body"}
+       ]},
+      {"id": "S002", "heading": "3 Results", "level": 1,
+       "paragraphs": [
+         {"id": "P002",
+          "text": "The coated sample delivered 140 mAh g-1 at 1 C. The uncoated sample delivered 110 mAh g-1 under the same conditions.",
+          "page": 1, "block_id": 3, "bbox": [72.0, 340.0, 290.0, 390.0],
+          "locator": "p1 b3", "kind": "body"}
+       ]}
+    ],
+    "tables": [
+      {"id": "T001", "page": 1,
+       "caption": "Table 2. Capacity at 1 C.",
+       "columns": ["Sample", "Capacity (mAh g-1)"],
+       "rows": [["Coated", "140"], ["Uncoated", "110"]],
+       "source_locator": "p1 b4", "detection": "manual-review"}
+    ],
+    "figures": [
+      {"id": "F001", "label": "Fig. 2",
+       "caption": "Fig. 2. Capacity versus rate for coated and uncoated samples.",
+       "page": 1, "locator": "p1 b5"}
+    ],
+    "equations": [
+      {"id": "E001", "page": 1,
+       "raw_text": "E = E0 - (RT/nF) ln Q (2)",
+       "latex": null, "number": "2", "locator": "p1 b5"}
+    ],
+    "references": [
+      {"id": "R001",
+       "raw": "[1] Example Author One. Synthetic coating study. J Synth Examples. 2026;1:1-2. doi:10.0000/synthetic.2026.001",
+       "doi": "10.0000/synthetic.2026.001", "year": "2026",
+       "title": "", "authors": []}
+    ],
+    "headers_footers": [
+      {"text": "Journal of Synthetic Examples 1 (2026) 1-2", "page": 1, "kind": "header"},
+      {"text": "1", "page": 1, "kind": "footer"}
+    ],
+    "engine": "synthetic-text",
+    "warnings": ["synthetic example: page/block values are illustrative, not PDF geometry"]
+  },
+  "report": {
+    "case_id": "SYNTHETIC-PAGE-DEMO",
+    "source_path": "synthetic-page.pdf",
+    "page_count": 1,
+    "readable_pages": 1,
+    "ocr_pages": [],
+    "empty_pages": [],
+    "sections": 2,
+    "paragraphs": 2,
+    "tables": 1,
+    "figures": 1,
+    "equations": 1,
+    "references": 1,
+    "warnings": ["synthetic example: page/block values are illustrative, not PDF geometry"]
+  }
+}

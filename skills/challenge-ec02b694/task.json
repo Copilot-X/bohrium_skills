@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-ec02b694",
+  "family": "experiment",
+  "mode": "parameter-optimization",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "实验参数优化建议",
+  "work_file": "work/experiment-plan.json",
+  "deliverable": "output/experiment-report.md",
+  "output_files": [
+    "output/experiment-report.md",
+    "output/plan.json",
+    "output/parameter-recommendations.json",
+    "output/risk-assessment.json"
+  ],
+  "required_fields": [
+    "steps",
+    "parameters",
+    "evidence"
+  ],
+  "focus": "参数空间、历史数据、约束、推荐值与验证实验",
+  "checks": "推荐值有依据；约束明确；给出验证/停止条件",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-ec02b694",
+    "mode": "parameter-optimization",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

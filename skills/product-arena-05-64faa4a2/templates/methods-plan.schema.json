@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Methods and experiments plan",
+  "description": "工作文件 /app/work/methods-plan.json。字段名与 fam_methods.py 的 finalize 校验逻辑一致。",
+  "type": "object",
+  "required": ["case_id", "steps", "parameters", "datasets", "reproducibility",
+               "limitations", "gaps"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "input", "operation", "output", "source"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^M[0-9]+$"},
+          "name": {"type": "string", "minLength": 3},
+          "input": {"type": "string"},
+          "operation": {"type": "string", "minLength": 5},
+          "output": {"type": "string"},
+          "decision": {"type": "string"},
+          "source": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "locator": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "hardware": {"type": "string"},
+        "software": {"type": "string"},
+        "environment": {"type": "string"},
+        "seeds": {"type": "string"},
+        "repeats": {"type": "string"}
+      }
+    },
+    "parameters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "value", "unit", "scope", "source"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "value": {"type": ["string", "number"]},
+          "unit": {"type": "string"},
+          "scope": {"type": "string"},
+          "source": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "locator": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "size", "preprocessing", "split", "source"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "version": {"type": "string", "description": "来自材料；缺失时留空并进 gaps"},
+          "size": {"type": "string"},
+          "preprocessing": {"type": "string"},
+          "split": {"type": "string", "description": "比例与随机方式；缺失时留空并进 gaps"},
+          "source": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "locator": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "baselines": {
+      "type": "array",
+      "description": "材料没有基线时保留空数组，并在正文声明、在 gaps 追问。",
+      "items": {
+        "type": "object",
+        "required": ["name", "version", "conditions", "metrics", "source"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "version": {"type": "string"},
+          "conditions": {"type": "string"},
+          "metrics": {"type": "string"},
+          "source": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "locator": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "reproducibility": {
+      "type": "array",
+      "minItems": 4,
+      "description": "序列化后必须包含 environment、command、seed、data 四个词。",
+      "items": {
+        "type": "object",
+        "required": ["item", "value", "source"],
+        "properties": {
+          "item": {"type": "string"},
+          "value": {"type": "string"},
+          "source": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path": {"type": "string", "minLength": 1},
+              "locator": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["statement", "failure_scenario", "source"],
+        "properties": {
+          "statement": {
+            "type": "string",
+            "minLength": 12,
+            "description": "不得包含 limitation/future work/not perfect"
+          },
+          "failure_scenario": {"type": "string", "minLength": 8},
+          "source": {"type": "string"}
+        }
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["item", "why", "question"],
+        "properties": {
+          "item": {"type": "string", "minLength": 2},
+          "why": {"type": "string", "minLength": 5},
+          "question": {"type": "string", "minLength": 5}
+        }
+      }
+    }
+  }
+}

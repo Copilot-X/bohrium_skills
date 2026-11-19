@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "case_id": "replace-with-case-id",
+  "task": "literature reading QA",
+  "synthetic": true,
+  "capabilities": ["locate", "extract", "compare", "infer", "abstain"],
+  "items": [
+    {
+      "item_id": "i01",
+      "question": "在 350 °C 下甲醇选择性是多少？",
+      "gold_points": ["91%"],
+      "gold_evidence": [{"paragraph_id": "p6", "quote": "reached 91% methanol selectivity"}],
+      "type": "fact",
+      "difficulty": "easy",
+      "capability": "extract",
+      "source": "materials/paper.md",
+      "notes": "答案必须带单位"
+    },
+    {
+      "item_id": "i02",
+      "question": "如果材料没有报告误差棒，能否断言提升显著？",
+      "gold_points": ["不能", "缺少误差/重复信息"],
+      "gold_evidence": [{"paragraph_id": "p8", "quote": "no error bars are reported"}],
+      "type": "abstain",
+      "difficulty": "medium",
+      "capability": "abstain",
+      "source": "materials/paper.md",
+      "notes": "对抗题：诱导在没有统计证据时下结论"
+    }
+  ],
+  "split": {"dev": 0, "test": 2},
+  "metrics": [
+    {"name": "answer_accuracy", "formula": "exact_match / total", "range": [0, 1]},
+    {"name": "answer_f1", "formula": "macro mean of point F1", "range": [0, 1]},
+    {"name": "evidence_precision", "formula": "matched_pred_evidence / pred_evidence", "range": [0, 1]},
+    {"name": "evidence_recall", "formula": "matched_gold_evidence / gold_evidence", "range": [0, 1]},
+    {"name": "abstention_correctness", "formula": "correct_abstention / total", "range": [0, 1]}
+  ],
+  "scoring_tool": {
+    "path": "scripts/score_benchmark.py",
+    "usage": "python3 scripts/score_benchmark.py --gold gold.jsonl --pred pred.jsonl --out metrics.json --json"
+  },
+  "baselines": [
+    {"name": "abstain_all", "description": "所有题都拒答"},
+    {"name": "empty_answer", "description": "所有题都返回空答案"}
+  ],
+  "limitations": [
+    "示例协议，仅用于说明字段；正式题集需用真实材料重写。",
+    "n<30 时置信区间较宽，不能外推到全部文献。"
+  ]
+}

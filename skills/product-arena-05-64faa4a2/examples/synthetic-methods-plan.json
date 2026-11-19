@@ -1,0 +1,74 @@
+{
+  "case_id": "SYNTHETIC-METHODS",
+  "steps": [
+    {"id": "M1", "name": "Load and split data", "input": "CH4-sim v2.0",
+     "operation": "load CH4-sim and split into train:val:test = 70:15:15",
+     "output": "train/val/test splits", "decision": "fixed split from config",
+     "source": {"path": "synthetic-config.yaml", "locator": "dataset"}},
+    {"id": "M2", "name": "Train NiCo-200", "input": "training split",
+     "operation": "train for 50 epochs with batch size 64, learning rate 0.0005 and Adam",
+     "output": "trained model", "decision": "config-defined schedule",
+     "source": {"path": "synthetic-config.yaml", "locator": "training"}},
+    {"id": "M3", "name": "Evaluate", "input": "test split",
+     "operation": "measure yield and stability with 5 repeats",
+     "output": "yield and stability metrics", "decision": "held-out test split",
+     "source": {"path": "synthetic-config.yaml", "locator": "evaluation"}}
+  ],
+  "settings": {
+    "hardware": "NVIDIA RTX 4090",
+    "software": "Python 3.11.4, PyTorch 2.2.0, CUDA 12.4",
+    "environment": "fp16 precision",
+    "seeds": "7",
+    "repeats": "5"
+  },
+  "parameters": [
+    {"name": "learning_rate", "value": "0.0005", "unit": "", "scope": "training",
+     "source": {"path": "synthetic-config.yaml", "locator": "training.learning_rate"}},
+    {"name": "batch_size", "value": "64", "unit": "", "scope": "training",
+     "source": {"path": "synthetic-config.yaml", "locator": "training.batch_size"}},
+    {"name": "epochs", "value": "50", "unit": "", "scope": "training",
+     "source": {"path": "synthetic-config.yaml", "locator": "training.epochs"}},
+    {"name": "seed", "value": "7", "unit": "", "scope": "all",
+     "source": {"path": "synthetic-config.yaml", "locator": "training.seed"}},
+    {"name": "weight_decay", "value": "0.00001", "unit": "", "scope": "training",
+     "source": {"path": "synthetic-config.yaml", "locator": "training.weight_decay"}},
+    {"name": "hidden_dim", "value": "128", "unit": "", "scope": "model",
+     "source": {"path": "synthetic-config.yaml", "locator": "model.hidden_dim"}},
+    {"name": "layers", "value": "3", "unit": "", "scope": "model",
+     "source": {"path": "synthetic-config.yaml", "locator": "model.layers"}},
+    {"name": "repeats", "value": "5", "unit": "", "scope": "evaluation",
+     "source": {"path": "synthetic-config.yaml", "locator": "evaluation.repeats"}}
+  ],
+  "datasets": [
+    {"name": "CH4-sim", "version": "v2.0", "size": "8000",
+     "preprocessing": "as provided; no additional preprocessing reported",
+     "split": "train:val:test = 70:15:15",
+     "source": {"path": "synthetic-config.yaml", "locator": "dataset"}}
+  ],
+  "baselines": [],
+  "reproducibility": [
+    {"item": "environment",
+     "value": "Python 3.11.4, PyTorch 2.2.0, CUDA 12.4, NVIDIA RTX 4090, fp16",
+     "source": {"path": "synthetic-config.yaml", "locator": "software"}},
+    {"item": "command",
+     "value": "python code.py --data data.csv --seed 7 --epochs 50 --batch-size 64 --lr 0.0005",
+     "source": {"path": "code.py", "locator": "argparse defaults"}},
+    {"item": "seed", "value": "7",
+     "source": {"path": "synthetic-config.yaml", "locator": "training.seed"}},
+    {"item": "data access", "value": "CH4-sim v2.0 (synthetic-config.yaml dataset section)",
+     "source": {"path": "synthetic-config.yaml", "locator": "dataset"}}
+  ],
+  "limitations": [
+    {"statement": "The supplied config covers a single seed and one 70:15:15 split, so run-to-run variance across seeds and alternative splits cannot be assessed.",
+     "failure_scenario": "Differences smaller than seed-to-seed variance, or conclusions under a different split, are unsupported by this configuration.",
+     "source": "synthetic-config.yaml dataset/training"}
+  ],
+  "gaps": [
+    {"item": "baseline specification",
+     "why": "The config, log, code and data contain no baseline system or shared-budget conditions.",
+     "question": "Which baseline system and version, under which shared budget, should be used for comparison?"},
+    {"item": "checkpoint selection",
+     "why": "The config defines no validation-based checkpoint rule, so the selection procedure is ambiguous.",
+     "question": "Was the checkpoint selected on the validation split, and by which metric?"}
+  ]
+}

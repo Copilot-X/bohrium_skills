@@ -1,0 +1,44 @@
+{
+  "challenge_id": "agent-6aefb2fd",
+  "family": "analysis",
+  "mode": "multi-step-agent",
+  "module": "fam_tracks",
+  "profile": "both",
+  "status_success": "completed",
+  "title": "多步骤数据分析 Agent",
+  "work_file": "work/analysis-plan.json",
+  "deliverable": "output/analysis-report.md",
+  "output_files": [
+    "output/analysis-report.md",
+    "output/results.json",
+    "output/results.csv",
+    "output/execution.log"
+  ],
+  "required_fields": [
+    "analysis",
+    "results",
+    "evidence"
+  ],
+  "focus": "多步骤计划、工具调用、中间结果与可恢复性",
+  "checks": "每步有输入/输出；失败可恢复；最终结果可复算",
+  "run_python": true,
+  "work_template": {
+    "case_id": "agent-6aefb2fd",
+    "mode": "multi-step-agent",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

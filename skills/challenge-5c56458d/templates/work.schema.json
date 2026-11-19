@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "科研数据库查询与分析 work file",
+  "type": "object",
+  "required": [
+    "case_id",
+    "summary",
+    "analysis",
+    "results",
+    "evidence"
+  ],
+  "properties": {
+    "analysis": {
+      "description": "required by task.json"
+    },
+    "results": {
+      "description": "required by task.json"
+    },
+    "evidence": {
+      "description": "required by task.json"
+    }
+  }
+}

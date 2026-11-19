@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "compile-report.schema.json",
+  "title": "Compile report (output/compile-report.json)",
+  "description": "Written by fam_latex.finalize from the real compile attempt and static checks. Fields reflect what actually happened; never fill them by hand.",
+  "type": "object",
+  "required": ["case_id", "main", "available", "ok", "static", "edits_applied", "edits_blocked", "file_changes"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "main": {"type": "string", "description": "Relative path of the compiled main .tex."},
+    "available": {
+      "type": "boolean",
+      "description": "true only if a TeX engine (latexmk/pdflatex/xelatex/lualatex) was found and invoked."
+    },
+    "ok": {
+      "type": "boolean",
+      "description": "true only if the engine exited 0 and a PDF appeared."
+    },
+    "engine": {"type": ["string", "null"], "description": "Engine actually used, null if unavailable."},
+    "error": {"type": ["string", "null"], "description": "Engine error text or exit code."},
+    "passes": {"type": ["integer", "null"], "description": "Number of passes recorded for the last attempt."},
+    "errors": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Log lines starting with '!' or containing 'Undefined control sequence' (deduplicated, capped)."
+    },
+    "warnings": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "LaTeX/Package warnings, undefined refs, over/underfull boxes (deduplicated, capped)."
+    },
+    "static": {
+      "type": "object",
+      "properties": {
+        "documentclass": {"type": "boolean"},
+        "begin_document": {"type": "boolean"},
+        "end_document": {"type": "boolean"},
+        "balanced_braces": {"type": "boolean", "description": "Raw brace counts in the main file; escaped braces are still counted."},
+        "citations": {"type": "array", "items": {"type": "string"}},
+        "labels": {"type": "array", "items": {"type": "string"}},
+        "refs": {"type": "array", "items": {"type": "string"}},
+        "bib_keys": {"type": "array", "items": {"type": "string"}},
+        "missing_refs": {"type": "array", "items": {"type": "string"}},
+        "missing_citations": {"type": "array", "items": {"type": "string"}},
+        "ok": {"type": "boolean"}
+      }
+    },
+    "edits_applied": {"type": "integer"},
+    "edits_blocked": {"type": "integer"},
+    "file_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {"type": "string"},
+          "changed": {"type": "boolean"},
+          "diff": {"type": "string"},
+          "binary": {"type": "boolean"},
+          "sha256_before": {"type": "string"},
+          "sha256_after": {"type": "string"}
+        }
+      }
+    },
+    "pdf": {
+      "type": ["string", "null"],
+      "description": "\"main.pdf\" only when a real %PDF- file was copied to output; otherwise null."
+    }
+  }
+}

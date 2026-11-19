@@ -1,0 +1,86 @@
+{
+  "_example_notice": "SYNTHETIC interface example only — not an official case and not an official answer. All entities, values and the DOI are fictional.",
+  "case_id": "SYNTH-NANOPUB-EXAMPLE",
+  "source_metadata": {
+    "paper_id": "SYNTH-NANOPUB-EXAMPLE",
+    "title": "Silica Coating Reduces Capacity Fade in LiNiO2 Cathodes",
+    "authors": ["C. Example", "D. Sample"],
+    "year": "2026",
+    "doi": "10.9999/synth.2026.002",
+    "version": "1",
+    "source_path": "paper.md"
+  },
+  "assertions": [
+    {
+      "id": "A001",
+      "assertion": "Silica coating decreases capacity fade in LiNiO2 cathodes after 100 cycles.",
+      "subject": {"label": "silica coating", "type": "material"},
+      "relation": "DECREASES",
+      "object": {"label": "capacity fade", "type": "metric"},
+      "conditions": ["100 cycles", "1 C", "2.8-4.3 V"],
+      "evidence": {
+        "path": "paper.md",
+        "locator": "paper.md P008",
+        "quote": "The uncoated cell retained 71% capacity after 100 cycles. ... The coated cell retained 88% capacity under the same conditions."
+      },
+      "evidence_type": "direct",
+      "confidence": "high",
+      "limitations": ["One coated and one uncoated cell were compared."]
+    },
+    {
+      "id": "A002",
+      "assertion": "After 100 cycles, the silica-coated cell retains more capacity than the uncoated cell.",
+      "subject": {"label": "silica-coated LiNiO2 cell", "type": "material"},
+      "relation": "OUTPERFORMS",
+      "object": {"label": "uncoated LiNiO2 cell", "type": "material"},
+      "conditions": ["100 cycles", "1 C"],
+      "evidence": {
+        "path": "paper.md",
+        "locator": "paper.md P008",
+        "quote": "The uncoated cell retained 71% capacity after 100 cycles. ... The coated cell retained 88% capacity under the same conditions."
+      },
+      "evidence_type": "direct",
+      "confidence": "high",
+      "limitations": ["No replicate count is reported."]
+    },
+    {
+      "id": "A003",
+      "assertion": "The test cells used a lithium metal anode.",
+      "subject": {"label": "test cells", "type": "material"},
+      "relation": "USES",
+      "object": {"label": "lithium metal anode", "type": "material"},
+      "conditions": ["1 M LiPF6 electrolyte"],
+      "evidence": {
+        "path": "paper.md",
+        "locator": "paper.md P006",
+        "quote": "Cells used a lithium metal anode and 1 M LiPF6 electrolyte."
+      },
+      "evidence_type": "direct",
+      "confidence": "high",
+      "limitations": []
+    },
+    {
+      "id": "A004",
+      "assertion": "Silica coating is associated with suppressed surface reconstruction.",
+      "subject": {"label": "silica coating", "type": "material"},
+      "relation": "ASSOCIATED_WITH",
+      "object": {"label": "suppressed surface reconstruction", "type": "process"},
+      "conditions": ["as proposed by the authors"],
+      "evidence": {
+        "path": "paper.md",
+        "locator": "paper.md P004",
+        "quote": "the coating may suppress surface reconstruction"
+      },
+      "evidence_type": "indirect",
+      "confidence": "low",
+      "limitations": ["Post-mortem evidence is limited and the mechanism is not proven."]
+    }
+  ],
+  "unresolved": [
+    {
+      "item": "coating thickness after cycling",
+      "reason": "The paper states that coating thickness was not measured after cycling.",
+      "action": "Do not assert a thickness-dependent mechanism; keep the claim as an open question."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "note": "SYNTHETIC EXAMPLE - interface illustration only, NOT a formal answer.",
+  "case_id": "SYNTHETIC-LATEX",
+  "main": "main.tex",
+  "edits": [
+    {
+      "id": "L001",
+      "file": "main.tex",
+      "before": "\\caption{Synthetic performance table.}",
+      "after": "\\caption{Synthetic performance table.}\n\\label{tab:demo}",
+      "reason": "Table~\\ref{tab:demo} is unresolved; add a unique label after the caption.",
+      "error_id": "static:missing_ref:tab:demo"
+    },
+    {
+      "id": "L002",
+      "file": "main.tex",
+      "before": "reports CO2 conversion",
+      "after": "reports CO$_2$ conversion",
+      "reason": "Chemical formula subscript consistency; numeric value and citation key unchanged.",
+      "error_id": "static:formula"
+    }
+  ],
+  "template_requirements": [
+    "article class, 11pt",
+    "booktabs three-line table",
+    "author-year citations via natbib/plainnat"
+  ]
+}

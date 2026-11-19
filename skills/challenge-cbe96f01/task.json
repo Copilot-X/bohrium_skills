@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-cbe96f01",
+  "family": "review",
+  "mode": "citation-fact-check",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "引用与事实核验",
+  "work_file": "work/review-findings.json",
+  "deliverable": "output/review-report.md",
+  "output_files": [
+    "output/review-report.md",
+    "output/findings.json",
+    "output/evidence-map.json"
+  ],
+  "required_fields": [
+    "findings",
+    "evidence"
+  ],
+  "focus": "引用与事实核验、论断-来源匹配、编造/错配检出",
+  "checks": "每条引用可回查；论断与来源结论匹配；不确定项明确",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-cbe96f01",
+    "mode": "citation-fact-check",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

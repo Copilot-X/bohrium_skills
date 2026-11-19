@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-de9f0708",
+  "family": "review",
+  "mode": "compliance-review",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "学术规范与合规检查",
+  "work_file": "work/review-findings.json",
+  "deliverable": "output/review-report.md",
+  "output_files": [
+    "output/review-report.md",
+    "output/findings.json",
+    "output/evidence-map.json"
+  ],
+  "required_fields": [
+    "findings",
+    "evidence"
+  ],
+  "focus": "学术规范、引用/数据/伦理/利益冲突与合规检查",
+  "checks": "检查项逐条有结论；证据不足标待复核；不替代机构审查",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-de9f0708",
+    "mode": "compliance-review",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

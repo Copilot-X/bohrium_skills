@@ -1,0 +1,143 @@
+{
+  "case_id": "replace-with-case-id",
+  "synthetic": true,
+  "figures": [
+    {
+      "figure_id": "Fig.2",
+      "caption": "原文图注（没有就写空字符串并在 uncertainty 说明）",
+      "panels": ["a"],
+      "figure_mode": "quantitative_chart",
+      "panel_modes": {"a": "quantitative_chart"},
+      "content_kind": "text",
+      "extraction_mode": "deterministic",
+      "hallucination_risk": "low",
+      "axes": {
+        "x": {"label": "Temperature", "unit": "°C", "scale": "linear", "range": [300, 400]},
+        "y": {"label": "Conversion", "unit": "%", "scale": "linear", "range": [0, 100]}
+      },
+      "series": [
+        {"name": "Catalyst A", "condition": "1 bar", "marker": "circle", "color": "blue"}
+      ],
+      "statistics": {
+        "error_bar": "SD",
+        "n": 3,
+        "significance": [
+          {"comparison": "A vs B", "mark": "***", "test": "two-sided t-test"}
+        ]
+      },
+      "observations": [
+        {
+          "text": "Catalyst A 在 350 °C 达到峰值 92%",
+          "kind": "derived",
+          "quantitative": true,
+          "estimated": true,
+          "read_error": "±2%",
+          "evidence": {"figure_id": "Fig.2", "panel": "a", "quote": "graph reading"}
+        }
+      ]
+    },
+    {
+      "figure_id": "Fig.3",
+      "caption": "显微图图注：scale bar 100 µm",
+      "panels": ["a"],
+      "figure_mode": "visual_figure",
+      "panel_modes": {"a": "visual_figure"},
+      "content_kind": "visual",
+      "extraction_mode": "visual_description",
+      "hallucination_risk": "medium",
+      "axes": null,
+      "series": [],
+      "statistics": {"error_bar": "not_applicable", "n": null, "significance": []},
+      "observations": [
+        {
+          "text": "可见针状晶体沿视野左侧聚集；比例尺标注 100 µm",
+          "kind": "visual",
+          "quantitative": false,
+          "estimated": false,
+          "evidence": {"figure_id": "Fig.3", "panel": "a", "quote": "scale bar 100 µm"}
+        }
+      ]
+    }
+  ],
+  "question_figure_map": [
+    {"question_id": "q1", "figure_id": "Fig.2", "panel": "a",
+     "locator_kind": "figure", "note": "峰值与误差棒"},
+    {"question_id": "q2", "figure_id": "Fig.3", "panel": "a",
+     "locator_kind": "figure", "note": "形貌与比例尺"}
+  ],
+  "panel_coverage": [
+    {"figure_id": "Fig.2", "panel": "a", "figure_mode": "quantitative_chart",
+     "covered": true, "evidence": "plot_tables:Fig.2/a", "notes": ""},
+    {"figure_id": "Fig.3", "panel": "a", "figure_mode": "visual_figure",
+     "covered": true, "evidence": "observations:Fig.3/a", "notes": ""}
+  ],
+  "unreadable": [],
+  "plot_tables": [
+    {
+      "figure_id": "Fig.2",
+      "panel": "a",
+      "chart_type": "line",
+      "axes": {
+        "x": {"label": "Temperature", "unit": "°C", "scale": "linear", "range": [300, 400]},
+        "y": {"label": "Conversion", "unit": "%", "scale": "linear", "range": [0, 100]}
+      },
+      "series": [
+        {"name": "Catalyst A", "condition": "1 bar",
+         "points": [{"x": 350, "y": 92, "estimated": true, "read_error": "±2%"}]}
+      ],
+      "statistics": {"error_bar": "SD", "n": 3, "significance": []},
+      "sampling": "selected_points"
+    }
+  ],
+  "axis_check": {
+    "Fig.2": {"x": "linear 300-400 °C", "y": "linear 0-100 %", "issues": []}
+  },
+  "panel_map": {
+    "Fig.2": [
+      {"panel": "a", "variables": ["Temperature", "Conversion"],
+       "conditions": ["Catalyst A/B", "1 bar"]}
+    ]
+  },
+  "answers": [
+    {
+      "question_id": "q1",
+      "answer": "Catalyst A 在 350 °C 达峰 92%（估读 ±2%），高于 B 的 78%。",
+      "status": "answered",
+      "claims": [
+        {"claim_id": "q1-c1", "text": "A 峰值 92% at 350 °C", "kind": "derived",
+         "evidence": [{"figure_id": "Fig.2", "panel": "a", "quote": "peak"}]},
+        {"claim_id": "q1-c2", "text": "B 峰值 78% at 360 °C", "kind": "derived",
+         "evidence": [{"figure_id": "Fig.2", "panel": "a", "quote": "peak"}]}
+      ],
+      "unanswered_parts": []
+    },
+    {
+      "question_id": "q2",
+      "answer": "显微图可见针状晶体沿左侧聚集；比例尺 100 µm。未做尺寸换算。",
+      "status": "answered",
+      "claims": [
+        {"claim_id": "q2-c1", "text": "针状晶体沿左侧聚集", "kind": "visual",
+         "evidence": [{"figure_id": "Fig.3", "panel": "a", "quote": "visual"}]}
+      ],
+      "unanswered_parts": []
+    }
+  ],
+  "tables": [],
+  "uncertainty": [
+    {"item": "Fig.2 读数", "reason": "无逐点数据，按轴估读", "impact": "±2%"},
+    {"item": "Fig.3 尺寸", "reason": "题目未要求尺寸且未做像素测量", "impact": "size_not_measured"}
+  ],
+  "change_log": [
+    {"step": 1, "action": "判模式并建立 question_figure_map", "evidence": "case.json"}
+  ],
+  "support_files_used": ["references/figure-reading-playbook.md"],
+  "status": "answered",
+  "result": {"summary": "q1: A 在 350 °C 达峰 92%；q2: 显微图可见针状晶体，比例尺 100 µm"},
+  "claims": [
+    {"claim_id": "q1-c1", "kind": "derived", "evidence": "Fig.2 panel a",
+     "source_id": "replace-with-source-id", "location": "Fig.2a"}
+  ],
+  "uncertainties": [
+    {"item": "Fig.2 读数", "reason": "无逐点数据，按轴估读", "impact": "±2%"}
+  ]
+}

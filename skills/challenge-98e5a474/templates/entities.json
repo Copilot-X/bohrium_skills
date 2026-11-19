@@ -1,0 +1,27 @@
+{
+  "case_id": "replace-with-case-id",
+  "figure_id": "Fig.1",
+  "canvas_mm": [180, 90],
+  "direction": "LR",
+  "layout": "layered",
+  "font_family": "Liberation Sans",
+  "font_size_pt": 8,
+  "title": "",
+  "footnote": "",
+  "entities": [
+    {"id": "E1", "label": "Catalyst bed", "type": "component", "shape": "rect",
+     "source": {"path": "materials/method.md", "locator": "§2.1"}, "kind": "reported"},
+    {"id": "E2", "label": "Product stream", "type": "state", "shape": "rounded",
+     "source": {"path": "materials/results.md", "locator": "p.5"}, "kind": "reported"}
+  ],
+  "relations": [
+    {"id": "R1", "from": "E1", "to": "E2", "semantic": "flow",
+     "direction": "forward", "label": "product", "source": "§2.1", "kind": "reported"}
+  ],
+  "groups": [
+    {"id": "G1", "label": "Reactor", "entities": ["E1"]}
+  ],
+  "legend": [
+    {"kind": "flow", "label": "flow"}
+  ]
+}

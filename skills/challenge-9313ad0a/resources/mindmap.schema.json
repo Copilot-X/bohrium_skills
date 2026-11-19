@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.invalid/mindmap-builder/mindmap.schema.json",
+  "title": "Editable mind-map outline",
+  "description": "Structure written by extract_material.py and build_mindmap.py. Every reported node or relation must carry a real source; inferred content must say so.",
+  "type": "object",
+  "required": ["case_id", "title", "nodes"],
+  "properties": {
+    "case_id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1, "maxLength": 80},
+    "structure_type": {
+      "type": "string",
+      "enum": ["left_right_tree", "central_radial", "org_chart", "fishbone", "timeline", "matrix"]
+    },
+    "layout": {"type": "string", "enum": ["tree", "radial"]},
+    "root_id": {"type": "string"},
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "sections_covered": {"type": "array", "items": {"type": "string"}},
+        "not_covered": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/definitions/node"}
+    },
+    "cross_links": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/cross_link"}
+    },
+    "render": {
+      "type": "object",
+      "properties": {
+        "width": {"type": "integer", "minimum": 100},
+        "height": {"type": "integer", "minimum": 100},
+        "layout": {"type": "string", "enum": ["tree", "radial"]}
+      },
+      "additionalProperties": true
+    }
+  },
+  "definitions": {
+    "source": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {
+          "type": "object",
+          "properties": {
+            "path": {"type": "string"},
+            "locator": {"type": "string"},
+            "quote": {"type": "string", "maxLength": 600}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "node": {
+      "type": "object",
+      "required": ["node_id", "label", "type", "source", "kind"],
+      "properties": {
+        "node_id": {"type": "string", "pattern": "^[A-Za-z0-9_-]{1,40}$"},
+        "parent": {"type": ["string", "null"]},
+        "label": {"type": "string", "minLength": 1, "maxLength": 60},
+        "type": {
+          "type": "string",
+          "enum": ["topic", "concept", "question", "method", "evidence", "result", "claim", "risk", "gap", "task"]
+        },
+        "detail": {"type": "string", "maxLength": 600},
+        "source": {"$ref": "#/definitions/source"},
+        "kind": {"type": "string", "enum": ["reported", "task", "inferred"]},
+        "importance": {"type": "string", "enum": ["core", "supporting", "detail"]}
+      },
+      "additionalProperties": true
+    },
+    "cross_link": {
+      "type": "object",
+      "required": ["from", "to", "relation", "source"],
+      "properties": {
+        "from": {"type": "string"},
+        "to": {"type": "string"},
+        "relation": {
+          "type": "string",
+          "enum": ["supports", "contrasts", "depends", "explains", "causes", "precedes", "part_of", "conflicts", "cites", "link"]
+        },
+        "kind": {"type": "string", "enum": ["reported", "task", "inferred"]},
+        "source": {"$ref": "#/definitions/source"}
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

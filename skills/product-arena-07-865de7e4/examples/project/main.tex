@@ -1,0 +1,34 @@
+% SYNTHETIC EXAMPLE PROJECT - interface demo only, NOT a formal case answer.
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{natbib}
+\title{Synthetic LaTeX Build Example}
+\author{Example Author}
+\begin{document}
+\maketitle
+\begin{abstract}
+This synthetic project demonstrates the edit-plan interface only.
+\end{abstract}
+\section{Results}
+The sample reached 90\% selectivity (Table~\ref{tab:demo}).
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lc}
+\toprule
+Sample & Selectivity (\%) \\
+\midrule
+A & 90 \\
+\bottomrule
+\end{tabular}
+\caption{Synthetic performance table.}
+\end{table}
+The rate follows Eq.~\ref{eq:rate}.
+\begin{equation}
+r = k p_{\mathrm{CO2}}
+\label{eq:rate}
+\end{equation}
+Prior work reports CO2 conversion \citep{doe2024}.
+\bibliographystyle{plainnat}
+\bibliography{refs}
+\end{document}

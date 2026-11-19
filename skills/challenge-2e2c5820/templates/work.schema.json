@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "实验方案可行性评估 work file",
+  "type": "object",
+  "required": [
+    "case_id",
+    "summary",
+    "steps",
+    "parameters",
+    "evidence"
+  ],
+  "properties": {
+    "steps": {
+      "description": "required by task.json"
+    },
+    "parameters": {
+      "description": "required by task.json"
+    },
+    "evidence": {
+      "description": "required by task.json"
+    }
+  }
+}

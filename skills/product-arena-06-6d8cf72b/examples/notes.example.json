@@ -1,0 +1,174 @@
+{
+  "_example_notice": "SYNTHETIC interface example only — not an official case and not an official answer. All entities, values and the DOI are fictional.",
+  "case_id": "SYNTH-NOTES-EXAMPLE",
+  "paper_card": {
+    "title": "Manganese Doping Raises Visible-Light Conversion over TiO2",
+    "research_question": "Does manganese doping raise visible-light conversion over TiO2?",
+    "data": "Two synthetic TiO2 samples tested at 25 °C and 1 bar.",
+    "methods": "Annealing at 450 °C for 3 h; 2 wt% Mn doping; 50 mg catalyst; each condition measured twice.",
+    "findings": [
+      "The doped sample reached 85% conversion after 2 h, compared with 70% for pristine TiO2",
+      "Conversion decreased above 60 °C"
+    ],
+    "limitations": [
+      "The manganese content was not measured after reaction, so the mechanism is not proven",
+      "The evidence for increased visible-light absorption is indirect"
+    ],
+    "conditions": [
+      "25 °C",
+      "1 bar",
+      "2 h"
+    ],
+    "doi": "10.9999/synth.2025.001",
+    "year": "2025",
+    "authors": [
+      "A. Example",
+      "B. Sample"
+    ]
+  },
+  "sections": [
+    {
+      "id": "S2",
+      "heading": "Abstract",
+      "purpose": "State the doping hypothesis and the headline comparison.",
+      "methods": "Two samples were compared at 25 °C and 1 bar.",
+      "results": "The doped sample reached 85% conversion after 2 h versus 70% for pristine TiO2.",
+      "conclusions": "Manganese doping may increase visible-light absorption, but the evidence is indirect.",
+      "anchors": [
+        {
+          "path": "paper.md",
+          "locator": "paper.md P004",
+          "quote": "The doped sample reached 85% conversion after 2 h, compared with 70% for pristine TiO2."
+        }
+      ]
+    },
+    {
+      "id": "S3",
+      "heading": "1 Introduction",
+      "purpose": "Motivate the doping-conversion question.",
+      "methods": "",
+      "results": "",
+      "conclusions": "The link between doping and conversion is still debated.",
+      "anchors": [
+        {
+          "path": "paper.md",
+          "locator": "paper.md P006",
+          "quote": "However, the link between doping and conversion remains debated."
+        }
+      ]
+    },
+    {
+      "id": "S4",
+      "heading": "2 Methods",
+      "purpose": "Describe sample preparation and test conditions.",
+      "methods": "Annealing at 450 °C for 3 h; 2 wt% Mn; 50 mg catalyst at 1 bar; two repeats.",
+      "results": "",
+      "conclusions": "",
+      "anchors": [
+        {
+          "path": "paper.md",
+          "locator": "paper.md P008",
+          "quote": "TiO2 was annealed at 450 °C for 3 h."
+        },
+        {
+          "path": "paper.md",
+          "locator": "paper.md P008",
+          "quote": "The doped sample contained 2 wt% Mn."
+        }
+      ]
+    },
+    {
+      "id": "S5",
+      "heading": "3 Results",
+      "purpose": "Report the conversion comparison and the temperature trend.",
+      "methods": "",
+      "results": "Pristine TiO2 reached 70% conversion; the doped sample reached 85% under the same conditions.",
+      "conclusions": "Conversion decreased above 60 °C.",
+      "anchors": [
+        {
+          "path": "paper.md",
+          "locator": "paper.md P010",
+          "quote": "The doped sample reached 85% conversion under the same conditions."
+        },
+        {
+          "path": "paper.md",
+          "locator": "paper.md P010",
+          "quote": "Conversion decreased above 60 °C."
+        }
+      ]
+    },
+    {
+      "id": "S6",
+      "heading": "4 Discussion",
+      "purpose": "Interpret the comparison and state its causal limits.",
+      "methods": "",
+      "results": "The higher conversion is consistent with improved visible-light absorption.",
+      "conclusions": "The mechanism is not proven because manganese content was not measured after reaction.",
+      "anchors": [
+        {
+          "path": "paper.md",
+          "locator": "paper.md P012",
+          "quote": "However, the manganese content was not measured after reaction, so the mechanism is not proven."
+        }
+      ]
+    }
+  ],
+  "knowledge_points": [
+    {
+      "id": "K1",
+      "type": "finding",
+      "statement": "The doped TiO2 sample reached 85% conversion after 2 h, compared with 70% for pristine TiO2.",
+      "evidence": [
+        {
+          "path": "paper.md",
+          "locator": "paper.md P004",
+          "quote": "The doped sample reached 85% conversion after 2 h, compared with 70% for pristine TiO2."
+        }
+      ],
+      "tags": [
+        "conversion",
+        "doping"
+      ]
+    },
+    {
+      "id": "K2",
+      "type": "limitation",
+      "statement": "The mechanism is not proven because manganese content was not measured after reaction.",
+      "evidence": [
+        {
+          "path": "paper.md",
+          "locator": "paper.md P012",
+          "quote": "However, the manganese content was not measured after reaction, so the mechanism is not proven."
+        }
+      ],
+      "tags": [
+        "mechanism",
+        "limitation"
+      ]
+    },
+    {
+      "id": "K3",
+      "type": "method",
+      "statement": "The doped sample contained 2 wt% Mn and was tested with 50 mg catalyst at 1 bar.",
+      "evidence": [
+        {
+          "path": "paper.md",
+          "locator": "paper.md P008",
+          "quote": "The doped sample contained 2 wt% Mn."
+        },
+        {
+          "path": "paper.md",
+          "locator": "paper.md P008",
+          "quote": "Tests used 50 mg catalyst at 1 bar"
+        }
+      ],
+      "tags": [
+        "doping",
+        "test-condition"
+      ]
+    }
+  ],
+  "open_questions": [
+    "Would post-reaction manganese measurements confirm the proposed doping mechanism?"
+  ]
+}

@@ -1,0 +1,36 @@
+SYNTHETIC PAGE — 示例版面，不是正式案例，也不是正式答案。
+用于说明双栏阅读顺序、页/块 locator、表题与公式的拆分方式。
+
+Journal of Synthetic Examples 1 (2026) 1-2          [页眉，应移入 headers_footers]
+
+Synthetic Coating Study
+Example Author One, Example Author Two
+
+Abstract
+Coating improves capacity in this synthetic example, but the dataset is not real.
+
+1 Introduction
+Coating is widely used to improve rate capability in synthetic examples.
+
+================================ page 1, two columns ================================
+
+[left column]
+3 Results
+The coated sample delivered 140 mAh g-1 at 1 C.
+The uncoated sample delivered 110 mAh g-1 under the same conditions.
+
+[right column]
+Table 2. Capacity at 1 C.
+Sample        Capacity (mAh g-1)
+Coated        140
+Uncoated      110
+
+E = E0 - (RT/nF) ln Q (2)
+
+Fig. 2. Capacity versus rate for coated and uncoated samples.
+
+References
+[1] Example Author One. Synthetic coating study. J Synth Examples.
+    2026;1:1-2. doi:10.0000/synthetic.2026.001
+
+[页脚: 1]                                          [页脚，应移入 headers_footers]

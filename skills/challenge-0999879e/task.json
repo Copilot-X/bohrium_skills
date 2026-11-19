@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-0999879e",
+  "family": "review",
+  "mode": "quality-review",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "论文质量审查",
+  "work_file": "work/review-findings.json",
+  "deliverable": "output/review-report.md",
+  "output_files": [
+    "output/review-report.md",
+    "output/findings.json",
+    "output/evidence-map.json"
+  ],
+  "required_fields": [
+    "findings",
+    "evidence"
+  ],
+  "focus": "论文质量审查、逐条问题、严重度与修改建议",
+  "checks": "问题有位置/原文；区分错误/建议；覆盖检查项",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-0999879e",
+    "mode": "quality-review",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

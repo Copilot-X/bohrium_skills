@@ -1,0 +1,40 @@
+{
+  "case_id": "replace-with-case-id",
+  "paper_id": "replace-with-paper-id",
+  "material_version": "replace-with-version",
+  "answers": [
+    {
+      "question_id": "q1",
+      "answer": "350 °C 下转化率为 92%。",
+      "conditions": ["350 °C", "1 bar", "实验室规模"],
+      "status": "answered",
+      "claims": [
+        {
+          "claim_id": "q1-c1",
+          "text": "350 °C 下转化率为 92%",
+          "kind": "reported",
+          "claim_strength": "fact",
+          "confidence": 0.9,
+          "evidence": [{"paragraph_id": "p6", "quote": "conversion reached 92% at 350 °C"}]
+        }
+      ],
+      "unanswered_parts": []
+    },
+    {
+      "question_id": "q2",
+      "answer": "材料未报告误差棒；无法判断显著性。",
+      "conditions": [],
+      "status": "insufficient_evidence",
+      "claims": [],
+      "unanswered_parts": [{"part": "误差类型与重复次数", "reason": "材料未报告"}]
+    }
+  ],
+  "coverage": {
+    "documents_read": ["paper.md"],
+    "sections_read": ["Abstract", "Results"],
+    "sections_skipped": [{"section": "Supplementary", "reason": "材料未提供"}],
+    "notes": "事实题已答；统计信息缺失。"
+  },
+  "uncertainty": [{"item": "误差棒", "reason": "图注未说明", "impact": "不能判断显著性"}],
+  "change_log": [{"step": 1, "action": "建段落索引并逐题回答", "evidence": "p6"}]
+}

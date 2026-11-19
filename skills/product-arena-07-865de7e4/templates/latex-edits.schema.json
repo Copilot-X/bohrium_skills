@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "latex-edits.schema.json",
+  "title": "LaTeX edit plan (work/latex-edits.json)",
+  "description": "Model-authored edit plan consumed by fam_latex.finalize. Each edit replaces one uniquely occurring verbatim anchor inside a file under work/project.",
+  "type": "object",
+  "required": ["edits"],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "Traceability only; finalize does not validate it against case.json."
+    },
+    "main": {
+      "type": "string",
+      "description": "Relative path of the main .tex (traceability; the effective main comes from work/latex-project.json)."
+    },
+    "edits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "before", "after", "reason"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Stable edit id, e.g. L001.",
+            "pattern": "^L[0-9]{3,}$"
+          },
+          "file": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Path relative to work/project, forward slashes, e.g. main.tex or sections/results.tex."
+          },
+          "before": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Verbatim source fragment that must occur exactly once in file."
+          },
+          "after": {
+            "type": "string",
+            "description": "Replacement fragment; may be empty to delete the anchor."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "description": "Which error, template requirement or style rule this edit fixes."
+          },
+          "error_id": {
+            "type": "string",
+            "description": "Optional link to a compile error, warning or static finding, e.g. compile:Undefined control sequence or static:missing_ref:tab:perf."
+          }
+        }
+      }
+    },
+    "template_requirements": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Advisory checklist for human review; finalize does not apply these automatically."
+    }
+  }
+}

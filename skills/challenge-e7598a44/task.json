@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-e7598a44",
+  "family": "search",
+  "mode": "question-driven",
+  "module": "fam_tracks",
+  "profile": "reading",
+  "status_success": "answered",
+  "title": "科研问题驱动检索",
+  "work_file": "work/search-plan.json",
+  "deliverable": "output/search-results.json",
+  "output_files": [
+    "output/search-results.json",
+    "output/candidates.csv",
+    "output/search-log.json",
+    "output/evidence.json"
+  ],
+  "required_fields": [
+    "queries",
+    "candidates",
+    "evidence"
+  ],
+  "focus": "问题拆解、子问题依赖、查询规划与停止条件",
+  "checks": "每个子问题有查询和证据；停止条件可解释；未覆盖子问题明确列出",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-e7598a44",
+    "mode": "question-driven",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

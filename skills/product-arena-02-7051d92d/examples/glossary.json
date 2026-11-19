@@ -1,0 +1,6 @@
+{
+  "terms": [
+    {"source": "oxygen vacancy", "target": "oxygen vacancy", "note": "synthetic example"},
+    {"source": "methanol selectivity", "target": "methanol selectivity", "note": ""}
+  ]
+}

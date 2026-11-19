@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-c0e1e220",
+  "family": "analysis",
+  "mode": "statistics",
+  "module": "fam_tracks",
+  "profile": "both",
+  "status_success": "completed",
+  "title": "统计分析与结果解读",
+  "work_file": "work/analysis-plan.json",
+  "deliverable": "output/analysis-report.md",
+  "output_files": [
+    "output/analysis-report.md",
+    "output/results.json",
+    "output/results.csv",
+    "output/execution.log"
+  ],
+  "required_fields": [
+    "analysis",
+    "results",
+    "evidence"
+  ],
+  "focus": "统计方法选择、假设检查、效应量/区间与结果解读",
+  "checks": "方法与数据匹配；前提检查；报告数字与输出一致；不越界因果",
+  "run_python": true,
+  "work_template": {
+    "case_id": "challenge-c0e1e220",
+    "mode": "statistics",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "case_id": "replace-with-case-id",
+  "budget": {"audience": "领域同行", "duration_min": 15, "slide_budget": 13,
+             "per_slide_sec": 60, "language": "zh",
+             "must_cover": ["研究问题", "方法", "关键结果", "局限"]},
+  "claims": [
+    {"claim_id": "F001", "text": "A 在 350 °C 保持 92% 选择性",
+     "value": "92", "unit": "%", "condition": "350 °C, 1 bar",
+     "source": {"path": "materials/paper.pdf", "locator": "Fig.2a"},
+     "kind": "reported"}
+  ],
+  "outline": [
+    {"no": 1, "kind": "title", "title": "论文标题", "role": "cover", "claims": []},
+    {"no": 2, "kind": "content", "title": "A 在 350 °C 保持 92% 选择性",
+     "role": "result", "claims": ["F001"], "notes_seconds": 60}
+  ],
+  "slides": [
+    {"no": 1, "role": "cover", "title": "论文标题", "claims": [],
+     "notes_seconds": 20, "layout": "title"},
+    {"no": 2, "role": "result", "title": "A 在 350 °C 保持 92% 选择性",
+     "claims": [{"claim_id": "F001", "source": {"path": "materials/paper.pdf", "locator": "Fig.2a"}}],
+     "visual": {"path": "materials/fig2a.png", "locator": "Fig.2a"},
+     "notes_seconds": 60, "layout": "content"}
+  ],
+  "content_gaps": [],
+  "uncertainty": [],
+  "change_log": []
+}

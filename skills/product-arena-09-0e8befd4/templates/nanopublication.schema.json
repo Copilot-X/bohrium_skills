@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://period4.local/schemas/nanopublication.schema.json",
+  "title": "output/nanopublications.json — generated nanopublication envelope",
+  "description": "finalize 生成的主交付物结构。nanopub_id 由入口按 sha256(case_id + assertion id + assertion text) 确定性生成；模型不要自造。",
+  "type": "object",
+  "required": ["case_id", "source_metadata", "nanopublications", "count"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "source_metadata": {"$ref": "#/$defs/source_metadata"},
+    "nanopublications": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/nanopublication"}
+    },
+    "count": {"type": "integer", "minimum": 0}
+  },
+  "$defs": {
+    "source_metadata": {
+      "type": "object",
+      "properties": {
+        "paper_id": {"type": "string"},
+        "title": {"type": "string"},
+        "authors": {"type": "array", "items": {"type": "string"}},
+        "year": {"type": "string"},
+        "doi": {"type": "string"},
+        "version": {"type": "string"},
+        "source_path": {"type": "string"}
+      }
+    },
+    "nanopublication": {
+      "type": "object",
+      "required": ["nanopub_id", "assertion", "provenance", "publication_info"],
+      "properties": {
+        "nanopub_id": {
+          "type": "string",
+          "pattern": "^np:[0-9a-f]{24}$",
+          "description": "np: + sha256(case_id + id + assertion)[:24]"
+        },
+        "assertion": {
+          "type": "object",
+          "required": ["subject", "relation", "object", "text", "conditions"],
+          "properties": {
+            "subject": {"type": "object"},
+            "relation": {"type": "string"},
+            "object": {"type": "object"},
+            "text": {"type": "string"},
+            "conditions": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "required": ["source_id", "title", "authors", "year", "doi",
+                       "version", "path", "locator", "quote", "evidence_type"],
+          "properties": {
+            "source_id": {"type": "string"},
+            "title": {"type": "string"},
+            "authors": {"type": "array", "items": {"type": "string"}},
+            "year": {"type": "string"},
+            "doi": {"type": "string"},
+            "version": {"type": "string"},
+            "path": {"type": "string"},
+            "locator": {"type": "string"},
+            "quote": {"type": "string"},
+            "evidence_type": {"enum": ["direct", "indirect", "inferred"]}
+          }
+        },
+        "publication_info": {
+          "type": "object",
+          "required": ["case_id", "assertion_id", "confidence", "limitations"],
+          "properties": {
+            "case_id": {"type": "string"},
+            "assertion_id": {"type": "string"},
+            "confidence": {"enum": ["high", "moderate", "low"]},
+            "limitations": {"type": "array", "items": {"type": "string"}}
+          }
+        }
+      }
+    }
+  }
+}

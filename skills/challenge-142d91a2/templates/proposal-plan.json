@@ -1,0 +1,43 @@
+{
+  "case_id": "replace-with-case-id",
+  "degree": "phd|master|undergrad",
+  "question": {
+    "question": "X 是否通过 Y 影响 Z？",
+    "pico": {"population": "…", "intervention": "…", "comparison": "…", "outcome": "…"},
+    "scope": {"included": "…", "excluded": ["…"]},
+    "hypotheses": [
+      {"id": "H1", "statement": "…", "falsifiable_by": "若…则 H1 不成立"}
+    ]
+  },
+  "gap": [
+    {"statement": "已有研究…但缺少…", "evidence": {"path": "materials/lit.md", "locator": "p.3"},
+     "kind": "reported|inferred"}
+  ],
+  "objectives": [
+    {"objective_id": "O1", "text": "…", "module": "M1", "indicator": "…", "criterion": "…"}
+  ],
+  "design": [
+    {"module": "M1", "materials": "…", "groups": "…", "measurements": ["…"],
+     "statistics": "…", "criterion": "…", "sample_size_basis": "…"}
+  ],
+  "plan": [
+    {"phase": "Q1", "period": "M1–M3", "tasks": ["…"], "milestone": "…",
+     "deliverable": "…", "critical_path": true}
+  ],
+  "risks": [
+    {"risk": "…", "trigger": "…", "impact": "high|medium|low", "plan_b": "…"}
+  ],
+  "ethics": {"required": false, "status": "not_applicable|to_be_obtained|provided",
+             "detail": "…"},
+  "fact_ledger": [
+    {"fact_id": "F1", "statement": "…", "status": "confirmed|user_stated|to_supplement|unusable",
+     "source": "materials/…"}
+  ],
+  "one_minute_retelling": ["问题", "缺口", "路线", "价值", "可验证结局"],
+  "red_team_answers": [
+    {"question": "为什么重要", "answer": "…"},
+    {"question": "新在哪里", "answer": "…"}
+  ],
+  "uncertainty": [],
+  "change_log": []
+}

@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-c050aaed",
+  "family": "library",
+  "mode": "annotation",
+  "module": "fam_tracks",
+  "profile": "reading",
+  "status_success": "answered",
+  "title": "阅读批注与知识沉淀",
+  "work_file": "work/library-plan.json",
+  "deliverable": "output/library-results.json",
+  "output_files": [
+    "output/library-results.json",
+    "output/library-index.json",
+    "output/operations.log.json"
+  ],
+  "required_fields": [
+    "items",
+    "evidence"
+  ],
+  "focus": "阅读批注、锚点、知识沉淀与可检索笔记",
+  "checks": "每条批注有原文锚点；标签/主题一致；可导出复用",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-c050aaed",
+    "mode": "annotation",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "case_id": "REPLACE_WITH_CASE_ID",
+  "status": "partial",
+  "task_family": "reading",
+  "schema": [
+    {
+      "field_id": "REPLACE_WITH_FIELD_ID",
+      "name": "REPLACE_WITH_FIELD_NAME",
+      "type": "number|string|boolean|range|date|enum",
+      "unit": "REPLACE_WITH_EXPECTED_UNIT_OR_NULL",
+      "required": true,
+      "definition_source": "target-fields.json"
+    }
+  ],
+  "extractions": [
+    {
+      "field_id": "REPLACE_WITH_FIELD_ID",
+      "field_name": "REPLACE_WITH_FIELD_NAME",
+      "status": "reported",
+      "values": [
+        {
+          "value": 0,
+          "original": "REPLACE_WITH_VERBATIM_ORIGINAL",
+          "unit": "REPLACE_WITH_UNIT",
+          "unit_status": "reported",
+          "unit_missing": false,
+          "statistic": "point_estimate",
+          "condition": "REPLACE_WITH_CONDITION",
+          "condition_status": "reported",
+          "comparator": "none",
+          "sample": "REPLACE_WITH_SAMPLE_OR_NOT_REPORTED",
+          "time_point": "REPLACE_WITH_TIME_POINT_OR_NOT_REPORTED",
+          "uncertainty": {
+            "type": "not_reported",
+            "value": null
+          },
+          "locator": {
+            "doc_id": "REPLACE_WITH_DOC_ID",
+            "paragraph_id": "REPLACE_WITH_PARAGRAPH_ID",
+            "table_id": null,
+            "figure_id": null,
+            "page": null,
+            "row_index": null,
+            "column": null,
+            "quote": "REPLACE_WITH_EXACT_VERBATIM_QUOTE"
+          },
+          "source_kind": "paragraph",
+          "condition_evidence": null,
+          "semantic_check": {
+            "requested_metric": "REPLACE_WITH_METRIC",
+            "quoted_metric": "REPLACE_WITH_METRIC_FOUND_IN_QUOTE",
+            "subject": "REPLACE_WITH_SUBJECT",
+            "matches_requested_field": true,
+            "note": "主语、指标与条件均与字段定义一致"
+          },
+          "digit_check": {
+            "checked": true,
+            "conflicts": []
+          }
+        }
+      ],
+      "candidates": [],
+      "resolution": null,
+      "resolution_note": null,
+      "missing_reason": null,
+      "search_scope": "REPLACE_WITH_SECTIONS_TABLES_FIGURES_SEARCHED"
+    }
+  ],
+  "missing": [],
+  "conflicts": [],
+  "summary": {
+    "field_count": 1,
+    "reported_count": 1,
+    "not_reported_count": 0,
+    "extraction_failed_count": 0,
+    "conflict_count": 0,
+    "unit_missing_count": 0,
+    "condition_missing_count": 0,
+    "complete_rate": 1.0
+  },
+  "corpus_scope": {
+    "documents": 1,
+    "year_range": "not_reported",
+    "languages": ["en"]
+  },
+  "uncertainty": [],
+  "change_log": [
+    {
+      "step": 1,
+      "action": "REPLACE_WITH_WHAT_WAS_DONE",
+      "evidence": "REPLACE_WITH_LOCATOR_OR_SOURCE"
+    }
+  ],
+  "support_files_used": [
+    "references/data-extraction-playbook.md",
+    "templates/extraction-schema.json",
+    "scripts/extract_tables.py",
+    "scripts/check_extraction.py"
+  ]
+}

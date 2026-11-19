@@ -1,0 +1,36 @@
+{
+  "_note": "SYNTHETIC / 示例数据，不是正式案例，也不是正式答案。仅用于演示 work/graph.json 的字段与判断方式；正式运行时必须读取 /input 下的真实材料。",
+  "corpus_id": "synthetic-coating-demo",
+  "papers": [
+    {
+      "source_id": "P1",
+      "doi": "10.0000/synthetic.p1",
+      "title": "Al2O3 coating on LiFePO4 cathodes (synthetic)",
+      "authors": ["Example Author One", "Example Author Two"],
+      "license": "CC0-synthetic",
+      "paragraphs": [
+        {"paragraph_id": "jats-p-0001",
+         "text": "LiFePO4 cathodes suffer from low rate capability."},
+        {"paragraph_id": "jats-p-0002",
+         "text": "Al2O3-coated LiFePO4 delivered 140 mAh g-1 at 1 C, whereas uncoated LiFePO4 delivered 110 mAh g-1 under the same conditions."},
+        {"paragraph_id": "jats-p-0003",
+         "text": "The authors suggest that the coating may suppress side reactions at the electrode surface."}
+      ]
+    },
+    {
+      "source_id": "P2",
+      "doi": "10.0000/synthetic.p2",
+      "title": "Impedance of coated LiFePO4 (synthetic)",
+      "authors": ["Example Author Three"],
+      "license": "CC0-synthetic",
+      "paragraphs": [
+        {"paragraph_id": "jats-p-0101",
+         "text": "In a separate LiFePO4 sample, Al2O3 coating reduced charge-transfer resistance."},
+        {"paragraph_id": "jats-p-0102",
+         "text": "The coated sample reached 125 mAh g-1 at 2 C."},
+        {"paragraph_id": "jats-p-0103",
+         "text": "No operando measurement of side reactions was reported."}
+      ]
+    }
+  ]
+}

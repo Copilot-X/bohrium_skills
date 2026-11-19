@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "result.json for introduction and related-work writing",
+  "description": "由 scripts/skillcore.py 的 ResultBuilder 生成；本 schema 只记录入口实际写出的字段。",
+  "type": "object",
+  "required": ["case_id", "status", "task_status", "profile", "deliverable",
+               "preserved_facts", "evidence_map", "change_log", "artifacts",
+               "result", "output_contract", "contract_coverage"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "task_family": {"type": "string"},
+    "profile": {"const": "writing"},
+    "status": {"enum": ["completed", "partial", "input_error"]},
+    "task_status": {"enum": ["completed", "partial", "input_error"]},
+    "deliverable": {
+      "type": ["object", "null"],
+      "required": ["path", "format", "exists"],
+      "properties": {
+        "path": {"type": "string", "description": "相对 output 目录，应为 sections.md"},
+        "format": {"type": "string"},
+        "exists": {"type": "boolean"},
+        "bytes": {"type": "integer"}
+      }
+    },
+    "preserved_facts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kind", "source", "target", "locator", "value", "unit"],
+        "properties": {
+          "kind": {"type": "string"},
+          "source": {"type": "string"},
+          "target": {"type": "string"},
+          "locator": {"type": "string"},
+          "value": {"type": "string"},
+          "unit": {"type": "string"}
+        }
+      }
+    },
+    "evidence_map": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "claim", "source"],
+        "properties": {
+          "claim_id": {"type": "string"},
+          "claim": {"type": "string"},
+          "source": {"type": "object"},
+          "quote": {"type": "string"},
+          "supports": {"type": "string"}
+        }
+      }
+    },
+    "change_log": {"type": "array", "items": {"type": "object"}},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "role", "format", "exists"],
+        "properties": {
+          "path": {"type": "string"},
+          "role": {"type": "string"},
+          "format": {"type": "string"},
+          "bytes": {"type": "integer"},
+          "kind": {"type": "string"},
+          "exists": {"type": "boolean"},
+          "description": {"type": "string"}
+        }
+      }
+    },
+    "result": {"type": "object"},
+    "claims": {"type": "array"},
+    "uncertainties": {"type": "array"},
+    "uncertainty": {"type": "array"},
+    "output_contract": {"type": ["object", "array"]},
+    "contract_coverage": {"type": "array"},
+    "artifact_paths_valid": {"type": "boolean"},
+    "engine_version": {"type": "string"},
+    "generated_at": {"type": "string"}
+  }
+}

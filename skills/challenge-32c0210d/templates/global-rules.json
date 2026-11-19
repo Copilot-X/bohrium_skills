@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "language": "zh",
+  "citation_style": "GB/T 7714-2015",
+  "heading_numbering": "chapter-decimal",
+  "figure_numbering": "chapter-dash",
+  "table_numbering": "chapter-dash",
+  "tense": "past-for-results-present-for-claims",
+  "person": "third-person",
+  "word_budget": 30000,
+  "terms": {
+    "氧空位": ["氧空缺", "oxygen vacancy", "O-vacancy"],
+    "选择性": ["选择率", "selectivity"],
+    "转化率": ["转换率", "conversion"]
+  },
+  "abbreviations": {
+    "CO2": "二氧化碳",
+    "RWGS": "逆水煤气变换",
+    "XPS": "X 射线光电子能谱"
+  },
+  "rules": {
+    "define_abbreviation_at_first_use": true,
+    "cite_every_figure_in_text": true,
+    "no_uncited_bibliography_entries": true,
+    "abstract_numbers_must_match_body": true
+  }
+}

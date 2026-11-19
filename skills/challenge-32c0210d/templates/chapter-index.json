@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "case_id": "replace-with-case-id",
+  "template_note": "Replace the example rows with the actual chapter files. Do not invent chapters that the case does not provide.",
+  "stage": "chapter-drafting",
+  "degree_level": "master",
+  "discipline": "replace-with-discipline",
+  "intent": "draft|revise|consistency-check",
+  "chapters": [
+    {
+      "chapter_id": "ch01",
+      "order": 1,
+      "title": "第一章 绪论",
+      "path": "chapters/ch01.md",
+      "purpose": "提出研究问题、缺口与本文任务",
+      "words_target": 5000,
+      "words_actual": 0,
+      "status": "pending",
+      "depends_on": [],
+      "figures": [],
+      "tables": [],
+      "refs_used": []
+    },
+    {
+      "chapter_id": "ch02",
+      "order": 2,
+      "title": "第二章 理论与文献",
+      "path": "chapters/ch02.md",
+      "purpose": "建立分析框架并界定核心概念",
+      "words_target": 7000,
+      "words_actual": 0,
+      "status": "pending",
+      "depends_on": ["ch01"],
+      "figures": ["Fig.2-1"],
+      "tables": [],
+      "refs_used": []
+    }
+  ],
+  "missing": [
+    {"part": "摘要", "reason": "材料未提供，不补写"}
+  ]
+}

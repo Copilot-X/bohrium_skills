@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "系统性文献综述 work file",
+  "type": "object",
+  "required": [
+    "case_id",
+    "summary",
+    "question",
+    "findings",
+    "evidence"
+  ],
+  "properties": {
+    "question": {
+      "description": "required by task.json"
+    },
+    "findings": {
+      "description": "required by task.json"
+    },
+    "evidence": {
+      "description": "required by task.json"
+    }
+  }
+}

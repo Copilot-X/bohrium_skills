@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-16d4414d",
+  "family": "review",
+  "mode": "logic-review",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "论文逻辑与论证审查",
+  "work_file": "work/review-findings.json",
+  "deliverable": "output/review-report.md",
+  "output_files": [
+    "output/review-report.md",
+    "output/findings.json",
+    "output/evidence-map.json"
+  ],
+  "required_fields": [
+    "findings",
+    "evidence"
+  ],
+  "focus": "论证链、前提-结论、因果/相关、反例与逻辑跳跃",
+  "checks": "每个问题指向具体段落；区分事实错误与论证不足；给出修复建议",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-16d4414d",
+    "mode": "logic-review",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

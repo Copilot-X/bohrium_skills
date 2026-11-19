@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Parameter table for methods writing",
+  "description": "output/parameter-table.json 与 output/parameter-table.csv。parameters 来自 methods-plan.json，extracted 来自引擎抽取的候选事实。",
+  "type": "object",
+  "required": ["case_id", "parameters", "extracted"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "parameters": {
+      "type": "array",
+      "description": "与 methods-plan.json 的 parameters 相同；CSV 列顺序如下",
+      "items": {
+        "type": "object",
+        "required": ["name", "value", "source"],
+        "properties": {
+          "name": {"type": "string"},
+          "value": {"type": ["string", "number"]},
+          "unit": {"type": "string"},
+          "scope": {"type": "string"},
+          "source": {
+            "type": "object",
+            "properties": {
+              "path": {"type": "string"},
+              "locator": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "extracted": {
+      "type": "array",
+      "description": "prepare 从材料中抽取的候选参数，可能含噪声，需人工核对",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "value": {},
+          "source": {"type": "string"},
+          "locator": {"type": "string"},
+          "kind": {"type": "string"}
+        }
+      }
+    }
+  },
+  "$comment": "parameter-table.csv 表头固定为 name,value,unit,scope,source_path,locator；每行对应 parameters[] 的一项。"
+}

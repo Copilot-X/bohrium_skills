@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Introduction and related-work plan",
+  "description": "工作文件 /app/work/writing-plan.json。字段名与 fam_intro.py 的 finalize 读取逻辑一致。",
+  "type": "object",
+  "required": ["case_id", "related_work_groups", "gap", "contributions"],
+  "properties": {
+    "case_id": {"type": "string", "description": "与 /input/case.json 一致"},
+    "background": {
+      "type": "object",
+      "properties": {
+        "claims": {"type": "array", "items": {"type": "string"}},
+        "sources": {"type": "array", "items": {"type": "string"},
+                    "description": "manuscript.md Pxxx 形式的 locator"}
+      }
+    },
+    "related_work_groups": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["group", "dimension", "works", "synthesis"],
+        "properties": {
+          "group": {"type": "string", "minLength": 3},
+          "dimension": {"enum": ["problem", "method", "data", "metric"]},
+          "works": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": ["citation_key", "summary", "limitation"],
+              "properties": {
+                "citation_key": {"type": "string"},
+                "summary": {"type": "string", "minLength": 8},
+                "limitation": {"type": "string", "minLength": 8}
+              }
+            }
+          },
+          "synthesis": {"type": "string", "minLength": 10}
+        }
+      }
+    },
+    "gap": {
+      "type": "object",
+      "required": ["statement", "derived_from"],
+      "properties": {
+        "statement": {"type": "string", "minLength": 15},
+        "derived_from": {
+          "type": "array", "minItems": 2, "items": {"type": "string"},
+          "description": "每项必须是正文中已用 [@key] 或 \\cite{key} 引用的真实键"
+        },
+        "evidence": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "contributions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["id", "statement", "linked_sections", "evidence"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^C[0-9]+$"},
+          "statement": {"type": "string", "minLength": 10},
+          "linked_sections": {"type": "array", "items": {"type": "string"}},
+          "evidence": {"type": "array", "items": {"type": "string"}}
+        },
+        "anyOf": [
+          {"properties": {"linked_sections": {"minItems": 1}}},
+          {"properties": {"evidence": {"minItems": 1}}}
+        ]
+      }
+    },
+    "citation_coverage": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "used_in", "claim"],
+        "properties": {
+          "key": {"type": "string"},
+          "used_in": {"enum": ["Introduction", "Related Work"]},
+          "claim": {"type": "string", "minLength": 5}
+        }
+      }
+    },
+    "unresolved": {
+      "type": "array",
+      "description": "可选：无法在文献库中找到但材料要求引用的条目；会随 plan 进入 evidence-map.json",
+      "items": {"type": "object"}
+    }
+  }
+}

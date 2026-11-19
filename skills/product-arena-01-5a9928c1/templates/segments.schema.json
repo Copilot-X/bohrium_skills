@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Translation segments",
+  "type": "object",
+  "required": ["case_id", "direction", "segments"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "direction": {"type": "string", "examples": ["zh->en", "en->zh"]},
+    "source_language": {"type": "string"},
+    "target_language": {"type": "string"},
+    "source_path": {"type": "string"},
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "text", "locator"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^P[0-9]{3}$"},
+          "text": {"type": "string"},
+          "locator": {"type": "string"},
+          "page": {"type": ["integer", "null"]},
+          "kind": {"type": "string"},
+          "sentences": {"type": "array"}
+        }
+      }
+    }
+  }
+}

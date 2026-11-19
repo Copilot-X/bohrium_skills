@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-ad3e9357",
+  "family": "search",
+  "mode": "patent-search",
+  "module": "fam_tracks",
+  "profile": "reading",
+  "status_success": "answered",
+  "title": "专利与技术文献检索",
+  "work_file": "work/search-plan.json",
+  "deliverable": "output/search-results.json",
+  "output_files": [
+    "output/search-results.json",
+    "output/candidates.csv",
+    "output/search-log.json",
+    "output/evidence.json"
+  ],
+  "required_fields": [
+    "queries",
+    "candidates",
+    "evidence"
+  ],
+  "focus": "专利/技术文献检索、同族合并、法律状态与技术分类",
+  "checks": "专利号/申请号可回溯；同族合并有依据；法律状态与日期字段完整",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-ad3e9357",
+    "mode": "patent-search",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

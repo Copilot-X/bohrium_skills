@@ -1,0 +1,43 @@
+{
+  "challenge_id": "agent-f8fb8bda",
+  "family": "research",
+  "mode": "deep-research",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "深度研究 Agent",
+  "work_file": "work/research-plan.json",
+  "deliverable": "output/research-report.md",
+  "output_files": [
+    "output/research-report.md",
+    "output/evidence-matrix.json",
+    "output/references.json"
+  ],
+  "required_fields": [
+    "question",
+    "findings",
+    "evidence"
+  ],
+  "focus": "多轮研究规划、子问题证据、综合报告与边界",
+  "checks": "每个结论有来源；子问题覆盖；冲突/空白明确",
+  "run_python": false,
+  "work_template": {
+    "case_id": "agent-f8fb8bda",
+    "mode": "deep-research",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

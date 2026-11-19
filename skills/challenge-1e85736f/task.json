@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-1e85736f",
+  "family": "search",
+  "mode": "latest-tracking",
+  "module": "fam_tracks",
+  "profile": "reading",
+  "status_success": "answered",
+  "title": "最新文献发现与追踪",
+  "work_file": "work/search-plan.json",
+  "deliverable": "output/search-results.json",
+  "output_files": [
+    "output/search-results.json",
+    "output/candidates.csv",
+    "output/search-log.json",
+    "output/evidence.json"
+  ],
+  "required_fields": [
+    "queries",
+    "candidates",
+    "evidence"
+  ],
+  "focus": "增量水位、时间窗、去重、版本更新与提醒抑制",
+  "checks": "只报告相对上次快照的新增；窗口/时区固定；重跑幂等；版本记录可回放",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-1e85736f",
+    "mode": "latest-tracking",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

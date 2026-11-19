@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-2bfd9194",
+  "family": "library",
+  "mode": "file-management",
+  "module": "fam_tracks",
+  "profile": "reading",
+  "status_success": "answered",
+  "title": "科研资料库与文件管理",
+  "work_file": "work/library-plan.json",
+  "deliverable": "output/library-results.json",
+  "output_files": [
+    "output/library-results.json",
+    "output/library-index.json",
+    "output/operations.log.json"
+  ],
+  "required_fields": [
+    "items",
+    "evidence"
+  ],
+  "focus": "目录/文件清单、元数据、版本关系、哈希与变更日志",
+  "checks": "每个文件有条目；哈希/来源/权限可核对；冲突/跳过/恢复有记录",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-2bfd9194",
+    "mode": "file-management",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

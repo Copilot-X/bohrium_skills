@@ -1,0 +1,19 @@
+{
+  "case_id": "replace-with-case-id",
+  "primary_key": "sample_id",
+  "rules": [
+    {"rule_id": "R1", "type": "trim", "fields": ["sample_id", "catalyst", "notes"]},
+    {"rule_id": "R2", "type": "normalize_name", "fields": ["catalyst"]},
+    {"rule_id": "R3", "type": "unit_convert", "field": "temperature",
+     "from_unit": "K", "to_unit": "°C", "factor": 1, "offset": -273.15},
+    {"rule_id": "R4", "type": "range", "field": "temperature",
+     "min": -100, "max": 1500, "action": "flag"},
+    {"rule_id": "R5", "type": "dedupe", "keys": ["sample_id"], "keep": "first"},
+    {"rule_id": "R6", "type": "missing", "field": "selectivity", "policy": "keep"}
+  ],
+  "output": {
+    "cleaned": "cleaned.csv",
+    "log": "cleaning_log.json",
+    "quality": "quality_report.json"
+  }
+}

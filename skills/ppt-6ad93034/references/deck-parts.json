@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "description": "Slide-part registry used by scripts/build.py and scripts/checks.py. It defines the allowed page roles, their editable slots and the planning limits. Edit here to change validation, not in code.",
+  "aspect_ratios": {
+    "16:9": [12192000, 6858000],
+    "4:3": [9144000, 6858000]
+  },
+  "parts": {
+    "title": {
+      "layout": "title",
+      "required": ["title"],
+      "optional": ["subtitle", "eyebrow", "source", "notes"],
+      "max_bullets": 0,
+      "purpose": "题目、副标题、汇报场合与日期"
+    },
+    "agenda": {
+      "layout": "steps",
+      "required": ["title", "steps"],
+      "max_items": 6,
+      "purpose": "用真实章节生成页序，不新增材料外主题"
+    },
+    "background": {
+      "layout": "content",
+      "required": ["title", "bullets"],
+      "optional": ["callout", "image", "caption"],
+      "max_bullets": 4,
+      "purpose": "研究问题、现状与缺口"
+    },
+    "question": {
+      "layout": "statement",
+      "required": ["title", "quote"],
+      "optional": ["attribution"],
+      "max_bullets": 0,
+      "purpose": "一页只陈述一个研究问题"
+    },
+    "method": {
+      "layout": "steps",
+      "required": ["title", "steps"],
+      "max_items": 4,
+      "purpose": "可复现的方法步骤，压到 3–4 条"
+    },
+    "result": {
+      "layout": "content|stat|image-left",
+      "required": ["title", "bullets|stats|image"],
+      "optional": ["stats", "image", "caption", "claim"],
+      "max_bullets": 4,
+      "purpose": "结果页；数字、图注、图号必须可回查"
+    },
+    "discussion": {
+      "layout": "content",
+      "required": ["title", "bullets"],
+      "max_bullets": 4,
+      "purpose": "解释结果，不引入材料外结论"
+    },
+    "limitations": {
+      "layout": "content",
+      "required": ["title", "bullets"],
+      "optional": ["callout"],
+      "max_bullets": 4,
+      "purpose": "适用边界、样本与条件限制"
+    },
+    "conclusion": {
+      "layout": "closing",
+      "required": ["title", "bullets"],
+      "max_bullets": 5,
+      "purpose": "三条以内结论与下一步"
+    },
+    "evidence": {
+      "layout": "content",
+      "required": ["title", "bullets"],
+      "max_bullets": 7,
+      "purpose": "文件 + 定位索引，支撑逐页复核"
+    }
+  },
+  "rules": {
+    "min_slides": 4,
+    "max_slides": 30,
+    "max_bullets": 5,
+    "max_chars_per_bullet": 120,
+    "max_title_units": 64,
+    "notes_min_units": 20,
+    "result_slide_ratio": 0.3,
+    "method_slide_max": 2,
+    "result_ratio_min": 0.2,
+    "method_ratio_max": 0.35,
+    "required_roles_generate": ["title", "background", "method", "result", "conclusion"],
+    "required_roles_edit": [],
+    "allowed_kinds": ["title", "section", "content", "stat", "stats", "metrics",
+                      "timeline", "steps", "process", "comparison", "two-column",
+                      "cards", "grid", "closing", "end", "quote", "statement",
+                      "image-left", "image-right"]
+  },
+  "slot_contract": {
+    "title": "action title or role label; <= max_title_units display units",
+    "bullets": "verbatim-grounded clauses; one claim per bullet; <= max_chars_per_bullet",
+    "notes": "speaker notes; must not contain numbers absent from sources",
+    "source": "human-readable footer: <file> · <locator>",
+    "source_ref": "{path, locator} used by result.content_map and gold.json",
+    "claims": "[{claim, source:{path, locator}}] used for page-level evidence",
+    "figure_source": "{path, locator} proving the image is a real source figure"
+  }
+}

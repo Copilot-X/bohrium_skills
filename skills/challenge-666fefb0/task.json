@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-666fefb0",
+  "family": "library",
+  "mode": "classification",
+  "module": "fam_tracks",
+  "profile": "reading",
+  "status_success": "answered",
+  "title": "文献与资料自动分类",
+  "work_file": "work/library-plan.json",
+  "deliverable": "output/library-results.json",
+  "output_files": [
+    "output/library-results.json",
+    "output/library-index.json",
+    "output/operations.log.json"
+  ],
+  "required_fields": [
+    "items",
+    "evidence"
+  ],
+  "focus": "分类体系、批量归类、边界案例与人工复核",
+  "checks": "每类有判据；每条分配有证据；低置信度进待复核",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-666fefb0",
+    "mode": "classification",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

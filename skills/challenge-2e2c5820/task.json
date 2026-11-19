@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-2e2c5820",
+  "family": "experiment",
+  "mode": "feasibility",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "实验方案可行性评估",
+  "work_file": "work/experiment-plan.json",
+  "deliverable": "output/experiment-report.md",
+  "output_files": [
+    "output/experiment-report.md",
+    "output/plan.json",
+    "output/parameter-recommendations.json",
+    "output/risk-assessment.json"
+  ],
+  "required_fields": [
+    "steps",
+    "parameters",
+    "evidence"
+  ],
+  "focus": "设备/材料/时间/预算/安全/伦理可行性与风险",
+  "checks": "每项可行性有条件；风险有处置；不把未确认写成可执行",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-2e2c5820",
+    "mode": "feasibility",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

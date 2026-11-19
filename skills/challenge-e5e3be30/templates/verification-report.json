@@ -1,0 +1,198 @@
+{
+  "case_id": "REPLACE_WITH_INPUT_CASE_ID",
+  "status": "partial",
+  "task_family": "reading",
+  "material_version": "REPLACE_WITH_INPUT_MATERIAL_VERSION",
+  "source_index": {
+    "locator_scheme": "doc_id + paragraph_id",
+    "documents": [
+      {
+        "doc_id": "paper1",
+        "title": "REPLACE_WITH_MATERIAL_TITLE",
+        "locations_read": ["Abstract", "Results", "Discussion"]
+      }
+    ]
+  },
+  "verdicts": [
+    {
+      "assertion_id": "a1",
+      "claim_id": "c1",
+      "source_claim": "示例：在 350 °C 时，该催化剂的 CO2 转化率为 92%。",
+      "assertion": "示例：在 350 °C 时，该催化剂的 CO2 转化率为 92%。",
+      "claim_type": "numeric",
+      "comparator": "",
+      "negation": false,
+      "significance": "",
+      "conditions": ["350 °C", "1 bar"],
+      "verdict": "supported",
+      "confidence": 0.93,
+      "supporting_evidence": [
+        {
+          "doc_id": "paper1",
+          "paragraph_id": "p2",
+          "quote": "在 350 °C 时，Ni/Al2O3 催化剂的 CO2 转化率达到 92%，CH4 选择性为 91%。",
+          "evidence_level": "primary",
+          "secondary_source": false
+        }
+      ],
+      "counter_evidence": [],
+      "limitations": [],
+      "reason": "原文在相同温度与压力条件下直接给出 92% 的转化率，数值与条件一致。",
+      "search_scope": "检索 p1-p5 中的温度、转化率与催化剂名称。",
+      "numeric_check": {
+        "claimed": "92% at 350 °C",
+        "observed": "92% at 350 °C",
+        "conversion": "none",
+        "unit": "%"
+      },
+      "rewrite": "在 350 °C、1 bar 条件下，该催化剂的 CO2 转化率为 92%。",
+      "match_quality": "exact",
+      "severity": "none",
+      "verification_route": "local_text",
+      "retraction_flag": false,
+      "preprint_flag": false
+    },
+    {
+      "assertion_id": "a2",
+      "claim_id": "c2",
+      "source_claim": "示例：干预组 HbA1c 较安慰剂组多降低 0.4 个百分点。",
+      "assertion": "示例：干预组 HbA1c 较安慰剂组多降低 0.4 个百分点。",
+      "claim_type": "comparison",
+      "comparator": "intervention vs placebo, between-group change",
+      "negation": false,
+      "significance": "p = 0.03",
+      "conditions": ["12 weeks", "type 2 diabetes"],
+      "verdict": "contradicted",
+      "confidence": 0.88,
+      "supporting_evidence": [],
+      "counter_evidence": [
+        {
+          "doc_id": "paper2",
+          "paragraph_id": "p2",
+          "quote": "After 12 weeks, HbA1c decreased by 0.4 percentage points in the intervention group and by 0.1 points in the placebo group (p = 0.03).",
+          "evidence_level": "primary",
+          "secondary_source": false
+        }
+      ],
+      "limitations": ["0.4 是干预组组内变化，组间差异应为约 0.3 个百分点。"],
+      "reason": "原文同时报告安慰剂组下降 0.1 个百分点，故相对安慰剂的差值不是 0.4。",
+      "search_scope": "检索 p1-p4 中 HbA1c、组间差异与安慰剂。",
+      "numeric_check": {
+        "claimed": "between-group difference = 0.4 percentage points",
+        "observed": "intervention -0.4; placebo -0.1",
+        "conversion": "0.4 - 0.1 = 0.3 percentage points",
+        "unit": "percentage points"
+      },
+      "rewrite": "12 周后，干预组 HbA1c 下降 0.4 个百分点，安慰剂组下降 0.1 个百分点，组间差异约 0.3 个百分点。",
+      "match_quality": "mismatch",
+      "severity": "major",
+      "verification_route": "local_text",
+      "retraction_flag": false,
+      "preprint_flag": false
+    },
+    {
+      "assertion_id": "a3",
+      "claim_id": "c3",
+      "source_claim": "示例：氧空位导致该催化剂活性提高。",
+      "assertion": "示例：氧空位导致该催化剂活性提高。",
+      "claim_type": "causal",
+      "comparator": "",
+      "negation": false,
+      "significance": "",
+      "conditions": ["Ni/Al2O3", "CO2 methanation"],
+      "verdict": "partially_supported",
+      "confidence": 0.55,
+      "supporting_evidence": [
+        {
+          "doc_id": "paper1",
+          "paragraph_id": "p4",
+          "quote": "作者推测氧空位可能稳定中间体，但机理尚未确认。",
+          "evidence_level": "primary",
+          "secondary_source": false
+        }
+      ],
+      "counter_evidence": [],
+      "limitations": ["原文只给出“可能/推测”，没有因果实验或机理确认。"],
+      "reason": "原文支持“可能有关联”，不支持“导致”的确定因果表述。",
+      "search_scope": "检索 p1-p5 中 oxygen vacancy、mechanism、cause。",
+      "numeric_check": {
+        "claimed": "",
+        "observed": "",
+        "conversion": "",
+        "unit": ""
+      },
+      "rewrite": "作者推测氧空位可能稳定中间体，但该机理尚未得到确认。",
+      "match_quality": "partial",
+      "severity": "major",
+      "verification_route": "local_text",
+      "retraction_flag": false,
+      "preprint_flag": false
+    },
+    {
+      "assertion_id": "a4",
+      "claim_id": "c4",
+      "source_claim": "示例：该催化剂在 200 h 后仍保持 80% 初始活性。",
+      "assertion": "示例：该催化剂在 200 h 后仍保持 80% 初始活性。",
+      "claim_type": "numeric",
+      "comparator": "",
+      "negation": false,
+      "significance": "",
+      "conditions": ["200 h", "initial activity = 100%"],
+      "verdict": "insufficient_evidence",
+      "confidence": 0.8,
+      "supporting_evidence": [],
+      "counter_evidence": [],
+      "limitations": ["材料只报告 50 h 稳定性，未报告 200 h 或 80% 阈值。"],
+      "reason": "在 p1-p6 中未检索到 200 h 稳定性数据；未报告不等于被反驳。",
+      "search_scope": "检索 p1-p6 中 stability、200 h、80%、deactivation；仅命中 50 h。",
+      "numeric_check": {
+        "claimed": "80% after 200 h",
+        "observed": "not reported",
+        "conversion": "not applicable",
+        "unit": "%"
+      },
+      "rewrite": "材料未报告 200 h 后的活性保持率；现有材料仅报告 50 h 稳定性。",
+      "match_quality": "not_found",
+      "severity": "minor",
+      "verification_route": "local_text",
+      "retraction_flag": false,
+      "preprint_flag": false
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "supported": 1,
+    "partially_supported": 1,
+    "contradicted": 1,
+    "insufficient_evidence": 1,
+    "high_risk": ["a2", "a3"]
+  },
+  "checked_range": "c1-c4 全部覆盖；a1-a4 逐条判定；未抽样。",
+  "unchecked": [],
+  "bibliography_issues": [],
+  "uncertainty": [
+    {
+      "item": "氧空位机理",
+      "reason": "原文只有推测，未做机理实验",
+      "impact": "不能把关联改写为因果"
+    }
+  ],
+  "change_log": [
+    {
+      "step": 1,
+      "action": "读取 claims 并建立段落索引",
+      "evidence": "/app/work/claim_index.json"
+    },
+    {
+      "step": 2,
+      "action": "逐条定位、判定并写盘",
+      "evidence": "p2, p3, p4"
+    }
+  ],
+  "support_files_used": [
+    "references/claim-verification-playbook.md",
+    "templates/verification-report.json",
+    "scripts/inspect_claims.py",
+    "scripts/check_claim_verification.py"
+  ]
+}

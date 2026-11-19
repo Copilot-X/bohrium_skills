@@ -1,0 +1,140 @@
+{
+  "schema": "reproduction-plan/v1",
+  "case_id": "<case-id-from-input>",
+  "paper": {
+    "title": "<paper-title-or-material-name>",
+    "doi_or_url": "<doi-or-url>",
+    "version_or_date": "<version-or-date>"
+  },
+  "objective": "<one-sentence reproduction target: what claim/metric will be checked>",
+  "seven_elements": {
+    "task": {
+      "value": null,
+      "status": "missing",
+      "source": {},
+      "evidence_class": "source_inspection"
+    },
+    "data": {
+      "value": null,
+      "status": "missing",
+      "source": {},
+      "evidence_class": "source_inspection"
+    },
+    "split": {
+      "value": null,
+      "status": "missing",
+      "source": {},
+      "evidence_class": "source_inspection"
+    },
+    "model": {
+      "value": null,
+      "status": "missing",
+      "source": {},
+      "evidence_class": "source_inspection"
+    },
+    "metric": {
+      "value": null,
+      "status": "missing",
+      "source": {},
+      "evidence_class": "source_inspection"
+    },
+    "threshold": {
+      "value": null,
+      "status": "missing",
+      "source": {},
+      "evidence_class": "source_inspection"
+    },
+    "claim": {
+      "value": null,
+      "status": "missing",
+      "source": {},
+      "evidence_class": "source_inspection"
+    }
+  },
+  "materials": [
+    {
+      "item": "code_repository",
+      "kind": "code",
+      "location": "<repo-url-or-path>",
+      "version_or_commit": "<commit-or-tag>",
+      "license": "<license-or-unknown>",
+      "status": "unknown",
+      "evidence": {}
+    },
+    {
+      "item": "dataset",
+      "kind": "data",
+      "location": "<dataset-url-or-path>",
+      "version_or_commit": "<version-or-sha256>",
+      "license": "<license-or-unknown>",
+      "status": "unknown",
+      "evidence": {}
+    },
+    {
+      "item": "evaluation_script",
+      "kind": "code",
+      "location": "<path-in-repo>",
+      "version_or_commit": "<commit-or-tag>",
+      "license": "<license-or-unknown>",
+      "status": "unknown",
+      "evidence": {}
+    }
+  ],
+  "environment": {
+    "runtime": "<python/framework version>",
+    "dependencies": [],
+    "hardware": "<cpu/gpu, driver, memory>",
+    "seed_policy": "<seed value and repeat count>",
+    "determinism_flags": [],
+    "observed_conflicts": []
+  },
+  "parameter_recovery": [
+    {
+      "name": "<parameter-name>",
+      "value": null,
+      "origin": "unknown",
+      "source": {},
+      "conflict": null,
+      "impact_if_wrong": "unknown",
+      "sensitivity_checked": false
+    }
+  ],
+  "reproduction_steps": [
+    {
+      "step": 1,
+      "action": "<smallest executable unit>",
+      "command": "<exact command>",
+      "expected_output": "<metric or artifact to produce>",
+      "status": "planned"
+    }
+  ],
+  "tolerance_policy": [
+    {
+      "metric": "<metric-name>",
+      "reported_value": null,
+      "abs_tol": null,
+      "rel_tol": null,
+      "source": {},
+      "statistical_method": "<single run | mean+/-std over n seeds>"
+    }
+  ],
+  "gaps": [
+    {
+      "field": "seven_elements.task",
+      "status": "missing",
+      "impact": "cannot define the reproduction target",
+      "next_check": "<what to read or ask next>"
+    }
+  ],
+  "verdict_rules": {
+    "max_level_if_data_restricted": "not_reproducible",
+    "max_level_if_code_missing": "partial",
+    "blocked_if": [
+      "data_restricted",
+      "code_unavailable",
+      "metric_incomparable"
+    ],
+    "leakage_rule": "leak_detected => do_not_promote"
+  },
+  "change_log": []
+}

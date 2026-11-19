@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-139745c7",
+  "family": "library",
+  "mode": "file-search",
+  "module": "fam_tracks",
+  "profile": "reading",
+  "status_success": "answered",
+  "title": "科研文件智能检索",
+  "work_file": "work/library-plan.json",
+  "deliverable": "output/library-results.json",
+  "output_files": [
+    "output/library-results.json",
+    "output/library-index.json",
+    "output/operations.log.json"
+  ],
+  "required_fields": [
+    "items",
+    "evidence"
+  ],
+  "focus": "文件/全文检索、字段过滤、排序与结果定位",
+  "checks": "每条结果有路径和命中片段；排序可解释；无结果说明",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-139745c7",
+    "mode": "file-search",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

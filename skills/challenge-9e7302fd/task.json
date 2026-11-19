@@ -1,0 +1,42 @@
+{
+  "challenge_id": "challenge-9e7302fd",
+  "family": "review",
+  "mode": "methods-stats-review",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "研究方法与统计审查",
+  "work_file": "work/review-findings.json",
+  "deliverable": "output/review-report.md",
+  "output_files": [
+    "output/review-report.md",
+    "output/findings.json",
+    "output/evidence-map.json"
+  ],
+  "required_fields": [
+    "findings",
+    "evidence"
+  ],
+  "focus": "研究方法、统计假设、样本量、多重比较与报告完整性",
+  "checks": "统计判断有依据；假设/检验匹配；缺失报告不补造",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-9e7302fd",
+    "mode": "methods-stats-review",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

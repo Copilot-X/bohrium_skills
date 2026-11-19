@@ -1,0 +1,16 @@
+{
+  "case_id": "SYNTHETIC-POLISH",
+  "genre": "journal article",
+  "edits": [
+    {"id": "E001", "segment_id": "P003", "sentence_id": "P003-S001",
+     "before": "The catalyst show a high methanol selectivity of 92%",
+     "after": "The catalyst showed high methanol selectivity of 92%",
+     "type": "grammar", "reason": "主谓一致；保留 92% 数值",
+     "preserve": ["number"]},
+    {"id": "E002", "segment_id": "P003", "sentence_id": "P003-S003",
+     "before": "The result suggest that oxygen vacancies play a important role.",
+     "after": "The result suggests that oxygen vacancies play an important role.",
+     "type": "grammar", "reason": "主谓一致与冠词错误",
+     "preserve": []}
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-cf1995b5",
+  "family": "experiment",
+  "mode": "plan-generation",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "实验方案生成与优化",
+  "work_file": "work/experiment-plan.json",
+  "deliverable": "output/experiment-report.md",
+  "output_files": [
+    "output/experiment-report.md",
+    "output/plan.json",
+    "output/parameter-recommendations.json",
+    "output/risk-assessment.json"
+  ],
+  "required_fields": [
+    "steps",
+    "parameters",
+    "evidence"
+  ],
+  "focus": "假设、变量、对照、步骤、参数、资源与判读标准",
+  "checks": "步骤可执行；变量/对照完整；参数有来源；缺失项列为确认项",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-cf1995b5",
+    "mode": "plan-generation",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

@@ -1,0 +1,313 @@
+---
+name: research-proposal-writer
+description: 研究计划/开题报告写作：从研究问题、缺口、目标、方法、时间线、预期成果、风险与伦理逐项展开，每条论断绑定所给文献或预实验数据。Write a thesis proposal or research plan with question, gap, objectives, methods, timeline, outcomes, risks and ethics tied to supplied evidence. Use for 开题报告、研究计划、课题设计、答辩材料。
+---
+
+# 开题报告与研究计划书（Research Proposal Writer）
+
+## 用途与触发
+
+task.md 要求"开题报告""研究计划书""proposal defence"时使用。
+与基金申请（`d403dce6`）的区别：本题更强调**研究设计是否可执行**与**时间/风险安排**，
+不涉及经费与资助政策。
+
+## 支持文件（必须使用）
+
+| 文件 | 何时用 | 用法 |
+|---|---|---|
+| `references/proposal-writing-playbook.md` | 收窄问题、建假设/设计/时间线前 | 先读；按 PICO、可证伪、红队六问执行 |
+| `templates/proposal-plan.json` | 计划骨架 | 复制后填 question/objectives/design/plan/risks/ethics/fact_ledger |
+| `templates/proposal-brief.md` | 写正文 | 按 11 节骨架写，不虚构预实验/文献 |
+| `scripts/check_proposal.py` | 交付前 | `python3 {SKILL_DIR}/scripts/check_proposal.py --result /app/output/result.json --brief /app/output/proposal.md --root /app/output --json` |
+
+`{SKILL_DIR}` 通常为 `/skills/weekly-skill`。校验器检查 PICO、假设可证伪、目标-设计对齐、
+时间线里程碑、风险 Plan B、伦理状态与 fact_ledger。不要为了通过而把
+`to_supplement` 改成 `confirmed`。
+
+## 输入
+
+- `/input/task.md`：学位层次（博/硕）、学科、篇幅、章节要求、答辩场景
+- `/input/case.json`：`case_id`、`topic`、`literature[]`、`preliminary_data[]`、`output_contract`
+- 文献：PDF/摘要/综述；预实验数据；方法学资料
+- 可选：导师意见、伦理要求、实验室条件
+
+## 执行步骤
+
+1. **界定问题**：把选题收敛成一个可检验的科学问题（PICO / 变量关系 / 假设形式），
+   写入 `/app/work/question.json`：
+   ```json
+   {"question": "X 是否通过 Y 影响 Z？",
+    "hypotheses": [{"id": "H1", "statement": "…", "falsifiable_by": "…"}],
+    "scope": {"population": "…", "conditions": "…", "excluded": ["…"]}}
+   ```
+2. **文献缺口**：读提供的文献，建 `/app/work/gap.json`
+   （已知什么、争议什么、缺什么、本研究补哪一块）。每条结论带出处。
+3. **目标与内容**：1 个总目标 + 2–4 个分目标；每个分目标对应 1 个研究内容模块。
+4. **研究设计**：每个模块写清
+   `样本/材料 → 分组/条件 → 测量指标 → 统计方法 → 判据`。
+   指标必须可测，判据必须事先定义（避免事后挑结果）。
+5. **时间线**：`plan.json` 按季度排，含里程碑与交付物；标出关键路径。
+6. **风险与备选**：每个高风险环节给触发条件与 Plan B。
+7. **伦理与合规**：涉及人/动物/数据隐私时写审批与知情同意；材料未提供则标
+   `to_be_obtained`。
+8. **落盘**：`proposal.md`、`plan.json`、`result.json`。
+9. **交付校验**：运行 `check_proposal.py`，检查 PICO、假设可证伪、目标-设计对齐、
+   时间线、风险与事实台账；有 problem 先修，修不了标 `status=partial`。
+
+## 官方输出契约（必须补齐）
+
+官方 `example-input` 的 `output_contract` 要求顶层字段：`deliverable`、`preserved_facts`、`evidence_map`、`change_log`。
+题目原有字段全部保留；交付前运行：
+
+```bash
+python3 {SKILL_DIR}/scripts/emit_official.py \
+  --result /app/output/result.json --out /app/output/result.json \
+  --profile writing --json
+```
+
+该适配器只补齐官方别名，不改变任务字段；`validate_result.py` 之后仍需运行。
+
+## 输出契约
+
+```json
+{
+  "case_id": "…",
+  "task_family": "research-proposal",
+  "status": "completed|partial",
+  "proposal": {
+    "path": "proposal.md",
+    "language": "zh|en",
+    "word_count": 0,
+    "degree": "phd|master|undergrad"
+  },
+  "artifacts": [
+    {
+      "role": "editable",
+      "path": "proposal.md",
+      "format": "markdown"
+    },
+    {
+      "role": "plan",
+      "path": "plan.json",
+      "format": "json"
+    }
+  ],
+  "question": {
+    "question": "…",
+    "hypotheses": [
+      "H1"
+    ],
+    "scope": {
+      "included": "…",
+      "excluded": [
+        "…"
+      ]
+    }
+  },
+  "gap": [
+    {
+      "statement": "…",
+      "evidence": {
+        "path": "…",
+        "locator": "p.3"
+      },
+      "kind": "reported|inferred"
+    }
+  ],
+  "objectives": [
+    {
+      "objective_id": "O1",
+      "text": "…",
+      "module": "M1",
+      "indicator": "…",
+      "criterion": "…"
+    }
+  ],
+  "design": [
+    {
+      "module": "M1",
+      "materials": "…",
+      "groups": "…",
+      "measurements": [
+        "…"
+      ],
+      "statistics": "…",
+      "criterion": "…",
+      "sample_size_basis": "…"
+    }
+  ],
+  "plan": [
+    {
+      "phase": "Q1",
+      "period": "2026-12 → 2027-02",
+      "tasks": [
+        "…"
+      ],
+      "milestone": "…",
+      "deliverable": "…",
+      "critical_path": true
+    }
+  ],
+  "risks": [
+    {
+      "risk": "…",
+      "trigger": "…",
+      "plan_b": "…",
+      "impact": "high|medium|low"
+    }
+  ],
+  "ethics": {
+    "required": true,
+    "status": "to_be_obtained|provided|not_applicable",
+    "detail": "…"
+  },
+  "fact_ledger": [
+    {
+      "fact_id": "F1",
+      "statement": "…",
+      "status": "confirmed|user_stated|to_supplement|unusable",
+      "source": "materials/…"
+    }
+  ],
+  "one_minute_retelling": [
+    "问题",
+    "缺口",
+    "路线",
+    "价值",
+    "可验证结局"
+  ],
+  "red_team_answers": [
+    {
+      "question": "为什么重要",
+      "answer": "…"
+    }
+  ],
+  "support_files_used": [
+    "references/proposal-writing-playbook.md",
+    "scripts/check_proposal.py"
+  ],
+  "gaps": [
+    {
+      "item": "…",
+      "owner": "…"
+    }
+  ],
+  "uncertainty": [],
+  "change_log": [],
+  "deliverable": {
+    "path": "…",
+    "format": "markdown"
+  },
+  "preserved_facts": [],
+  "evidence_map": []
+}
+```
+
+## 章节骨架
+
+1. 选题背景与意义（≤ 20%）
+2. 国内外研究现状与缺口（有引用，有评述，不是罗列）
+3. 科学问题与研究假设
+4. 研究目标与研究内容
+5. 研究设计与技术路线
+6. 可行性分析（理论/方法/数据/条件）
+7. 进度安排（表 + 关键路径）
+8. 预期成果与创新点
+9. 风险与应对
+10. 伦理与数据管理
+11. 参考文献
+
+## 规则
+
+1. 假设必须可证伪：写清"什么结果会否定它"。
+2. 现状综述要有评述句（"然而，A 与 B 的结论不一致，原因可能是…"），不是文献列表。
+3. 样本量给依据（功效分析或文献惯例），不能只写"n=30"。
+4. 统计方法先于数据确定；多重比较要说明校正。
+5. 预期成果区分"必然产出"（论文、数据集）与"可能产出"（机理认识）。
+6. 不使用材料外的预实验数据；没有就写"尚无预实验"。
+
+## 异常处理
+
+| 情况 | 处理 |
+|---|---|
+| 文献不足 | 明确写"检索范围有限"，缺口判断标 `inferred` |
+| 题目过宽 | 缩小 scope 并说明取舍理由 |
+| 方法超出条件 | 给替代方案与限制 |
+| 伦理信息缺失 | `to_be_obtained` + 需补材料清单 |
+| 学制/时间不明 | 按 task.md；仍不明则用相对月份（M1–M24） |
+
+## 自检
+
+- [ ] 科学问题具体、PICO/scope 齐全，假设可证伪
+- [ ] 每个目标有指标与判据，且与设计模块对齐
+- [ ] 设计可执行（材料、分组、测量、统计、样本依据齐全）
+- [ ] 时间线覆盖全部模块，里程碑可交付，关键路径标注
+- [ ] 风险有触发条件、影响与 Plan B
+- [ ] 伦理状态与 `fact_ledger` 已写，未把待补写成已证实
+- [ ] `check_proposal.py` 返回 `ok: true`
+- [ ] 文献结论有出处，未虚构
+
+## 快速路径（预算内）
+
+1. **0–2 分钟**：读材料，写出研究问题与缺口一句话，建 `plan.json` 骨架。
+2. **2–8 分钟**：先写目标、方法、设计与分析方案（评审重点），落盘。
+3. **8–13 分钟**：补时间线、成果、风险、伦理与可行性。
+4. **最后 2 分钟**：检查假设可证伪、目标-方法对齐、时间线自洽。
+
+## 方法增强（融合参考实践）
+
+- **PICO 收窄问题**：人群/对象、干预/暴露、对照、结局；缺一维则问题不可检验。
+- **缺口四类**：理论、方法、数据、应用；写清“已有研究做到了什么、还缺什么”。
+- **可证伪假设**：每条假设给“什么结果会推翻它”，并对应统计或判据。
+- **设计矩阵**：目标 → 假设 → 变量/对照 → 样本与功效 → 分析方法 → 预期结果，一行一目标。
+- **时间线里程碑**：按季度/半年排，里程碑可交付（数据/模型/论文），依赖关系明确。
+- **风险与备选**：每项主要风险给触发信号与备选方案，不写“无风险”。
+- **伦理与数据**：涉及人类/动物/隐私时写审批、知情同意、数据管理；不适用则说明。
+
+### 定向方法增强
+
+- **来自 中文项目申请书写作与交付**：先建“约束矩阵 + 事实台账”；事实分四态——已证实、用户口述、待补充、不可使用；缺论文/专利/数据/平台/伦理时写“待补充/需申请人核验”，不用流畅文字掩盖。
+- **来自 中文项目申请书写作与交付**：按项目类型选一句话公式——基础研究写“对象+未解科学问题+前期依据+假设+方法+预期认识”；任务型写“场景+瓶颈+路线+标志性成果+考核指标”；人才类写“长期主线+代表贡献+未来跃迁”。
+- **来自 中文项目申请书写作与交付**：定稿前做“一分钟复述”（大同行读完标题摘要能复述问题、缺口、路线、价值、可验证结局）与红队六问（为什么重要、是否新、是否可做、有无基础、失败怎么办、是否符合指南）。
+- **来自 NSFC 基金数据洞察**：选题要做撞车/同质化检查、方向热度与竞争强度判断、申请代码匹配；本环境无该服务的网络与密钥，只能基于用户提供的往年项目、指南和文献做离线差异化分析，缺数据时明确写“未做外部查重”。
+- **两篇合取后的改造**：`plan.json` 增加 `fact_ledger[status]`、`funder_type`、`one_minute_retelling`、`red_team_answers` 四块；未做外部查重时写 `not_available`，不假装查过。
+
+## 质量闸门
+
+| # | 检查 | 通过标准 | 不通过时 |
+|---|---|---|---|
+| G1 | 问题 | PICO 四要素齐全、可检验 | 收窄或补要素 |
+| G2 | 假设 | 每条可证伪且给判据 | 改写假设 |
+| G3 | 对齐 | 目标↔假设↔方法↔分析一致 | 建矩阵修正 |
+| G4 | 时间线 | 里程碑可交付、依赖合理 | 重排或拆任务 |
+| G5 | 风险 | 有触发信号与备选 | 补风险条目 |
+| G6 | 依据 | 文献/预实验数据有出处 | 补引用或标未提供 |
+
+## 常见失败模式
+
+| 失败模式 | 识别信号 | 修复 |
+|---|---|---|
+| 问题过大 | “研究人工智能与教育” | 用 PICO 收窄 |
+| 假设不可证伪 | 无判据、无推翻条件 | 补判据与否定结果 |
+| 方法堆砌 | 列多种方法无对应目标 | 按目标裁剪方法 |
+| 时间线理想化 | 无缓冲、无依赖 | 加缓冲与关键路径 |
+| 风险写“无” | 无备选方案 | 补主要风险与 Plan B |
+| 伦理缺失 | 涉及人/动物却无审批 | 补伦理与数据管理 |
+
+## 交付清单
+
+- [ ] `/app/output/result.json` 含 `case_id`、`question`、`objectives[]`、`design[]`、
+      `plan[]`、`risks[]`、`ethics`、`fact_ledger[]`、`support_files_used`
+- [ ] `proposal.md` 与 `plan.json` 真实存在
+- [ ] 问题符合 PICO 且可检验；每条假设可证伪
+- [ ] 目标-方法-分析逐条对齐，样本量有依据
+- [ ] 时间线含里程碑与缓冲；风险有 Plan B
+- [ ] 伦理有交代；事实台账区分 confirmed/to_supplement
+- [ ] `check_proposal.py` 通过
+
+## 最小示例（示例）
+
+输入：题目"某材料在高温下的稳定性"、8 篇文献、无预实验。
+输出：1 个问题、2 个假设；3 个目标对应 3 个模块；
+`plan` 8 个季度；`risks` 3 条；`ethics.status: "not_applicable"`；
+`gaps` 1 条（缺预实验数据）。

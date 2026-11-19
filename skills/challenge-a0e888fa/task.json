@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-a0e888fa",
+  "family": "analysis",
+  "mode": "data-cleaning",
+  "module": "fam_tracks",
+  "profile": "both",
+  "status_success": "completed",
+  "title": "科研数据清洗与处理",
+  "work_file": "work/analysis-plan.json",
+  "deliverable": "output/analysis-report.md",
+  "output_files": [
+    "output/analysis-report.md",
+    "output/results.json",
+    "output/results.csv",
+    "output/execution.log"
+  ],
+  "required_fields": [
+    "analysis",
+    "results",
+    "evidence"
+  ],
+  "focus": "数据字典、缺失/异常/重复处理、清洗规则与快照",
+  "checks": "规则可复跑；原始快照保留；清洗前后计数闭合；异常不静默",
+  "run_python": true,
+  "work_template": {
+    "case_id": "challenge-a0e888fa",
+    "mode": "data-cleaning",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

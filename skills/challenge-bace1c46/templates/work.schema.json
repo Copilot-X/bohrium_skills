@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "一、固定题面（赛事展示） work file",
+  "type": "object",
+  "required": [
+    "case_id",
+    "summary",
+    "queries",
+    "candidates",
+    "evidence"
+  ],
+  "properties": {
+    "queries": {
+      "description": "required by task.json"
+    },
+    "candidates": {
+      "description": "required by task.json"
+    },
+    "evidence": {
+      "description": "required by task.json"
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "challenge_id": "challenge-5c56458d",
+  "family": "analysis",
+  "mode": "database-query",
+  "module": "fam_tracks",
+  "profile": "both",
+  "status_success": "completed",
+  "title": "科研数据库查询与分析",
+  "work_file": "work/analysis-plan.json",
+  "deliverable": "output/analysis-report.md",
+  "output_files": [
+    "output/analysis-report.md",
+    "output/results.json",
+    "output/results.csv",
+    "output/execution.log"
+  ],
+  "required_fields": [
+    "analysis",
+    "results",
+    "evidence"
+  ],
+  "focus": "查询设计、模式/字段映射、结果校验与空结果处理",
+  "checks": "查询可复跑；结果与问题对应；权限/空结果明确",
+  "run_python": true,
+  "work_template": {
+    "case_id": "challenge-5c56458d",
+    "mode": "database-query",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

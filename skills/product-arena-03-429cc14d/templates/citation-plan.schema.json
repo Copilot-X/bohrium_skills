@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Citation management plan",
+  "type": "object",
+  "required": ["case_id", "insertions"],
+  "properties": {
+    "case_id": {"type": "string"},
+    "style": {"enum": ["gb", "apa", "ieee", "vancouver"]},
+    "insertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "paragraph_id", "sentence_id", "ref_keys", "reason"],
+        "properties": {
+          "id": {"type": "string"},
+          "paragraph_id": {"type": "string"},
+          "sentence_id": {"type": "string"},
+          "anchor_text": {"type": "string"},
+          "ref_keys": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+          "position": {"enum": ["sentence_end", "after_anchor"]},
+          "reason": {"type": "string", "minLength": 3}
+        }
+      }
+    },
+    "dedupe": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["keep", "merge", "decision"],
+        "properties": {
+          "keep": {"type": "string"},
+          "merge": {"type": "array", "items": {"type": "string"}},
+          "basis": {"type": "string"},
+          "decision": {"enum": ["merge", "keep_separate"]}
+        }
+      }
+    },
+    "metadata_fixes": {"type": "array"},
+    "unresolved": {"type": "array"}
+  }
+}

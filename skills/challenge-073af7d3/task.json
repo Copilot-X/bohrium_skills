@@ -1,0 +1,43 @@
+{
+  "challenge_id": "challenge-073af7d3",
+  "family": "research",
+  "mode": "trend-analysis",
+  "module": "fam_tracks",
+  "profile": "writing",
+  "status_success": "completed",
+  "title": "研究前沿与趋势分析",
+  "work_file": "work/research-plan.json",
+  "deliverable": "output/research-report.md",
+  "output_files": [
+    "output/research-report.md",
+    "output/evidence-matrix.json",
+    "output/references.json"
+  ],
+  "required_fields": [
+    "question",
+    "findings",
+    "evidence"
+  ],
+  "focus": "时间趋势、主题演化、研究前沿与证据边界",
+  "checks": "趋势基于可核对的时间/数量；不把共现当因果；窗口明确",
+  "run_python": false,
+  "work_template": {
+    "case_id": "challenge-073af7d3",
+    "mode": "trend-analysis",
+    "summary": "",
+    "question": "",
+    "answer": "",
+    "queries": [],
+    "candidates": [],
+    "items": [],
+    "findings": [],
+    "decisions": [],
+    "parameters": [],
+    "steps": [],
+    "analysis": {},
+    "results": [],
+    "evidence": [],
+    "uncertainties": [],
+    "artifacts": []
+  }
+}

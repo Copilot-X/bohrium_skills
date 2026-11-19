@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Graphical Abstract spec",
+  "description": "Agent-authored input for scripts/run_case.py. Write it to /app/work/ga-spec.json after reading the actual source materials. Example: examples/case.json + examples/paper.txt (synthetic, not a formal answer).",
+  "type": "object",
+  "required": ["case_id", "claim", "elements"],
+  "properties": {
+    "case_id": {"type": "string", "description": "Must match /input/case.json"},
+    "claim": {
+      "type": "object",
+      "required": ["claim"],
+      "properties": {
+        "claim": {"type": "string", "minLength": 1,
+                  "description": "One take-home sentence, <=12 English words or <=30 Chinese characters"},
+        "support": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path": {"type": "string", "description": "Real input file path"},
+              "locator": {"type": "string", "description": "Section/figure/sentence"}
+            }
+          }
+        },
+        "numbers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {"type": "string"},
+              "unit": {"type": "string"},
+              "source": {"type": "string"}
+            }
+          }
+        },
+        "not_claimed": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "elements": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "required": ["id", "role", "concept"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_.:-]*$"},
+          "role": {"enum": ["problem", "approach", "method", "result",
+                             "implication", "conclusion"]},
+          "concept": {"type": "string", "minLength": 1,
+                      "description": "Short label; keep numbers only when sourced"},
+          "kind": {"enum": ["reported", "schematic", "inferred", "estimated"]},
+          "source": {
+            "type": "object",
+            "required": ["path"],
+            "properties": {
+              "path": {"type": "string"},
+              "locator": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["from", "to"],
+        "properties": {
+          "id": {"type": "string"},
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "label": {"type": "string", "maxLength": 40},
+          "kind": {"type": "string"}
+        }
+      }
+    },
+    "canvas": {
+      "type": "object",
+      "properties": {
+        "width_px": {"type": "integer", "minimum": 800},
+        "height_px": {"type": "integer", "minimum": 400},
+        "dpi": {"type": "integer", "minimum": 72}
+      }
+    },
+    "journal_spec": {
+      "type": "object",
+      "properties": {
+        "min_font_pt": {"type": "number", "minimum": 4},
+        "source": {"type": "string"}
+      }
+    },
+    "reading_order": {"type": "string",
+                      "enum": ["left-to-right", "top-to-bottom", "circular"]},
+    "layout_type": {"type": "string",
+                    "enum": ["linear-progression", "binary-comparison",
+                              "comparison-matrix", "hub-spoke", "circular-flow",
+                              "hierarchical-layers", "bento-grid"]},
+    "style_type": {"type": "string", "enum": ["journal", "minimal", "editorial"]},
+    "caption": {"type": "string"},
+    "alt_text": {"type": "string"},
+    "visual_reviewed": {"type": "boolean", "default": false,
+                        "description": "true only after opening the exported preview"}
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://period4.local/schemas/notes.schema.json",
+  "title": "work/notes.json — section-aligned structured notes",
+  "description": "模型写入 /app/work/notes.json 的字段契约。finalize 读取 case_id、paper_card、sections、knowledge_points、open_questions；每节必须有 anchors，每个知识点必须有 evidence。",
+  "type": "object",
+  "required": ["case_id", "paper_card", "sections", "knowledge_points"],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "必须与 /input/case.json 的 case_id 一致"
+    },
+    "paper_card": {"$ref": "#/$defs/paper_card"},
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "description": "按 outline.sections 的顺序组织；id 保留，heading 去掉 Markdown # 标记",
+      "items": {"$ref": "#/$defs/section"}
+    },
+    "knowledge_points": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/knowledge_point"}
+    },
+    "open_questions": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "论文未回答或无法从原文确证的问题；不得伪装成知识点"
+    }
+  },
+  "$defs": {
+    "anchor": {
+      "type": "object",
+      "required": ["path", "locator", "quote"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "outline.source_path，例如 paper.md"
+        },
+        "locator": {
+          "type": "string",
+          "description": "outline.all_segments[].locator 或段落 id，例如 paper.md P010 / P010"
+        },
+        "quote": {
+          "type": "string",
+          "minLength": 1,
+          "description": "该段中逐字出现的连续片段；可用 ... 连接两段逐字片段"
+        }
+      }
+    },
+    "paper_card": {
+      "type": "object",
+      "required": ["research_question", "data", "methods", "findings", "limitations"],
+      "properties": {
+        "title": {"type": "string", "description": "可选；notes.md 一级标题使用"},
+        "research_question": {"type": "string", "minLength": 1},
+        "data": {"type": "string", "minLength": 1, "description": "样本、材料、数据来源与规模"},
+        "methods": {"type": "string", "minLength": 1, "description": "方法与关键实验条件"},
+        "findings": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"},
+          "description": "带条件的独立发现"
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"},
+          "description": "限制、边界条件与未测量项；未报告也要如实写"
+        },
+        "conditions": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "结论成立的前提，例如温度、压力、进料比"
+        },
+        "doi": {"type": "string"},
+        "year": {"type": "string"},
+        "authors": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "section": {
+      "type": "object",
+      "required": ["id", "heading", "anchors"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^S?[0-9]+$", "description": "沿用 outline 的 S1…S9"},
+        "heading": {"type": "string", "minLength": 1, "description": "去掉 # 的章节标题"},
+        "purpose": {"type": "string"},
+        "methods": {"type": "string"},
+        "results": {"type": "string"},
+        "conclusions": {"type": "string"},
+        "anchors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/anchor"}
+        }
+      }
+    },
+    "knowledge_point": {
+      "type": "object",
+      "required": ["id", "type", "statement", "evidence"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^K[0-9]+$"},
+        "type": {
+          "type": "string",
+          "enum": ["finding", "method", "limitation", "concept", "variable",
+                   "condition", "claim"],
+          "description": "知识点类型；保持全文一致"
+        },
+        "statement": {"type": "string", "minLength": 1, "description": "一条可检索、可复核的命题"},
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/anchor"}
+        },
+        "tags": {"type": "array", "items": {"type": "string"}}
+      }
+    }
+  }
+}
