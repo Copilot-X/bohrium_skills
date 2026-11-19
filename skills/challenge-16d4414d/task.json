@@ -14,7 +14,9 @@
     "output/evidence-map.json"
   ],
   "required_fields": [
+    "claim_inventory",
     "findings",
+    "cross_section_checks",
     "evidence"
   ],
   "focus": "论证链、前提-结论、因果/相关、反例与逻辑跳跃",
@@ -37,6 +39,87 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "checks": [],
+    "verdict": "",
+    "claim_inventory": [],
+    "cross_section_checks": []
+  },
+  "example": {
+    "case_id": "SYNTH-REVIEW",
+    "mode": "logic-review",
+    "summary": "Synthetic example only.",
+    "findings": [
+      {
+        "id": "L001",
+        "locator": {
+          "path": "synthetic.md",
+          "locator": "P1"
+        },
+        "original_quote": "synthetic source sentence",
+        "severity": "major",
+        "type": "logic_gap",
+        "status": "open",
+        "fix": "synthetic fix",
+        "false_positive_check": "cited view vs author claim checked",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "checks": [
+      {
+        "item": "synthetic check",
+        "status": "pass",
+        "detail": "synthetic only"
+      }
+    ],
+    "verdict": "major_revision",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "claim_inventory": [
+      {
+        "id": "C1",
+        "claim": "synthetic claim",
+        "type": "causal",
+        "section": "Discussion",
+        "speaker": "author",
+        "support": "partial",
+        "strength": "suggestive",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "cross_section_checks": [
+      {
+        "promise": "synthetic promise",
+        "delivery": "synthetic delivery",
+        "consistency": "partial"
+      }
+    ]
+  },
+  "schema_properties": {
+    "findings": "task-specific field required by this sub-challenge",
+    "checks": "检查项与 pass/fail/not_checked",
+    "verdict": "总体判断及边界",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "无法判断、材料不足、待复核",
+    "claim_inventory": "task-specific field required by this sub-challenge",
+    "cross_section_checks": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "主张清单标 speaker(author/cited/assumption) 与 support/strength；跨章节承诺-交付核对。",
+    "误报检查：引用观点/作者假设/学科惯例不得当作作者错误；severity 有判据。"
+  ]
 }

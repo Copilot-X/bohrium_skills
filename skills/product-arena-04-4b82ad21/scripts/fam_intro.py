@@ -27,6 +27,118 @@ def _bib(ctx):
     return entries, by_key
 
 
+def _bib_evidence(ctx, entry):
+    """Return a verbatim bibliography record for a cited key.
+
+    The full text of the cited paper is not part of /input in this task, so the
+    honest evidence is the bibliographic record itself.  Never leave quote
+    empty while claiming a source.
+    """
+    key = str(entry.get("key") or "")
+    fields = entry.get("fields") or {}
+    raw = str(entry.get("raw") or "").strip()
+    title = str(fields.get("title") or "").strip()
+    for doc in ctx.docs:
+        text = S.doc_text(doc)
+        rel = doc.get("rel_path") or doc.get("path") or ""
+        if raw and raw in text:
+            return {"path": rel, "locator": key, "quote": raw,
+                    "supports": "bibliographic-record"}
+        if title and title in text:
+            return {"path": rel, "locator": key, "quote": title,
+                    "supports": "bibliographic-record"}
+    return {"path": "bibliography", "locator": key,
+            "quote": raw or title, "supports": "bibliographic-record"}
+
+
+def _segments(ctx):
+    data = S.load_json(ctx.work / "evidence.json", {})
+    segments = data.get("segments") if isinstance(data, dict) else []
+    if segments:
+        return [s for s in segments if s.get("quote")]
+    out = []
+    for doc in ctx.docs:
+        text = S.doc_text(doc)
+        if not text.strip():
+            continue
+        for segment in S.segment_blocks(text, source_id=doc.get("source_id", "SRC01"),
+                                       path=doc.get("rel_path", "")):
+            out.append({"path": doc.get("rel_path"), "locator": segment["locator"],
+                        "quote": S.excerpt(segment["text"], 240),
+                        "text": segment["text"]})
+    return out
+
+
+def _best_segment(statement, segments):
+    statement = str(statement or "")
+    words = set(re.findall(r"[A-Za-z]{4,}|[一-鿿]{2,6}", statement))
+    numbers = set(re.findall(r"\d+(?:\.\d+)?%?", statement))
+    best, best_score = None, 0
+    for segment in segments:
+        text = str(segment.get("text") or segment.get("quote") or "")
+        score = len(words & set(re.findall(r"[A-Za-z]{4,}|[一-鿿]{2,6}", text)))
+        score += 2 * len(numbers & set(re.findall(r"\d+(?:\.\d+)?%?", text)))
+        if score > best_score:
+            best, best_score = segment, score
+    return best
+
+
+def _segment_evidence(segment, supports="contribution-link"):
+    if not segment:
+        return None
+    return {"path": segment.get("path"), "locator": segment.get("locator"),
+            "quote": S.excerpt(str(segment.get("text") or segment.get("quote") or ""), 240),
+            "supports": supports}
+
+
+def _contribution_evidence(contribution, segments):
+    raw = contribution.get("evidence") or []
+    out = []
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, dict) and str(item.get("quote") or "").strip():
+                out.append(item)
+            elif isinstance(item, str) and item.strip():
+                # A plan string is a pointer, not a source.  Resolve the
+                # explicit "path Pxxx: hint" form first, then fall back to a
+                # keyword/number match.  The delivered quote is always the
+                # manuscript segment, never the plan string.
+                pointer = re.search(
+                    r"([A-Za-z0-9_.-]+\.(?:md|txt|json|tex|pdf))\s+([A-Za-z0-9_.:-]+)",
+                    item)
+                segment = None
+                if pointer:
+                    path, locator = pointer.group(1), pointer.group(2)
+                    for candidate in segments:
+                        if (str(candidate.get("path") or "").endswith(path)
+                                and locator in str(candidate.get("locator") or "")):
+                            segment = candidate
+                            break
+                if segment is None:
+                    segment = _best_segment(item, segments)
+                evidence = _segment_evidence(segment)
+                if evidence:
+                    out.append(evidence)
+                else:
+                    out.append({"path": "writing-plan", "locator": contribution.get("id", ""),
+                                "quote": item.strip(), "supports": "contribution-plan"})
+    if out:
+        return out
+    segment = _best_segment(contribution.get("statement"), segments)
+    evidence = _segment_evidence(segment)
+    return [evidence] if evidence else []
+
+
+def _number_locator(ctx, raw):
+    for doc in ctx.docs:
+        text = S.doc_text(doc)
+        pos = text.find(raw)
+        if pos >= 0:
+            line = text.count("\n", 0, pos) + 1
+            return "%s:L%d" % (doc.get("rel_path") or doc.get("path") or "material", line)
+    return "materials"
+
+
 def prepare(ctx):
     doc = _primary_doc(ctx)
     if doc is None:
@@ -256,19 +368,71 @@ def finalize(ctx):
                                "contribution lacks linked evidence", "add method/result/figure links")
 
     preserved = [{"kind": "number", "source": t["raw"], "target": t["raw"],
-                  "locator": "materials", "value": t["raw"], "unit": ""}
+                  "locator": _number_locator(ctx, t["raw"]), "value": t["raw"], "unit": ""}
                  for t in S.number_tokens(text)[:100]]
+    segments = _segments(ctx)
     evidence_map = []
+    bib_evidence_used = False
     for item in plan.get("citation_coverage") or []:
-        evidence_map.append({"claim_id": item.get("key", ""),
+        key = str(item.get("key", ""))
+        entry = by_key.get(key)
+        if entry:
+            source = _bib_evidence(ctx, entry)
+            bib_evidence_used = True
+        else:
+            source = {"path": "bibliography", "locator": key, "quote": "",
+                      "supports": "missing-bibliographic-record"}
+        evidence_map.append({"claim_id": key,
                              "claim": item.get("claim", ""),
-                             "source": {"path": "bibliography", "locator": item.get("key", "")},
-                             "quote": "", "supports": item.get("used_in", "")})
+                             "source": {"path": source["path"],
+                                        "locator": source["locator"]},
+                             "quote": source.get("quote", ""),
+                             "supports": item.get("used_in") or source.get("supports", "")})
     for contribution in contributions:
-        evidence_map.append({"claim_id": contribution.get("id", ""),
-                             "claim": contribution.get("statement", ""),
-                             "source": {"path": "writing-plan", "locator": contribution.get("id", "")},
-                             "quote": "", "supports": "contribution"})
+        items = _contribution_evidence(contribution, segments)
+        if not items:
+            ctx.result.uncertainty(
+                "contribution_evidence", str(contribution.get("id") or ""),
+                "no manuscript segment could be bound to this contribution",
+                "add an explicit evidence quote to writing-plan.json")
+        for item in items:
+            evidence_map.append({"claim_id": contribution.get("id", ""),
+                                 "claim": contribution.get("statement", ""),
+                                 "source": {"path": item.get("path", ""),
+                                            "locator": item.get("locator", "")},
+                                 "quote": item.get("quote", ""),
+                                 "supports": item.get("supports", "contribution")})
+    if bib_evidence_used:
+        ctx.result.uncertainty(
+            "citation_fulltext", "cited works are represented by bibliographic records",
+            "the input supplies bibliography metadata, not the full text of each cited paper",
+            "bind claims to the cited paper's full text when it is provided")
+
+    texts = {doc.get("rel_path") or doc.get("path"): S.doc_text(doc) for doc in ctx.docs}
+    evidence_problems = []
+    for item in evidence_map:
+        quote = str(item.get("quote") or "").strip()
+        source = item.get("source") or {}
+        path = str(source.get("path") or "")
+        if not quote:
+            evidence_problems.append("%s: empty quote" % item.get("claim_id"))
+            continue
+        text = texts.get(path)
+        if text is None:
+            text = next((value for key, value in texts.items()
+                         if key and path and str(key).endswith(path)), None)
+        if text is None:
+            evidence_problems.append("%s: source path not found: %s" % (
+                item.get("claim_id"), path))
+            continue
+        ok, reason = S.quote_supported(text, quote)
+        if not ok:
+            evidence_problems.append("%s: %s" % (item.get("claim_id"), reason))
+    if evidence_problems:
+        status = "partial"
+        ctx.result.uncertainty("evidence_map", "; ".join(evidence_problems[:12]),
+                               "some claim-to-source quotes are empty or not verbatim",
+                               "fix the source path/locator and copy the exact sentence")
 
     ctx.result.add_artifact(ctx.output / "introduction.md", "section", "md", "Introduction")
     ctx.result.add_artifact(ctx.output / "related-work.md", "section", "md", "Related Work")

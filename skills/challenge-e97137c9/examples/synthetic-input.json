@@ -2,47 +2,94 @@
   "case_id": "SYNTH-RESEARCH",
   "mode": "review-generation",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
-    {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P001",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
+  "question": "Synthetic research question",
   "findings": [
     {
       "id": "F001",
       "statement": "Synthetic finding",
+      "sources": [
+        "synthetic.md"
+      ],
+      "support": "partial",
+      "strength": "suggestive",
+      "limitations": [],
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
     }
   ],
+  "references": [
+    {
+      "key": "ref1",
+      "title": "Synthetic reference",
+      "doi": null
+    }
+  ],
+  "gap_analysis": [
+    {
+      "gap": "Synthetic gap",
+      "basis": "synthetic.md P1"
+    }
+  ],
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "screening_criteria": {
+    "version": "v1",
+    "include": [
+      "synthetic include"
+    ],
+    "exclude": [
+      "synthetic exclude"
+    ],
+    "priority": []
+  },
+  "screening_log": [
+    {
+      "record_id": "R001",
+      "decision": "include",
+      "reason": "synthetic only",
+      "full_text": false,
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "themes": [
+    {
+      "id": "TH1",
+      "name": "Synthetic theme",
+      "records": [
+        "R001",
+        "R002"
+      ],
+      "boundary": "synthetic only",
+      "conflicts": [],
+      "evidence": [
+        {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      ]
+    }
+  ],
+  "gaps": [
+    {
+      "gap": "Synthetic gap",
+      "basis": "TH1",
+      "alternative_explanations": []
+    }
+  ]
 }

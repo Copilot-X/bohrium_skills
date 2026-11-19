@@ -10,12 +10,13 @@
   "deliverable": "output/analysis-report.md",
   "output_files": [
     "output/analysis-report.md",
+    "output/query.sql",
+    "output/result-table.csv",
     "output/results.json",
-    "output/results.csv",
     "output/execution.log"
   ],
   "required_fields": [
-    "analysis",
+    "query",
     "results",
     "evidence"
   ],
@@ -39,6 +40,89 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "figures": [],
+    "code": "",
+    "query": "",
+    "schema_mapping": {},
+    "permissions": {},
+    "empty_result": {}
+  },
+  "example": {
+    "case_id": "SYNTH-ANALYSIS",
+    "mode": "database-query",
+    "summary": "Synthetic example only.",
+    "analysis": {
+      "question": "Synthetic question",
+      "method": "Synthetic method",
+      "assumptions": [
+        "Synthetic assumption"
+      ],
+      "diagnostics": [
+        "Synthetic diagnostic"
+      ],
+      "steps": [
+        "Synthetic step"
+      ]
+    },
+    "results": [
+      {
+        "id": "R001",
+        "metric": "synthetic_metric",
+        "value": 1,
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "figures": [
+      {
+        "path": "figures/synthetic.svg",
+        "source": "results",
+        "data_source": "output/results.csv",
+        "units": {
+          "x": "s",
+          "y": "%"
+        }
+      }
+    ],
+    "code": "work/analysis.py",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "query": "SELECT * FROM synthetic",
+    "schema_mapping": {
+      "synthetic_col": "synthetic_col"
+    },
+    "permissions": {
+      "status": "ok",
+      "notes": "synthetic only"
+    },
+    "empty_result": {
+      "is_empty": false,
+      "reason": ""
+    }
+  },
+  "schema_properties": {
+    "analysis": "问题、方法、假设与步骤",
+    "results": "task-specific field required by this sub-challenge",
+    "figures": "图表路径及其数据来源",
+    "code": "真实执行的分析脚本路径",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "异常、缺失、失败与未验证项",
+    "query": "task-specific field required by this sub-challenge",
+    "schema_mapping": "task-specific field required by this sub-challenge",
+    "permissions": "task-specific field required by this sub-challenge",
+    "empty_result": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "查询可复跑；结果与问题对应；权限/空结果明确；字段映射可核对。"
+  ]
 }

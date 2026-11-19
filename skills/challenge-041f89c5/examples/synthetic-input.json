@@ -2,47 +2,83 @@
   "case_id": "SYNTH-RESEARCH",
   "mode": "topic-selection",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
-    {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P001",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
+  "question": "Synthetic research question",
   "findings": [
     {
       "id": "F001",
       "statement": "Synthetic finding",
+      "sources": [
+        "synthetic.md"
+      ],
+      "limitations": [],
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
     }
   ],
+  "references": [
+    {
+      "key": "ref1",
+      "title": "Synthetic reference",
+      "doi": null
+    }
+  ],
+  "gap_analysis": [
+    {
+      "gap": "Synthetic gap",
+      "basis": "synthetic.md P1"
+    }
+  ],
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "problem_definition": {
+    "question": "Synthetic question",
+    "scope": "synthetic corpus",
+    "constraints": [
+      "synthetic constraint"
+    ]
+  },
+  "comparison_matrix": [
+    {
+      "option": "Synthetic option",
+      "dimension": "novelty",
+      "value": "medium",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "novelty_claims": [
+    {
+      "claim": "Synthetic novelty claim",
+      "covered_by": [],
+      "verdict": "not_established",
+      "scope": "corpus"
+    }
+  ],
+  "feasibility": {
+    "premises": [
+      {
+        "premise": "synthetic premise",
+        "value": "synthetic value",
+        "source": "synthetic.md",
+        "status": "assumption"
+      }
+    ],
+    "calculation": "synthetic only",
+    "conclusion": "conditional",
+    "risks": []
+  }
 }

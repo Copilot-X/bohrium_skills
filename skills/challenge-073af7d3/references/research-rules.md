@@ -4,7 +4,7 @@
 
 - 目标：时间趋势、主题演化、研究前沿与证据边界。
 - 主产物：`output/research-report.md`。
-- 必填字段：`question`, `findings`, `evidence`。
+- 必填字段：`time_window`, `year_counts`, `topic_counts`, `representative_rule`, `findings`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 结论：每条有 `statement/sources/limitations/evidence`；区分观测、推断与空白。
+- 证据矩阵：按维度分组比较，保留每篇的结论、条件与局限；冲突并列。
+- 系统综述：PRISMA 式检索/纳排/纳入计数闭合；每个排除有理由码。
+- 趋势/选题：时间窗、检索范围与数量口径明确；不把共现当因果，不夸大创新性。
+- 趋势/计数可复算；窗口与分母明确；代表作规则允许低被引首创工作。
+- 每个趋势结论标 evidence_type(count/co-occurrence/qualitative)，禁止共现推因果。

@@ -10,13 +10,13 @@
   "deliverable": "output/experiment-report.md",
   "output_files": [
     "output/experiment-report.md",
-    "output/plan.json",
-    "output/parameter-recommendations.json",
-    "output/risk-assessment.json"
+    "output/interpretation.json",
+    "output/anomalies.json",
+    "output/follow-up.json"
   ],
   "required_fields": [
-    "steps",
-    "parameters",
+    "observations",
+    "interpretations",
     "evidence"
   ],
   "focus": "结果解释、异常识别、替代解释与后续实验",
@@ -39,6 +39,132 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "hypothesis": "",
+    "variables": {},
+    "risks": [],
+    "confirmation_items": [],
+    "observations": [],
+    "interpretations": [],
+    "alternative_explanations": [],
+    "anomalies": [],
+    "next_experiments": []
+  },
+  "example": {
+    "case_id": "SYNTH-EXPERIMENT",
+    "mode": "result-interpretation",
+    "summary": "Synthetic example only.",
+    "hypothesis": "Synthetic hypothesis",
+    "variables": {
+      "independent": [
+        "Synthetic variable"
+      ],
+      "dependent": [
+        "Synthetic outcome"
+      ],
+      "controls": [
+        "Synthetic control"
+      ]
+    },
+    "steps": [
+      {
+        "id": "S1",
+        "action": "Synthetic step",
+        "parameters": {
+          "temperature": "350 C"
+        },
+        "duration": "2 h",
+        "materials": "Synthetic material"
+      }
+    ],
+    "parameters": [
+      {
+        "name": "temperature",
+        "value": "350",
+        "unit": "C",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "Synthetic risk",
+        "impact": "medium",
+        "mitigation": "Synthetic mitigation"
+      }
+    ],
+    "confirmation_items": [
+      "Synthetic item to confirm"
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "observations": [
+      {
+        "id": "O1",
+        "statement": "Synthetic observation",
+        "value": 92,
+        "unit": "%",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "interpretations": [
+      {
+        "id": "I1",
+        "statement": "Synthetic interpretation",
+        "type": "inference",
+        "strength": "suggestive",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "alternative_explanations": [
+      {
+        "explanation": "Synthetic alternative",
+        "status": "not_excluded"
+      }
+    ],
+    "anomalies": [
+      {
+        "observation_id": "O1",
+        "anomaly": "synthetic",
+        "action": "repeat"
+      }
+    ],
+    "next_experiments": [
+      {
+        "experiment": "synthetic follow-up",
+        "purpose": "test alternative"
+      }
+    ]
+  },
+  "schema_properties": {
+    "hypothesis": "可检验假设",
+    "variables": "自变量、因变量、对照",
+    "steps": "可执行步骤、参数、时长与材料",
+    "parameters": "参数值、单位与依据",
+    "risks": "风险、影响与处置",
+    "confirmation_items": "需要作者确认的设备/安全/伦理条件",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "未确认、冲突、缺口",
+    "observations": "task-specific field required by this sub-challenge",
+    "interpretations": "task-specific field required by this sub-challenge",
+    "alternative_explanations": "task-specific field required by this sub-challenge",
+    "anomalies": "task-specific field required by this sub-challenge",
+    "next_experiments": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "解释区分观测/推断；异常有证据；不把相关当因果；给出后续实验。"
+  ]
 }

@@ -110,8 +110,10 @@ def _parse_bilingual(text):
             continue
         if current is None:
             continue
-        src = re.match(r"^-\s+\*\*Source[^*]*\*\*:\s*(.*)$", line.strip(), re.I)
-        tgt = re.match(r"^-\s+\*\*Target[^*]*\*\*:\s*(.*)$", line.strip(), re.I)
+        # Accept both "- **Source (zh):** text" (the template) and
+        # "- **Source (zh)**: text" (the older parser-only form).
+        src = re.match(r"^-\s+\*\*Source[^*]*?\*\*\s*:?\s*(.*)$", line.strip(), re.I)
+        tgt = re.match(r"^-\s+\*\*Target[^*]*?\*\*\s*:?\s*(.*)$", line.strip(), re.I)
         if src:
             entries[current]["source"] = src.group(1).strip()
         elif tgt:
@@ -242,6 +244,12 @@ def finalize(ctx):
     target_neg = S.negation_count(target_all)
     source_hedge = S.hedge_counts(source_all)
     target_hedge = S.hedge_counts(target_all)
+    # Chinese and English negation markers are not one-to-one (e.g. 不同,
+    # 未来, 不仅 are not negations, while "without" can be one).  Compare
+    # counts with a proportional tolerance instead of exact equality.
+    neg_limit = max(1, int(round(0.35 * max(source_neg, target_neg))))
+    negation_ok = abs(source_neg - target_neg) <= neg_limit
+    hedging_ok = source_hedge["level"] == target_hedge["level"]
     term_issues = S.check_terms(glossary, target_all) if glossary else []
     missing_segments = [e["segment_id"] for e in entries if not e["target"]]
     alignment_issues = []
@@ -255,9 +263,9 @@ def finalize(ctx):
         "numbers": numbers,
         "citations": citations,
         "negation": {"source": source_neg, "target": target_neg,
-                     "ok": source_neg == target_neg},
+                     "tolerance": neg_limit, "ok": negation_ok},
         "hedging": {"source": source_hedge, "target": target_hedge,
-                    "ok": source_hedge["level"] == target_hedge["level"]},
+                    "ok": hedging_ok},
         "glossary": {"terms": len(glossary), "issues": term_issues,
                      "ok": not term_issues and bool(glossary)},
         "alignment_issues": alignment_issues,
@@ -293,7 +301,7 @@ def finalize(ctx):
                          "supports": "translation"})
 
     critical = (bool(missing_segments) or bool(numbers["missing"]) or not citations["ok"]
-                or not checks["glossary"]["ok"])
+                or not checks["glossary"]["ok"] or not negation_ok or not hedging_ok)
     status = "answered" if not critical and translated == len(segments) else "partial"
     if missing_segments:
         ctx.result.uncertainty("untranslated_segments", ", ".join(missing_segments[:20]),

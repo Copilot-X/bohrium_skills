@@ -356,4 +356,14 @@ def finalize(ctx):
                 {"claim_id": "static", "text": "static checks ok=%s" % static.get("ok")}],
         preserved_facts=[],
         evidence_map=evidence,
+        extra={
+            "editable_source": S.relpath(out_project, ctx.output),
+            "export_artifact": (S.relpath(pdf_path, ctx.output)
+                                if pdf_path else None),
+            "content_map": [{"path": c.get("file", ""),
+                             "diff": c.get("diff", "")[:2000]}
+                            for c in changes],
+            "compliance_checks": report if isinstance(report, dict) else {},
+            "exceptions": list(ctx.result.data.get("uncertainties") or []),
+        },
     )

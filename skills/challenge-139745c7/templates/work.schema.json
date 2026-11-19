@@ -6,14 +6,85 @@
     "case_id",
     "summary",
     "items",
+    "filters",
     "evidence"
   ],
   "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "mode": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "summary": {
+      "type": "string",
+      "description": "task-specific field"
+    },
     "items": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "operations": {
+      "type": "array",
+      "description": "索引/移动/分类/批注等操作及结果",
+      "items": {
+        "type": "object"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "检索/问答/批注结论及证据",
+      "items": {
+        "type": "object"
+      }
     },
     "evidence": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "path+locator+quote 的逐字证据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "权限、损坏、跳过、冲突",
+      "items": {
+        "type": "object"
+      }
+    },
+    "filters": {
+      "type": "object",
+      "description": "task-specific field required by this sub-challenge"
+    },
+    "filter_execution": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "no_result": {
+      "type": "boolean",
+      "description": "task-specific field required by this sub-challenge"
+    },
+    "unreadable": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "version_conflict": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
     }
   }
 }

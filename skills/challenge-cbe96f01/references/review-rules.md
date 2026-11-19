@@ -4,7 +4,7 @@
 
 - 目标：引用与事实核验、论断-来源匹配、编造/错配检出。
 - 主产物：`output/review-report.md`。
-- 必填字段：`findings`, `evidence`。
+- 必填字段：`claim_source_matrix`, `source_status`, `findings`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 问题：`location/check_item/issue/severity/comment/evidence`；位置到段落或行。
+- 检查项：`checks[].item/status(pass|fail|not_checked)/detail`；未检查不等于通过。
+- 判断：区分事实错误、证据不足与改进建议；给出可执行修复。
+- 边界：不替代机构审查；材料不足写 `uncertainties` 与人工复核点。
+- claim/source/verdict 四档枚举（full/partial/none/unverifiable）；引用存在≠支持结论。
+- 来源状态 published/preprint/retracted/unknown；unknown 标 needs_recheck；数值 claim 有 source_value/manuscript_value。

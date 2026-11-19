@@ -2,47 +2,87 @@
   "case_id": "SYNTH-ANALYSIS",
   "mode": "multi-step-agent",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "analysis": {
+    "question": "Synthetic question",
+    "method": "Synthetic method",
+    "assumptions": [
+      "Synthetic assumption"
+    ],
+    "diagnostics": [
+      "Synthetic diagnostic"
+    ],
+    "steps": [
+      "Synthetic step"
+    ]
+  },
+  "results": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "R001",
+      "metric": "selectivity",
+      "value": 92,
+      "unit": "%",
+      "source": "synthetic.md",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
-  "findings": [
+  "figures": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "path": "figures/synthetic.svg",
+      "source": "results",
+      "data_source": "output/results.csv",
+      "units": {
+        "x": "s",
+        "y": "%"
+      }
     }
   ],
+  "code": "work/analysis.py",
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "steps": [
+    {
+      "id": "S1",
+      "action": "synthetic step",
+      "tool": "synthetic-tool",
+      "params": {},
+      "result": "synthetic only",
+      "status": "ok",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "tool_calls": [
+    {
+      "id": "T1",
+      "step_id": "S1",
+      "status": "ok",
+      "retry": 0
+    }
+  ],
+  "intermediate_results": [
+    {
+      "step_id": "S1",
+      "path": "work/step1.json"
+    }
+  ],
+  "recovery": [
+    {
+      "failure": "synthetic",
+      "action": "retry",
+      "status": "recovered"
+    }
+  ]
 }

@@ -12,7 +12,9 @@
     "output/analysis-report.md",
     "output/results.json",
     "output/results.csv",
-    "output/execution.log"
+    "output/statistics-report.json",
+    "output/analysis-code.py",
+    "output/environment.json"
   ],
   "required_fields": [
     "analysis",
@@ -39,6 +41,77 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "figures": [],
+    "code": ""
+  },
+  "example": {
+    "case_id": "SYNTH-ANALYSIS",
+    "mode": "statistics",
+    "summary": "Synthetic example only.",
+    "analysis": {
+      "question": "Synthetic question",
+      "method": "synthetic test",
+      "assumptions": [
+        "normality"
+      ],
+      "assumption_checks": [
+        {
+          "assumption": "normality",
+          "result": "not_checked"
+        }
+      ],
+      "effect_size": "synthetic",
+      "ci": [
+        0,
+        1
+      ],
+      "sample_size": 1
+    },
+    "results": [
+      {
+        "id": "R001",
+        "metric": "selectivity",
+        "value": 92,
+        "unit": "%",
+        "source": "synthetic.md",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "figures": [
+      {
+        "path": "figures/synthetic.svg",
+        "source": "results",
+        "data_source": "output/results.csv",
+        "units": {
+          "x": "s",
+          "y": "%"
+        }
+      }
+    ],
+    "code": "work/analysis.py",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": []
+  },
+  "schema_properties": {
+    "analysis": "task-specific field required by this sub-challenge",
+    "results": "指标、数值、单位、来源与证据",
+    "figures": "图表路径及其数据来源",
+    "code": "真实执行的分析脚本路径",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "异常、缺失、失败与未验证项"
+  },
+  "mode_metrics": [
+    "方法与数据匹配；前提检查；效应量/区间；报告数字与结果文件一致；不越界因果。"
+  ]
 }

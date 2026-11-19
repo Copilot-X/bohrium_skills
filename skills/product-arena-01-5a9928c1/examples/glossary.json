@@ -1,10 +1,28 @@
 {
   "locked": true,
   "terms": [
-    {"source": "氧空位", "target": "oxygen vacancy",
-     "aliases": ["oxygen vacancies"], "note": "synthetic example"},
-    {"source": "选择性", "target": "selectivity", "aliases": []},
-    {"source": "转化率", "target": "conversion", "aliases": []},
-    {"source": "甲酸盐中间体", "target": "formate intermediate", "aliases": []}
+    {
+      "source": "氧空位",
+      "target": "oxygen vacancies",
+      "aliases": [
+        "oxygen vacancy"
+      ],
+      "note": "synthetic example"
+    },
+    {
+      "source": "选择性",
+      "target": "selectivity",
+      "aliases": []
+    },
+    {
+      "source": "转化率",
+      "target": "conversion",
+      "aliases": []
+    },
+    {
+      "source": "甲酸盐中间体",
+      "target": "formate intermediate",
+      "aliases": []
+    }
   ]
 }

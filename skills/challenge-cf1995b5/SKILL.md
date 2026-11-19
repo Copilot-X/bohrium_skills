@@ -1,6 +1,6 @@
 ---
 name: experiment-plan-generation-skill
-description: 实验方案生成与优化：假设、变量、对照、步骤、参数、资源与判读标准。交付假设/变量/对照/步骤/参数/资源/判读标准，保留来源/定位与不确定性，并生成含官方 reading/writing 字段的 result.json。experiment skill with a source-bound work file, evidence checks and an honest result envelope. Use for 实验方案生成与优化、plan-generation、experiment、证据绑定、结果复核.
+description: 实验方案生成与优化：假设、变量、对照、步骤、参数、资源与判读标准。交付假设、变量、对照、步骤、参数与判读，保留来源/定位与不确定性，并生成含官方 reading/writing 字段的 result.json。experiment skill with a source-bound work file, evidence checks and an honest result envelope. Use for 实验方案生成与优化、plan-generation、experiment、证据绑定、结果复核.
 ---
 
 # 实验方案生成与优化（experiment track · plan-generation）
@@ -8,8 +8,8 @@ description: 实验方案生成与优化：假设、变量、对照、步骤、�
 ## 用途与触发
 
 task.md 要求“假设、变量、对照、步骤、参数、资源与判读标准”，或 `/input/case.json` 给出 `experiment` / `plan-generation`
-相关字段时使用。本题属于 **实验方案** 类任务，核心交付是
-**假设/变量/对照/步骤/参数/资源/判读标准**，不是一段泛泛建议。
+相关字段时使用。本题属于 **实验方案生成** 类任务，核心交付是
+**假设、变量、对照、步骤、参数与判读**，不是一段泛泛建议。
 
 不适用：输入没有可读材料、要求联网获取未提供的数据、或要求替代
 同行评审/机构审查/临床决策。材料不足时只交付可确认部分，并把缺口写成
@@ -44,7 +44,7 @@ mkdir -p /app/work /app/output
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/experiment-plan.json` 的字段契约 |
-| `references/experiment-rules.md` | 实验方案 的可执行规则与失败模式 |
+| `references/experiment-rules.md` | 实验方案生成 的可执行规则与失败模式 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
 ## 工作流
@@ -72,19 +72,74 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 
 ```json
 {
-  "case_id": "与输入一致",
+  "case_id": "SYNTH-EXPERIMENT",
   "mode": "plan-generation",
-  "summary": "一句话主结果",
-  "question": "研究/审查/分析问题",
-  "queries": [{"id": "Q1", "query": "...", "source": "...", "purpose": "..."}],
-  "candidates": [{"id": "C001", "title": "...", "year": "...",
-                  "relevance": "core|method|background|exclude",
-                  "reason": "...", "evidence": {"path": "...",
-                  "locator": "...", "quote": "逐字原文"}}],
-  "findings": [{"id": "F001", "statement": "...", "severity": "high|medium|low",
-                "evidence": [{"path": "...", "locator": "...", "quote": "..."}]}],
-  "evidence": [{"path": "...", "locator": "...", "quote": "..."}],
-  "uncertainties": [{"item": "...", "reason": "...", "impact": "..."}]
+  "summary": "Synthetic example only.",
+  "hypothesis": "Synthetic hypothesis",
+  "variables": {
+    "independent": [
+      "temperature"
+    ],
+    "dependent": [
+      "selectivity"
+    ],
+    "controls": [
+      "pressure"
+    ]
+  },
+  "steps": [
+    {
+      "id": "S1",
+      "action": "synthetic step",
+      "parameters": {
+        "temperature": "350 C"
+      },
+      "duration": "2 h",
+      "materials": "synthetic",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "name": "temperature",
+      "value": "350",
+      "unit": "C",
+      "basis": "synthetic.md P1"
+    }
+  ],
+  "risks": [
+    {
+      "risk": "Synthetic risk",
+      "impact": "medium",
+      "mitigation": "Synthetic mitigation"
+    }
+  ],
+  "confirmation_items": [
+    "Synthetic item to confirm"
+  ],
+  "evidence": [
+    {
+      "path": "synthetic.md",
+      "locator": "P1",
+      "quote": "synthetic source sentence"
+    }
+  ],
+  "uncertainties": [],
+  "readout": {
+    "metric": "selectivity",
+    "unit": "%",
+    "decision_rule": "synthetic"
+  },
+  "resources": {
+    "equipment": [
+      "synthetic"
+    ],
+    "time": "2 h"
+  }
 }
 ```
 
@@ -98,7 +153,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 - `output/experiment-report.md` 是主交付物，必须真实存在且非空。
 - 所有 `quote` 必须能在对应 `path` 的材料中逐字（允许空白折叠/省略号分段）
   找到；找不到的写入 `uncertainties`，不要改写成“大意”。
-- 不把未经确认的设备/安全/伦理条件写成可执行事实。
+- 参数有来源；缺失项列为确认项。
 
 ### 第 3 步：finalize（约 30% 预算）
 
@@ -111,10 +166,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 1. 读取 `work/experiment-plan.json`（或 JSON 主产物），检查必填字段 `steps`, `parameters`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
-3. 登记 `output/experiment-report.md` 与 - `output/experiment-report.md`
-- `output/plan.json`
-- `output/parameter-recommendations.json`
-- `output/risk-assessment.json` 的真实文件；
+3. 登记 `output/experiment-report.md` 与 `output/plan.json`, `output/parameter-recommendations.json`, `output/risk-assessment.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
    stdout/stderr 写入 `output/execution.log`；失败不伪造结果；
 5. 写 `output/result.json`，含 `status/result/claims/uncertainties`
@@ -133,11 +185,17 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 - `claims[]`：`findings`/`candidates`/`summary` 的投影；
 - `preserved_facts[]`：证据中的数字/单位（有则填）；
 - `evidence_map[]`：每条证据的 path/locator/quote；
-- `artifacts[]`：主产物与 - `output/experiment-report.md`
-- `output/plan.json`
-- `output/parameter-recommendations.json`
-- `output/risk-assessment.json`；
+- `artifacts[]`：主产物与 `output/plan.json`, `output/parameter-recommendations.json`, `output/risk-assessment.json`；
 - `uncertainties[]`、`change_log[]`、`output_contract`、`contract_coverage`。
+
+若 `/input/case.json` 的 `output_contract` 含本题特有键（例如
+`cleaned_table`、`quality_report`、`rule_log`、`original_snapshot`），必须：
+
+1. 在 `result.json` 顶层保留原键名；
+2. 优先写同名产物 `output/<field>.json/.csv/.md`，或把对应 canonical
+   字段/artifact 路径填入该键；
+3. finalize 会检查 `contract_coverage`，未覆盖的键会降级 `partial` 并写入
+   `uncertainties`；不要只写 `status/result/claims` 而忽略原契约字段。
 
 ## 质量闸门
 
@@ -150,6 +208,16 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | G5 | 专项 | 步骤可执行；变量/对照完整；参数有来源；缺失项列为确认项 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+
+## 评分维度对照
+
+| 评分维度 | 本题要交付的证据 | 主要产物 |
+|---|---|---|
+| 实际效果 | 假设、变量、对照、步骤、参数、资源与判读标准；步骤可执行；变量/对照完整；参数有来源；缺失项列为确认项 | `output/experiment-report.md` + evidence |
+| 使用增益 | 可复跑的查询/步骤/规则/日志，以及同条件对照 | `output/plan.json`, `output/parameter-recommendations.json`, `output/risk-assessment.json` |
+| 创新增益 | 本题专项方法（plan-generation）及其与基线方案的边界 | `references/experiment-rules.md` + `output/experiment-report.md` |
+| 可靠体验 | 空结果、冲突、缺字段、权限/格式错误的识别与降级 | `uncertainties` + `output/result.json` |
+| 生态贡献 | SKILL.md、schema、规则、synthetic 示例可被他人复用 | `SKILL.md` + `templates/` + `references/` + `examples/` |
 
 ## 异常处理
 
@@ -171,19 +239,71 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "case_id": "SYNTH-EXPERIMENT",
   "mode": "plan-generation",
   "summary": "Synthetic example only.",
-  "question": "Synthetic research question",
-  "queries": [{"id": "Q1", "query": "example query", "source": "provided corpus"}],
-  "candidates": [{"id": "C001", "title": "Synthetic paper",
-                  "year": "2026", "relevance": "method",
-                  "reason": "Synthetic relevance reason",
-                  "evidence": {"path": "synthetic.md", "locator": "P001",
-                  "quote": "synthetic source sentence"}}],
-  "findings": [{"id": "F001", "statement": "Synthetic finding",
-                "evidence": [{"path": "synthetic.md", "locator": "P001",
-                "quote": "synthetic source sentence"}]}],
-  "evidence": [{"path": "synthetic.md", "locator": "P001",
-                "quote": "synthetic source sentence"}],
-  "uncertainties": []
+  "hypothesis": "Synthetic hypothesis",
+  "variables": {
+    "independent": [
+      "temperature"
+    ],
+    "dependent": [
+      "selectivity"
+    ],
+    "controls": [
+      "pressure"
+    ]
+  },
+  "steps": [
+    {
+      "id": "S1",
+      "action": "synthetic step",
+      "parameters": {
+        "temperature": "350 C"
+      },
+      "duration": "2 h",
+      "materials": "synthetic",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "name": "temperature",
+      "value": "350",
+      "unit": "C",
+      "basis": "synthetic.md P1"
+    }
+  ],
+  "risks": [
+    {
+      "risk": "Synthetic risk",
+      "impact": "medium",
+      "mitigation": "Synthetic mitigation"
+    }
+  ],
+  "confirmation_items": [
+    "Synthetic item to confirm"
+  ],
+  "evidence": [
+    {
+      "path": "synthetic.md",
+      "locator": "P1",
+      "quote": "synthetic source sentence"
+    }
+  ],
+  "uncertainties": [],
+  "readout": {
+    "metric": "selectivity",
+    "unit": "%",
+    "decision_rule": "synthetic"
+  },
+  "resources": {
+    "equipment": [
+      "synthetic"
+    ],
+    "time": "2 h"
+  }
 }
 ```
 

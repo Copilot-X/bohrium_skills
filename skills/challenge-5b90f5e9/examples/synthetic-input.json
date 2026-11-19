@@ -2,24 +2,55 @@
   "case_id": "SYNTH-SEARCH",
   "mode": "systematic-screening",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
+  "question": "Synthetic research question",
   "queries": [
     {
       "id": "Q1",
+      "round": 1,
       "query": "synthetic query",
-      "source": "provided corpus"
+      "source": "provided corpus",
+      "purpose": "recall",
+      "stop_condition": "no new eligible records in 2 rounds"
     }
   ],
   "candidates": [
     {
       "id": "C001",
       "title": "Synthetic paper",
+      "authors": "A. Example",
       "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "venue": "Journal of Synthetic Examples",
+      "doi": "10.0000/synth.001",
+      "relevance": "core",
+      "rank": 1,
+      "score": 1.0,
+      "dedupe_key": "doi:10.0000/synth.001",
+      "merged_from": [],
+      "reason": "Synthetic relevance reason",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "metrics": {
+    "k": 10,
+    "precision_at_k": 1.0,
+    "ndcg_at_k": 1.0,
+    "recall_at_k": 1.0,
+    "metadata_accuracy": 1.0,
+    "definition": "synthetic values; replace with measured values"
+  },
+  "screening": [
+    {
+      "record_id": "R001",
+      "decision": "include",
+      "reason_code": "P1",
+      "annotator": "A",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
@@ -31,7 +62,7 @@
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
@@ -40,9 +71,40 @@
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "protocol": {
+    "question": "Synthetic question",
+    "include": [
+      "synthetic include criterion"
+    ],
+    "exclude": [
+      "synthetic exclude criterion"
+    ],
+    "source": "synthetic only"
+  },
+  "records": [
+    {
+      "id": "R001",
+      "title": "Synthetic record",
+      "dedupe_key": "doi:10.0000/synth.001"
+    }
+  ],
+  "prisma_counts": {
+    "identified": 1,
+    "duplicates": 0,
+    "screened": 1,
+    "excluded": 0,
+    "included": 1
+  },
+  "arbitration": [
+    {
+      "record_id": "R001",
+      "disagreement": "synthetic",
+      "resolution": "synthetic"
+    }
+  ]
 }

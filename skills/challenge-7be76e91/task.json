@@ -10,13 +10,13 @@
   "deliverable": "output/experiment-report.md",
   "output_files": [
     "output/experiment-report.md",
-    "output/plan.json",
-    "output/parameter-recommendations.json",
+    "output/comparison-table.json",
+    "output/scoring.json",
     "output/risk-assessment.json"
   ],
   "required_fields": [
-    "steps",
-    "parameters",
+    "options",
+    "selection",
     "evidence"
   ],
   "focus": "方案比较维度、成本/风险/产出、评分与选择理由",
@@ -39,6 +39,113 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "hypothesis": "",
+    "variables": {},
+    "risks": [],
+    "confirmation_items": [],
+    "options": [],
+    "dimensions": [],
+    "selection": {}
+  },
+  "example": {
+    "case_id": "SYNTH-EXPERIMENT",
+    "mode": "plan-comparison",
+    "summary": "Synthetic example only.",
+    "hypothesis": "Synthetic hypothesis",
+    "variables": {
+      "independent": [
+        "Synthetic variable"
+      ],
+      "dependent": [
+        "Synthetic outcome"
+      ],
+      "controls": [
+        "Synthetic control"
+      ]
+    },
+    "steps": [
+      {
+        "id": "S1",
+        "action": "Synthetic step",
+        "parameters": {
+          "temperature": "350 C"
+        },
+        "duration": "2 h",
+        "materials": "Synthetic material"
+      }
+    ],
+    "parameters": [
+      {
+        "name": "temperature",
+        "value": "350",
+        "unit": "C",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "risks": [
+      {
+        "option_id": "O1",
+        "risk": "synthetic",
+        "mitigation": "synthetic"
+      }
+    ],
+    "confirmation_items": [
+      "Synthetic item to confirm"
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "options": [
+      {
+        "id": "O1",
+        "name": "Synthetic option",
+        "scores": {
+          "cost": 1,
+          "risk": 1,
+          "output": 1
+        },
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "dimensions": [
+      {
+        "name": "cost",
+        "weight": 1,
+        "direction": "lower_is_better"
+      }
+    ],
+    "selection": {
+      "option_id": "O1",
+      "reason": "synthetic only",
+      "tradeoffs": [
+        "synthetic tradeoff"
+      ]
+    }
+  },
+  "schema_properties": {
+    "hypothesis": "可检验假设",
+    "variables": "自变量、因变量、对照",
+    "steps": "可执行步骤、参数、时长与材料",
+    "parameters": "参数值、单位与依据",
+    "risks": "task-specific field required by this sub-challenge",
+    "confirmation_items": "需要作者确认的设备/安全/伦理条件",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "未确认、冲突、缺口",
+    "options": "task-specific field required by this sub-challenge",
+    "dimensions": "task-specific field required by this sub-challenge",
+    "selection": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "同维度比较；评分可复算；选择理由含劣势；不隐瞒风险。"
+  ]
 }

@@ -2,47 +2,68 @@
   "case_id": "SYNTH-REVIEW",
   "mode": "citation-fact-check",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "findings": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "R001",
+      "location": {
+        "path": "synthetic.md",
+        "locator": "P1"
+      },
+      "check_item": "synthetic check item",
+      "original_quote": "synthetic source sentence",
+      "issue": "Synthetic issue",
+      "severity": "major",
+      "type": "review_issue",
+      "fix": "synthetic fix",
+      "comment": "Synthetic comment",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
-  "findings": [
+  "checks": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "item": "synthetic check",
+      "status": "pass",
+      "detail": "synthetic only"
     }
   ],
+  "verdict": "major_revision",
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "claim_source_matrix": [
+    {
+      "claim_id": "C1",
+      "claim": "synthetic claim",
+      "source": "synthetic.md",
+      "source_design": "synthetic design",
+      "type": "citation_mismatch",
+      "fix": "synthetic fix",
+      "verdict": "partial",
+      "reason": "synthetic only",
+      "locator": "P1",
+      "original_quote": "synthetic source sentence",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "source_status": [
+    {
+      "source": "synthetic.md",
+      "status": "unknown",
+      "version_note": "synthetic only",
+      "needs_recheck": true
+    }
+  ]
 }

@@ -1,10 +1,10 @@
-# 一、固定题面（赛事展示）：执行规则
+# 文献研究质量评价：执行规则
 
 ## 1. 任务口径
 
 - 目标：研究设计/样本/测量/统计/报告质量维度与偏倚风险。
 - 主产物：`output/search-results.json`。
-- 必填字段：`queries`, `candidates`, `evidence`。
+- 必填字段：`appraisals`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 查询：`id/round/query/source/purpose/stop_condition`；至少一轮补充查询，停止条件可解释。
+- 候选：`authors/venue/doi/rank/score/relevance/reason/dedupe_key/merged_from`；重复用 DOI 或 title+year 合并并保留依据。
+- 指标：`k`、`precision_at_k`、`ndcg_at_k`、`recall_at_k`、`metadata_accuracy`，写清分子/分母/口径；无法计算写 `not_computable`。
+- 排序：`rank/score/tie_break` 稳定；关键文献在前；空结果、缺失元数据、来源冲突写 `uncertainties`。
+- 每个维度有 rating 与原文定位；维度匹配文献类型；证据不足不补造。
+- 总体风险不能由单一维度外推；不确定项写 uncertainties。

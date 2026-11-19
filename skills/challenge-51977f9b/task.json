@@ -14,7 +14,9 @@
     "output/references.json"
   ],
   "required_fields": [
-    "question",
+    "protocol",
+    "screening",
+    "quality_appraisal",
     "findings",
     "evidence"
   ],
@@ -38,6 +40,115 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "references": [],
+    "gap_analysis": [],
+    "protocol": {},
+    "screening": {},
+    "quality_appraisal": []
+  },
+  "example": {
+    "case_id": "SYNTH-RESEARCH",
+    "mode": "systematic-review",
+    "summary": "Synthetic example only.",
+    "question": "Synthetic research question",
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "sources": [
+          "synthetic.md"
+        ],
+        "limitations": [],
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "references": [
+      {
+        "key": "ref1",
+        "title": "Synthetic reference",
+        "doi": null
+      }
+    ],
+    "gap_analysis": [
+      {
+        "gap": "Synthetic gap",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "protocol": {
+      "version": "v1",
+      "search_string": "synthetic",
+      "databases": [
+        "SyntheticDB"
+      ],
+      "date": "2026-01-01",
+      "limits": "synthetic only"
+    },
+    "screening": {
+      "identified": 1,
+      "duplicates": 0,
+      "screened": 1,
+      "excluded": 0,
+      "full_text": 1,
+      "included": 1,
+      "records": [
+        {
+          "record_id": "R001",
+          "stage": "title_abstract",
+          "decision": "include",
+          "reason": "synthetic",
+          "evidence": {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        }
+      ]
+    },
+    "quality_appraisal": [
+      {
+        "record_id": "R001",
+        "tool": "synthetic tool",
+        "domains": [
+          "design"
+        ],
+        "judgement": "low_risk",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ]
+  },
+  "schema_properties": {
+    "question": "研究问题与范围",
+    "findings": "结论、来源与证据组",
+    "references": "引用条目与标识符",
+    "gap_analysis": "研究空白及其证据基础",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "冲突、空白、未覆盖范围",
+    "protocol": "task-specific field required by this sub-challenge",
+    "screening": "task-specific field required by this sub-challenge",
+    "quality_appraisal": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "筛选计数闭合（identified-duplicates=screened; screened-excluded=included）。",
+    "质量评价有工具/维度/判断/依据；综合结论引用等级；未执行检索显著标注。"
+  ]
 }

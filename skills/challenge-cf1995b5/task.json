@@ -39,6 +39,97 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "hypothesis": "",
+    "variables": {},
+    "risks": [],
+    "confirmation_items": [],
+    "readout": {},
+    "resources": {}
+  },
+  "example": {
+    "case_id": "SYNTH-EXPERIMENT",
+    "mode": "plan-generation",
+    "summary": "Synthetic example only.",
+    "hypothesis": "Synthetic hypothesis",
+    "variables": {
+      "independent": [
+        "temperature"
+      ],
+      "dependent": [
+        "selectivity"
+      ],
+      "controls": [
+        "pressure"
+      ]
+    },
+    "steps": [
+      {
+        "id": "S1",
+        "action": "synthetic step",
+        "parameters": {
+          "temperature": "350 C"
+        },
+        "duration": "2 h",
+        "materials": "synthetic",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "parameters": [
+      {
+        "name": "temperature",
+        "value": "350",
+        "unit": "C",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "Synthetic risk",
+        "impact": "medium",
+        "mitigation": "Synthetic mitigation"
+      }
+    ],
+    "confirmation_items": [
+      "Synthetic item to confirm"
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "readout": {
+      "metric": "selectivity",
+      "unit": "%",
+      "decision_rule": "synthetic"
+    },
+    "resources": {
+      "equipment": [
+        "synthetic"
+      ],
+      "time": "2 h"
+    }
+  },
+  "schema_properties": {
+    "hypothesis": "task-specific field required by this sub-challenge",
+    "variables": "task-specific field required by this sub-challenge",
+    "steps": "task-specific field required by this sub-challenge",
+    "parameters": "task-specific field required by this sub-challenge",
+    "risks": "风险、影响与处置",
+    "confirmation_items": "需要作者确认的设备/安全/伦理条件",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "未确认、冲突、缺口",
+    "readout": "task-specific field required by this sub-challenge",
+    "resources": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "步骤可执行；变量/对照完整；参数有来源；缺失项列为确认项。"
+  ]
 }

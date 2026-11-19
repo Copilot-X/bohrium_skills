@@ -5,7 +5,7 @@
   "module": "fam_tracks",
   "profile": "reading",
   "status_success": "answered",
-  "title": "一、固定题面（赛事展示）",
+  "title": "文献研究质量评价",
   "work_file": "work/search-plan.json",
   "deliverable": "output/search-results.json",
   "output_files": [
@@ -15,8 +15,7 @@
     "output/evidence.json"
   ],
   "required_fields": [
-    "queries",
-    "candidates",
+    "appraisals",
     "evidence"
   ],
   "focus": "研究设计/样本/测量/统计/报告质量维度与偏倚风险",
@@ -39,6 +38,125 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "metrics": {},
+    "screening": {},
+    "dimensions": [],
+    "appraisals": [],
+    "risk_of_bias": {}
+  },
+  "example": {
+    "case_id": "SYNTH-SEARCH",
+    "mode": "quality-appraisal",
+    "summary": "Synthetic appraisal only.",
+    "question": "Synthetic research question",
+    "queries": [
+      {
+        "id": "Q1",
+        "round": 1,
+        "query": "synthetic query",
+        "source": "provided corpus",
+        "purpose": "recall",
+        "stop_condition": "no new eligible records in 2 rounds"
+      }
+    ],
+    "candidates": [
+      {
+        "id": "C001",
+        "title": "Synthetic paper",
+        "authors": "A. Example",
+        "year": "2026",
+        "venue": "Journal of Synthetic Examples",
+        "doi": "10.0000/synth.001",
+        "relevance": "core",
+        "rank": 1,
+        "score": 1.0,
+        "dedupe_key": "doi:10.0000/synth.001",
+        "merged_from": [],
+        "reason": "Synthetic relevance reason",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "metrics": {
+      "k": 10,
+      "precision_at_k": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "metadata_accuracy": 1.0,
+      "definition": "synthetic values; replace with measured values"
+    },
+    "screening": {
+      "include": [
+        "C001"
+      ],
+      "exclude": [],
+      "uncertain": []
+    },
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "dimensions": [
+      "design",
+      "sample",
+      "measurement",
+      "statistics",
+      "reporting"
+    ],
+    "appraisals": [
+      {
+        "record_id": "R001",
+        "dimension": "design",
+        "rating": "low_risk",
+        "reason": "synthetic only",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "risk_of_bias": {
+      "overall": "low",
+      "notes": "synthetic only"
+    }
+  },
+  "schema_properties": {
+    "queries": "检索式、来源与目的；每条可复跑",
+    "candidates": "候选记录：title/authors/year/venue/doi/relevance/reason/evidence",
+    "metrics": "k、Precision@k、nDCG@k、Recall@k、元数据准确率及计算口径",
+    "screening": "include/exclude/uncertain 分层与判据",
+    "findings": "关键发现及证据",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "空结果、冲突、权限、缺失元数据",
+    "dimensions": "task-specific field required by this sub-challenge",
+    "appraisals": "task-specific field required by this sub-challenge",
+    "risk_of_bias": "task-specific field required by this sub-challenge",
+    "summary": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "每个维度有 rating 与原文定位；维度匹配文献类型；证据不足不补造。",
+    "总体风险不能由单一维度外推；不确定项写 uncertainties。"
+  ]
 }

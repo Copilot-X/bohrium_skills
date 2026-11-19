@@ -2,26 +2,30 @@
   "case_id": "SYNTH-LIBRARY",
   "mode": "annotation",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "items": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "I001",
+      "path": "synthetic.md",
+      "kind": "text",
+      "metadata": {
+        "title": "Synthetic item"
+      },
+      "version": "v1",
+      "hash": "sha256:synthetic",
+      "status": "indexed",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
+    }
+  ],
+  "operations": [
+    {
+      "action": "index",
+      "target": "synthetic.md",
+      "status": "ok",
+      "detail": "synthetic only"
     }
   ],
   "findings": [
@@ -31,7 +35,7 @@
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
@@ -40,9 +44,56 @@
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "annotations": [
+    {
+      "id": "AN1",
+      "doc": "synthetic.md",
+      "page": 1,
+      "paragraph": "P1",
+      "char_start": 0,
+      "char_end": 10,
+      "quote": "synthetic",
+      "doc_sha256": "synthetic-sha256",
+      "type": "claim",
+      "color": "yellow",
+      "anchor_status": "verified",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "notes": [
+    {
+      "id": "N1",
+      "text": "Synthetic note",
+      "claims": [
+        "synthetic claim"
+      ],
+      "annotation_ids": [
+        "AN1"
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "AN1",
+      "to": "N1",
+      "basis": "same quote"
+    }
+  ],
+  "search_index": [
+    {
+      "term": "synthetic",
+      "annotation_ids": [
+        "AN1"
+      ]
+    }
+  ]
 }

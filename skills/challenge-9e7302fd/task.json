@@ -15,6 +15,9 @@
   ],
   "required_fields": [
     "findings",
+    "facets_checked",
+    "decision_rules",
+    "reporting_checklist",
     "evidence"
   ],
   "focus": "研究方法、统计假设、样本量、多重比较与报告完整性",
@@ -37,6 +40,94 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "checks": [],
+    "verdict": "",
+    "facets_checked": [],
+    "decision_rules": [],
+    "reporting_checklist": {}
+  },
+  "example": {
+    "case_id": "SYNTH-REVIEW",
+    "mode": "methods-stats-review",
+    "summary": "Synthetic example only.",
+    "findings": [
+      {
+        "id": "S001",
+        "facet": "statistics",
+        "locator": {
+          "path": "synthetic.md",
+          "locator": "P1"
+        },
+        "original_quote": "synthetic source sentence",
+        "severity": "major",
+        "type": "insufficient_evidence",
+        "status": "open",
+        "fix": "synthetic fix",
+        "assumption_checked": [
+          "normality"
+        ],
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "checks": [
+      {
+        "item": "synthetic check",
+        "status": "pass",
+        "detail": "synthetic only"
+      }
+    ],
+    "verdict": "major_revision",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "facets_checked": [
+      {
+        "facet": "statistics",
+        "status": "checked",
+        "items": [
+          "normality",
+          "multiplicity"
+        ]
+      }
+    ],
+    "decision_rules": [
+      {
+        "rule": "paired vs unpaired",
+        "condition": "independent samples",
+        "decision": "synthetic only"
+      }
+    ],
+    "reporting_checklist": {
+      "n": "reported",
+      "effect": "missing",
+      "ci": "missing",
+      "exact_p": "reported",
+      "df": "missing",
+      "itt": "not_applicable"
+    }
+  },
+  "schema_properties": {
+    "findings": "task-specific field required by this sub-challenge",
+    "checks": "检查项与 pass/fail/not_checked",
+    "verdict": "总体判断及边界",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "无法判断、材料不足、待复核",
+    "facets_checked": "task-specific field required by this sub-challenge",
+    "decision_rules": "task-specific field required by this sub-challenge",
+    "reporting_checklist": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "五个检查面都有覆盖记录；统计判断有决策规则与前提检查。",
+    "区分 error/insufficient_evidence/suggestion；核对 Methods/Results/Table 的 n 一致。"
+  ]
 }

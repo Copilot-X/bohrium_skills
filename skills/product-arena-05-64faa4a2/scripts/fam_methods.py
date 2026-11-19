@@ -246,6 +246,119 @@ def _plan_problems(plan):
     return problems
 
 
+def _text_map(ctx):
+    texts = {}
+    for doc in ctx.docs:
+        rel = doc.get("rel_path") or doc.get("path") or ""
+        text = S.doc_text(doc)
+        texts[rel] = text
+        texts[Path(rel).name] = text
+    return texts
+
+
+def _hints(*values):
+    out = []
+    for value in values:
+        raw = str(value or "").strip()
+        if raw:
+            out.append(raw)
+            out.extend(re.findall(r"\d+(?:\.\d+)?", raw))
+    return out
+
+
+def _line_quote(text, hints):
+    for hint in hints:
+        hint = str(hint or "").strip()
+        if not hint:
+            continue
+        if len(hint) < 2:
+            # A one-character numeric hint is useful for lines like
+            # "repeats: 3" or "split: 8:1:1"; require a digit boundary so
+            # that "3" does not match "32" or "12000".
+            if not hint.isdigit():
+                continue
+            pattern = re.compile(r"(?<!\d)%s(?!\d)" % re.escape(hint))
+            for line in text.splitlines():
+                if pattern.search(line) and line.strip():
+                    return line.strip()
+            continue
+        for line in text.splitlines():
+            if hint in line and line.strip():
+                return line.strip()
+    return ""
+
+
+def _source_quote(source, hints, texts):
+    source = source or {}
+    path = str(source.get("path") or "")
+    locator = str(source.get("locator") or "")
+    text = texts.get(path) or texts.get(Path(path).name, "")
+    if not text:
+        return "", "source path not found: %s" % path
+    quote = str(source.get("quote") or "").strip()
+    if quote:
+        ok, _ = S.quote_supported(text, quote)
+        if ok:
+            return quote, ""
+    found = _line_quote(text, hints)
+    if found:
+        return found, ""
+    match = re.search(r"L(\d+)", locator)
+    if match:
+        lines = text.splitlines()
+        index = int(match.group(1)) - 1
+        if 0 <= index < len(lines) and lines[index].strip():
+            return lines[index].strip(), ""
+    return "", "no verbatim source line for %s" % (locator or path)
+
+
+def _number_locator(ctx, raw):
+    for doc in ctx.docs:
+        text = S.doc_text(doc)
+        pos = text.find(raw)
+        if pos >= 0:
+            rel = doc.get("rel_path") or doc.get("path") or "material"
+            return "%s:L%d" % (rel, text.count("\n", 0, pos) + 1)
+    return "materials"
+
+
+def _evidence(plan, texts):
+    evidence, problems = [], []
+
+    def add(claim_id, claim, source, hints, supports):
+        quote, error = _source_quote(source, hints, texts)
+        evidence.append({"claim_id": claim_id, "claim": claim,
+                         "source": {"path": (source or {}).get("path", ""),
+                                    "locator": (source or {}).get("locator", "")},
+                         "quote": quote, "supports": supports})
+        if error:
+            problems.append("%s: %s" % (claim_id, error))
+
+    for step in plan.get("steps") or []:
+        add(str(step.get("id", "")), str(step.get("name", "")),
+            step.get("source") or {},
+            _hints(step.get("operation"), step.get("decision"), step.get("name")),
+            "step")
+    for row in plan.get("parameters") or []:
+        add("param:%s" % row.get("name", ""),
+            "%s = %s" % (row.get("name"), row.get("value")),
+            row.get("source") or {},
+            _hints(row.get("name"), row.get("value")), "parameter")
+    for row in plan.get("datasets") or []:
+        add("dataset:%s" % row.get("name", ""), str(row.get("name", "")),
+            row.get("source") or {},
+            _hints(row.get("name"), row.get("version"), row.get("split")), "dataset")
+    for row in plan.get("baselines") or []:
+        add("baseline:%s" % row.get("name", ""), str(row.get("name", "")),
+            row.get("source") or {},
+            _hints(row.get("name"), row.get("conditions")), "baseline")
+    for row in plan.get("reproducibility") or []:
+        add("repro:%s" % row.get("item", ""), str(row.get("item", "")),
+            row.get("source") or {},
+            _hints(row.get("item"), row.get("value")), "reproducibility")
+    return evidence, problems
+
+
 def finalize(ctx):
     methods_path = ctx.output / "methods.md"
     text = S.read_text(methods_path)
@@ -274,10 +387,14 @@ def finalize(ctx):
     gaps = plan.get("gaps") or []
     if not gaps:
         plan_problems.append("no explicit gaps/questions for the author")
+    texts = _text_map(ctx)
+    evidence, evidence_problems = _evidence(plan, texts)
+    plan_problems.extend(evidence_problems)
     report = {
         "case_id": ctx.case_id,
         "numbers": numbers,
         "plan_problems": plan_problems,
+        "evidence_problems": evidence_problems,
         "untabulated_numbers": untabulated,
         "steps": len(plan.get("steps") or []),
         "parameters": len(plan.get("parameters") or []),
@@ -330,22 +447,8 @@ def finalize(ctx):
                                "align text and table")
 
     preserved = [{"kind": "number", "source": t["raw"], "target": t["raw"],
-                  "locator": "materials", "value": t["raw"], "unit": ""}
+                  "locator": _number_locator(ctx, t["raw"]), "value": t["raw"], "unit": ""}
                  for t in S.number_tokens(source_text)[:150]]
-    evidence = []
-    for step in plan.get("steps") or []:
-        source = step.get("source") or {}
-        evidence.append({"claim_id": step.get("id", ""), "claim": step.get("name", ""),
-                         "source": {"path": source.get("path", ""),
-                                    "locator": source.get("locator", "")},
-                         "quote": step.get("operation", ""), "supports": "step"})
-    for row in plan.get("parameters") or []:
-        source = row.get("source") or {}
-        evidence.append({"claim_id": "param:%s" % row.get("name", ""),
-                         "claim": "%s = %s" % (row.get("name"), row.get("value")),
-                         "source": {"path": source.get("path", ""),
-                                    "locator": source.get("locator", "")},
-                         "quote": "", "supports": "parameter"})
 
     ctx.result.add_artifact(methods_path, "deliverable", "md", "methods and experiments section")
     ctx.result.add_artifact(ctx.output / "parameter-table.json", "parameter_table", "json",

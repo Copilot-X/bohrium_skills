@@ -10,13 +10,13 @@
   "deliverable": "output/analysis-report.md",
   "output_files": [
     "output/analysis-report.md",
-    "output/results.json",
-    "output/results.csv",
-    "output/execution.log"
+    "output/figures/figure1.svg",
+    "output/figures/figure1.png",
+    "output/figure-manifest.json",
+    "output/caption.md"
   ],
   "required_fields": [
-    "analysis",
-    "results",
+    "figures",
     "evidence"
   ],
   "focus": "图表类型、编码、坐标轴/单位、可读性与数据溯源",
@@ -39,6 +39,92 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "figures": [],
+    "code": "",
+    "data_trace": []
+  },
+  "example": {
+    "case_id": "SYNTH-ANALYSIS",
+    "mode": "visualization",
+    "summary": "Synthetic example only.",
+    "analysis": {
+      "question": "Synthetic question",
+      "method": "Synthetic method",
+      "assumptions": [
+        "Synthetic assumption"
+      ],
+      "diagnostics": [
+        "Synthetic diagnostic"
+      ],
+      "steps": [
+        "Synthetic step"
+      ]
+    },
+    "results": [
+      {
+        "id": "R001",
+        "metric": "selectivity",
+        "value": 92,
+        "unit": "%",
+        "source": "synthetic.md",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "figures": [
+      {
+        "id": "F1",
+        "path": "figures/figure1.svg",
+        "chart_type": "line",
+        "x": "synthetic x",
+        "y": "synthetic y",
+        "units": {
+          "x": "s",
+          "y": "%"
+        },
+        "legend": [
+          "synthetic series"
+        ],
+        "data_source": "output/results.csv",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "code": "work/analysis.py",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "data_trace": [
+      {
+        "figure_id": "F1",
+        "row_ids": [
+          "S01"
+        ]
+      }
+    ]
+  },
+  "schema_properties": {
+    "analysis": "问题、方法、假设与步骤",
+    "results": "指标、数值、单位、来源与证据",
+    "figures": "task-specific field required by this sub-challenge",
+    "code": "真实执行的分析脚本路径",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "异常、缺失、失败与未验证项",
+    "data_trace": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "图与数据一致；轴/单位/图例完整；导出 SVG/PNG；不误导。"
+  ]
 }

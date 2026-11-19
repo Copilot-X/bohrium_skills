@@ -4,7 +4,7 @@
 
 - 目标：学术规范、引用/数据/伦理/利益冲突与合规检查。
 - 主产物：`output/review-report.md`。
-- 必填字段：`findings`, `evidence`。
+- 必填字段：`compliance_checklist`, `guideline_source`, `review_status`, `findings`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 问题：`location/check_item/issue/severity/comment/evidence`；位置到段落或行。
+- 检查项：`checks[].item/status(pass|fail|not_checked)/detail`；未检查不等于通过。
+- 判断：区分事实错误、证据不足与改进建议；给出可执行修复。
+- 边界：不替代机构审查；材料不足写 `uncertainties` 与人工复核点。
+- 合规条款绑定 rule_id/version；无指南/批件时标 not_checked，不给出违规结论。
+- 报告明确“不替代机构审查”；缺定位/依据的检查项降级。

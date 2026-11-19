@@ -2,28 +2,52 @@
   "case_id": "SYNTH-SEARCH",
   "mode": "patent-search",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
+  "question": "Synthetic research question",
   "queries": [
     {
       "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
+      "round": 1,
+      "query": "synthetic patent query",
+      "source": "patent corpus",
+      "purpose": "recall"
     }
   ],
   "candidates": [
     {
       "id": "C001",
       "title": "Synthetic paper",
+      "authors": "A. Example",
       "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "venue": "Journal of Synthetic Examples",
+      "doi": "10.0000/synth.001",
+      "relevance": "core",
+      "rank": 1,
+      "score": 1.0,
+      "dedupe_key": "doi:10.0000/synth.001",
+      "merged_from": [],
+      "reason": "Synthetic relevance reason",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
+  "metrics": {
+    "k": 10,
+    "precision_at_k": 1.0,
+    "ndcg_at_k": 1.0,
+    "recall_at_k": 1.0,
+    "metadata_accuracy": 1.0,
+    "definition": "synthetic values; replace with measured values"
+  },
+  "screening": {
+    "include": [
+      "C001"
+    ],
+    "exclude": [],
+    "uncertain": []
+  },
   "findings": [
     {
       "id": "F001",
@@ -31,7 +55,7 @@
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
@@ -40,9 +64,49 @@
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "patents": [
+    {
+      "id": "P001",
+      "patent_number": "CN000000A",
+      "title": "Synthetic patent",
+      "applicant": "Example",
+      "filing_date": "2020-01-01",
+      "legal_status": "granted",
+      "classification": "C07C",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "families": [
+    {
+      "family_id": "F1",
+      "members": [
+        "P001"
+      ],
+      "basis": "priority"
+    }
+  ],
+  "legal_status": [
+    {
+      "patent_id": "P001",
+      "status": "granted",
+      "date": "2021-01-01",
+      "source": "synthetic"
+    }
+  ],
+  "classification": [
+    {
+      "patent_id": "P001",
+      "code": "C07C",
+      "scheme": "IPC"
+    }
+  ]
 }

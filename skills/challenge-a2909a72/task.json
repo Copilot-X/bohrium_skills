@@ -17,7 +17,8 @@
   "required_fields": [
     "queries",
     "candidates",
-    "evidence"
+    "evidence",
+    "metrics"
   ],
   "focus": "多轮查询规划、关键词扩展、候选召回与来源记录",
   "checks": "查询式可复现；每条候选有来源与相关性理由；重复文献合并；空结果说明",
@@ -39,6 +40,91 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "metrics": {},
+    "screening": {}
+  },
+  "example": {
+    "case_id": "SYNTH-SEARCH",
+    "mode": "academic-search",
+    "summary": "Synthetic example only.",
+    "question": "Synthetic research question",
+    "queries": [
+      {
+        "id": "Q1",
+        "round": 1,
+        "query": "synthetic query",
+        "source": "provided corpus",
+        "purpose": "recall",
+        "stop_condition": "no new eligible records in 2 rounds"
+      }
+    ],
+    "candidates": [
+      {
+        "id": "C001",
+        "title": "Synthetic paper",
+        "authors": "A. Example",
+        "year": "2026",
+        "venue": "Journal of Synthetic Examples",
+        "doi": "10.0000/synth.001",
+        "relevance": "core",
+        "rank": 1,
+        "score": 1.0,
+        "dedupe_key": "doi:10.0000/synth.001",
+        "merged_from": [],
+        "reason": "Synthetic relevance reason",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "metrics": {
+      "k": 10,
+      "precision_at_k": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "metadata_accuracy": 1.0,
+      "definition": "synthetic values; replace with measured values"
+    },
+    "screening": {
+      "include": [
+        "C001"
+      ],
+      "exclude": [],
+      "uncertain": []
+    },
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": []
+  },
+  "schema_properties": {
+    "queries": "检索式、来源与目的；每条可复跑",
+    "candidates": "候选记录：title/authors/year/venue/doi/relevance/reason/evidence",
+    "metrics": "k、Precision@k、nDCG@k、Recall@k、元数据准确率及计算口径",
+    "screening": "include/exclude/uncertain 分层与判据",
+    "findings": "关键发现及证据",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "空结果、冲突、权限、缺失元数据"
+  },
+  "mode_metrics": []
 }

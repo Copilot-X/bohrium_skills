@@ -14,6 +14,8 @@
     "output/evidence-map.json"
   ],
   "required_fields": [
+    "claim_source_matrix",
+    "source_status",
     "findings",
     "evidence"
   ],
@@ -37,6 +39,92 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "checks": [],
+    "verdict": "",
+    "claim_source_matrix": [],
+    "source_status": []
+  },
+  "example": {
+    "case_id": "SYNTH-REVIEW",
+    "mode": "citation-fact-check",
+    "summary": "Synthetic example only.",
+    "findings": [
+      {
+        "id": "R001",
+        "location": {
+          "path": "synthetic.md",
+          "locator": "P1"
+        },
+        "check_item": "synthetic check item",
+        "original_quote": "synthetic source sentence",
+        "issue": "Synthetic issue",
+        "severity": "major",
+        "type": "review_issue",
+        "fix": "synthetic fix",
+        "comment": "Synthetic comment",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "checks": [
+      {
+        "item": "synthetic check",
+        "status": "pass",
+        "detail": "synthetic only"
+      }
+    ],
+    "verdict": "major_revision",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "claim_source_matrix": [
+      {
+        "claim_id": "C1",
+        "claim": "synthetic claim",
+        "source": "synthetic.md",
+        "source_design": "synthetic design",
+        "type": "citation_mismatch",
+        "fix": "synthetic fix",
+        "verdict": "partial",
+        "reason": "synthetic only",
+        "locator": "P1",
+        "original_quote": "synthetic source sentence",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "source_status": [
+      {
+        "source": "synthetic.md",
+        "status": "unknown",
+        "version_note": "synthetic only",
+        "needs_recheck": true
+      }
+    ]
+  },
+  "schema_properties": {
+    "findings": "逐条问题：location、issue、severity、comment、evidence",
+    "checks": "检查项与 pass/fail/not_checked",
+    "verdict": "总体判断及边界",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "无法判断、材料不足、待复核",
+    "claim_source_matrix": "task-specific field required by this sub-challenge",
+    "source_status": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "claim/source/verdict 四档枚举（full/partial/none/unverifiable）；引用存在≠支持结论。",
+    "来源状态 published/preprint/retracted/unknown；unknown 标 needs_recheck；数值 claim 有 source_value/manuscript_value。"
+  ]
 }

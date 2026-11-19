@@ -4,7 +4,7 @@
 
 - 目标：选题评估、创新性/可行性/证据缺口与风险。
 - 主产物：`output/research-report.md`。
-- 必填字段：`question`, `findings`, `evidence`。
+- 必填字段：`problem_definition`, `comparison_matrix`, `novelty_claims`, `feasibility`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 结论：每条有 `statement/sources/limitations/evidence`；区分观测、推断与空白。
+- 证据矩阵：按维度分组比较，保留每篇的结论、条件与局限；冲突并列。
+- 系统综述：PRISMA 式检索/纳排/纳入计数闭合；每个排除有理由码。
+- 趋势/选题：时间窗、检索范围与数量口径明确；不把共现当因果，不夸大创新性。
+- 四项交付齐全：问题定义/比较矩阵/创新审计/可行性。
+- 创新性不得写“首次/尚无人”除非有在线检索证据；可行性每个前提有来源或标 assumption。

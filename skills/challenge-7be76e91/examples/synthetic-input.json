@@ -2,47 +2,83 @@
   "case_id": "SYNTH-EXPERIMENT",
   "mode": "plan-comparison",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "hypothesis": "Synthetic hypothesis",
+  "variables": {
+    "independent": [
+      "Synthetic variable"
+    ],
+    "dependent": [
+      "Synthetic outcome"
+    ],
+    "controls": [
+      "Synthetic control"
+    ]
+  },
+  "steps": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
+      "id": "S1",
+      "action": "Synthetic step",
+      "parameters": {
+        "temperature": "350 C"
+      },
+      "duration": "2 h",
+      "materials": "Synthetic material"
     }
   ],
-  "candidates": [
+  "parameters": [
     {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P001",
-        "quote": "synthetic source sentence"
-      }
+      "name": "temperature",
+      "value": "350",
+      "unit": "C",
+      "basis": "synthetic.md P1"
     }
   ],
-  "findings": [
+  "risks": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "option_id": "O1",
+      "risk": "synthetic",
+      "mitigation": "synthetic"
     }
+  ],
+  "confirmation_items": [
+    "Synthetic item to confirm"
   ],
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "options": [
+    {
+      "id": "O1",
+      "name": "Synthetic option",
+      "scores": {
+        "cost": 1,
+        "risk": 1,
+        "output": 1
+      },
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "cost",
+      "weight": 1,
+      "direction": "lower_is_better"
+    }
+  ],
+  "selection": {
+    "option_id": "O1",
+    "reason": "synthetic only",
+    "tradeoffs": [
+      "synthetic tradeoff"
+    ]
+  }
 }

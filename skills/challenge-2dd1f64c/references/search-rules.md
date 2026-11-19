@@ -4,7 +4,7 @@
 
 - 目标：相关性判断、分层标签、稳定排序与逐条解释。
 - 主产物：`output/search-results.json`。
-- 必填字段：`queries`, `candidates`, `evidence`。
+- 必填字段：`candidates`, `evidence`, `metrics`, `screening`。
 
 ## 2. 证据
 
@@ -35,3 +35,13 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 查询：`id/round/query/source/purpose/stop_condition`；至少一轮补充查询，停止条件可解释。
+- 候选：`authors/venue/doi/rank/score/relevance/reason/dedupe_key/merged_from`；重复用 DOI 或 title+year 合并并保留依据。
+- 指标：`k`、`precision_at_k`、`ndcg_at_k`、`recall_at_k`、`metadata_accuracy`，写清分子/分母/口径；无法计算写 `not_computable`。
+- 排序：`rank/score/tie_break` 稳定；关键文献在前；空结果、缺失元数据、来源冲突写 `uncertainties`。
+- 标签一致率、nDCG@k、待定区规模、逐条理由可复核；keep/maybe/exclude 各有判据。
+- rank/score/tie_break 必须稳定；重复记录用 dedupe_key 合并并保留 merged_from。
+- 输入是候选集时不要编造 queries；query 来源写在 screening.source。

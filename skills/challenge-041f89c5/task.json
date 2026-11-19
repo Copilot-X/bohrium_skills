@@ -14,8 +14,10 @@
     "output/references.json"
   ],
   "required_fields": [
-    "question",
-    "findings",
+    "problem_definition",
+    "comparison_matrix",
+    "novelty_claims",
+    "feasibility",
     "evidence"
   ],
   "focus": "选题评估、创新性/可行性/证据缺口与风险",
@@ -38,6 +40,112 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "references": [],
+    "gap_analysis": [],
+    "problem_definition": {},
+    "comparison_matrix": [],
+    "novelty_claims": [],
+    "feasibility": {}
+  },
+  "example": {
+    "case_id": "SYNTH-RESEARCH",
+    "mode": "topic-selection",
+    "summary": "Synthetic example only.",
+    "question": "Synthetic research question",
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "sources": [
+          "synthetic.md"
+        ],
+        "limitations": [],
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "references": [
+      {
+        "key": "ref1",
+        "title": "Synthetic reference",
+        "doi": null
+      }
+    ],
+    "gap_analysis": [
+      {
+        "gap": "Synthetic gap",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "problem_definition": {
+      "question": "Synthetic question",
+      "scope": "synthetic corpus",
+      "constraints": [
+        "synthetic constraint"
+      ]
+    },
+    "comparison_matrix": [
+      {
+        "option": "Synthetic option",
+        "dimension": "novelty",
+        "value": "medium",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "novelty_claims": [
+      {
+        "claim": "Synthetic novelty claim",
+        "covered_by": [],
+        "verdict": "not_established",
+        "scope": "corpus"
+      }
+    ],
+    "feasibility": {
+      "premises": [
+        {
+          "premise": "synthetic premise",
+          "value": "synthetic value",
+          "source": "synthetic.md",
+          "status": "assumption"
+        }
+      ],
+      "calculation": "synthetic only",
+      "conclusion": "conditional",
+      "risks": []
+    }
+  },
+  "schema_properties": {
+    "question": "研究问题与范围",
+    "findings": "结论、来源与证据组",
+    "references": "引用条目与标识符",
+    "gap_analysis": "研究空白及其证据基础",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "冲突、空白、未覆盖范围",
+    "problem_definition": "task-specific field required by this sub-challenge",
+    "comparison_matrix": "task-specific field required by this sub-challenge",
+    "novelty_claims": "task-specific field required by this sub-challenge",
+    "feasibility": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "四项交付齐全：问题定义/比较矩阵/创新审计/可行性。",
+    "创新性不得写“首次/尚无人”除非有在线检索证据；可行性每个前提有来源或标 assumption。"
+  ]
 }

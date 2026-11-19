@@ -2,47 +2,65 @@
   "case_id": "SYNTH-REVIEW",
   "mode": "compliance-review",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
-    {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
+  "findings": [
     {
       "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "locator": {
+        "path": "synthetic.md",
+        "locator": "P1"
+      },
+      "original_quote": "synthetic source sentence",
+      "rule_id": "SYN-1",
+      "severity": "major",
+      "type": "compliance",
+      "fix": "synthetic fix",
+      "status": "needs_recheck",
+      "false_positive_check": "guideline scope checked",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
-  "findings": [
+  "checks": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "item": "synthetic check",
+      "status": "pass",
+      "detail": "synthetic only"
     }
   ],
+  "verdict": "major_revision",
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "compliance_checklist": [
+    {
+      "facet": "ethics",
+      "rule_id": "SYN-1",
+      "rule_version": "v1",
+      "type": "compliance",
+      "fix": "synthetic fix",
+      "status": "not_checked",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "guideline_source": {
+    "name": "Synthetic guideline",
+    "version": "v1",
+    "date": "2026-01-01"
+  },
+  "review_status": "not_checked",
+  "not_checked": [
+    "No institutional guideline supplied"
+  ]
 }

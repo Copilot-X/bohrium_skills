@@ -5,19 +5,98 @@
   "required": [
     "case_id",
     "summary",
-    "analysis",
-    "results",
+    "cleaned_table",
+    "cleaning_rules",
+    "quality_report",
+    "rule_log",
+    "original_snapshot",
     "evidence"
   ],
   "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "mode": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "summary": {
+      "type": "string",
+      "description": "task-specific field"
+    },
     "analysis": {
-      "description": "required by task.json"
+      "type": "object",
+      "description": "问题、方法、假设与步骤"
     },
     "results": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "指标、数值、单位、来源与证据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "figures": {
+      "type": "array",
+      "description": "图表路径及其数据来源",
+      "items": {
+        "type": "object"
+      }
+    },
+    "code": {
+      "type": "string",
+      "description": "真实执行的分析脚本路径"
     },
     "evidence": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "path+locator+quote 的逐字证据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "异常、缺失、失败与未验证项",
+      "items": {
+        "type": "object"
+      }
+    },
+    "data_dictionary": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "cleaning_rules": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "cleaned_table": {
+      "type": "string",
+      "description": "task-specific field required by this sub-challenge"
+    },
+    "rule_log": {
+      "type": "string",
+      "description": "task-specific field required by this sub-challenge"
+    },
+    "quality_report": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "original_snapshot": {
+      "type": "string",
+      "description": "task-specific field required by this sub-challenge"
+    },
+    "closure": {
+      "type": "object",
+      "description": "task-specific field required by this sub-challenge"
     }
   }
 }

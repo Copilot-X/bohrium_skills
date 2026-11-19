@@ -4,7 +4,7 @@
 
 - 目标：系统综述协议、检索/纳排、质量评价与证据综合。
 - 主产物：`output/research-report.md`。
-- 必填字段：`question`, `findings`, `evidence`。
+- 必填字段：`protocol`, `screening`, `quality_appraisal`, `findings`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@ PRISMA 式计数闭合；纳排理由可查；质量评价有依据。
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 结论：每条有 `statement/sources/limitations/evidence`；区分观测、推断与空白。
+- 证据矩阵：按维度分组比较，保留每篇的结论、条件与局限；冲突并列。
+- 系统综述：PRISMA 式检索/纳排/纳入计数闭合；每个排除有理由码。
+- 趋势/选题：时间窗、检索范围与数量口径明确；不把共现当因果，不夸大创新性。
+- 筛选计数闭合（identified-duplicates=screened; screened-excluded=included）。
+- 质量评价有工具/维度/判断/依据；综合结论引用等级；未执行检索显著标注。

@@ -14,7 +14,9 @@
     "output/references.json"
   ],
   "required_fields": [
-    "question",
+    "subquestions",
+    "search_plan",
+    "tool_calls",
     "findings",
     "evidence"
   ],
@@ -38,6 +40,96 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "references": [],
+    "gap_analysis": [],
+    "subquestions": [],
+    "search_plan": [],
+    "tool_calls": []
+  },
+  "example": {
+    "case_id": "SYNTH-RESEARCH",
+    "mode": "deep-research",
+    "summary": "Synthetic example only.",
+    "question": "Synthetic research question",
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "sources": [
+          "synthetic.md"
+        ],
+        "limitations": [],
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "references": [
+      {
+        "key": "ref1",
+        "title": "Synthetic reference",
+        "doi": null
+      }
+    ],
+    "gap_analysis": [
+      {
+        "gap": "Synthetic gap",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "subquestions": [
+      {
+        "id": "SQ1",
+        "question": "Synthetic subquestion",
+        "depends_on": [],
+        "status": "covered"
+      }
+    ],
+    "search_plan": [
+      {
+        "id": "S1",
+        "order": 1,
+        "source": "provided corpus",
+        "stop_condition": "evidence saturation"
+      }
+    ],
+    "tool_calls": [
+      {
+        "id": "T1",
+        "tool": "synthetic-tool",
+        "params": {},
+        "result": "synthetic only",
+        "status": "ok",
+        "retry": 0
+      }
+    ]
+  },
+  "schema_properties": {
+    "question": "研究问题与范围",
+    "findings": "结论、来源与证据组",
+    "references": "引用条目与标识符",
+    "gap_analysis": "研究空白及其证据基础",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "冲突、空白、未覆盖范围",
+    "subquestions": "task-specific field required by this sub-challenge",
+    "search_plan": "task-specific field required by this sub-challenge",
+    "tool_calls": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "每个子问题有 query/证据或显式未覆盖；拆解树依赖与停止条件可复跑。",
+    "工具调用日志进入输出或报告固定章节，不能只留在 work/。"
+  ]
 }

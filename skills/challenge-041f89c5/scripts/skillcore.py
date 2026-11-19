@@ -858,6 +858,43 @@ def dedupe_key(entry):
 # Result envelope
 # ---------------------------------------------------------------------------
 
+CONTRACT_ALIAS_MAP = {
+    # English semantic field names used by task.md output tables.
+    "search_results": ["deliverable", "result", "claims"],
+    "candidate_set": ["claims", "result", "deliverable"],
+    "screening_results": ["claims", "result", "deliverable"],
+    "evidence_record": ["evidence_map", "evidence", "sources"],
+    "status_note": ["uncertainties", "status"],
+    "review_report": ["deliverable", "claims"],
+    "analysis_report": ["deliverable", "claims", "results"],
+    "research_report": ["deliverable", "claims"],
+    "library_results": ["deliverable", "claims", "items"],
+    "experiment_report": ["deliverable", "claims", "steps"],
+    "coverage": ["result"],
+    "editable_source": ["deliverable", "result"],
+    "export_artifact": ["deliverable", "result"],
+    "content_map": ["evidence_map", "claims", "result"],
+    "compliance_checks": ["result", "claims"],
+    "exceptions": ["uncertainties"],
+    # Chinese field names used in some task.md tables.
+    "检索结果": ["deliverable", "result", "claims"],
+    "证据记录": ["evidence_map", "evidence", "sources"],
+    "状态说明": ["uncertainties", "status"],
+    "审查报告": ["deliverable", "claims"],
+    "分析报告": ["deliverable", "claims", "results"],
+    "研究产物": ["deliverable", "claims"],
+    "目标产物": ["deliverable"],
+    "事实与来源映射": ["evidence_map", "preserved_facts"],
+    "阅读解析结果": ["deliverable", "result", "claims"],
+    "证据与边界": ["evidence_map", "uncertainties"],
+}
+
+
+def contract_key_norm(key):
+    return re.sub(r"[^0-9a-z一-鿿]+", "_",
+                  str(key or "").lower()).strip("_")
+
+
 class ResultBuilder:
     def __init__(self, case_id, task_family, output_dir, work_dir,
                  case=None, task_text="", profile="reading"):
@@ -961,10 +998,69 @@ class ResultBuilder:
             return []
         coverage = []
         for key, spec in contract.items():
-            present = key in self.data and self.data[key] not in (None, "", [], {})
+            # A key whose value is an empty list/dict is still present and
+            # meaningful for fields such as uncertainties/conflicts.  For a
+            # primary result field, an empty container is not a covered value.
+            value = self.data.get(key)
+            present = key in self.data and value is not None and value != ""
+            if present and isinstance(value, (list, dict)) and len(value) == 0:
+                allowed_empty = {
+                    "uncertainties", "uncertainty", "preserved_facts",
+                    "change_log", "conflicts", "review_queue", "skipped",
+                    "excluded", "suppressed", "residual_misses", "unresolved",
+                    "gaps", "limitations", "duplicate_groups", "version_groups",
+                    "unreadable", "version_conflict", "missing_evidence",
+                }
+                present = key in allowed_empty
             coverage.append({"field": key, "present": present,
                              "spec": spec if isinstance(spec, (str, dict, list)) else str(spec)})
         return coverage
+
+    def _apply_contract_aliases(self):
+        """Populate original output_contract keys from equivalent fields.
+
+        A task.md output table may name a field ``search_results`` or
+        ``evidence_record`` while the skill's canonical envelope uses
+        ``deliverable`` / ``evidence_map``.  The original key is retained and
+        aliased to the real content; no new scientific content is invented.
+        """
+        contract = self.data.get("output_contract")
+        if not isinstance(contract, dict):
+            return
+        for key in contract:
+            if key in self.data and self.data[key] is not None:
+                value = self.data[key]
+                # A pre-finalize pass may have written an empty placeholder
+                # (e.g. {} from a not-yet-populated result).  Retry aliases
+                # for empty containers after the canonical fields exist.
+                if not (isinstance(value, (list, dict)) and len(value) == 0):
+                    continue
+            norm = contract_key_norm(key)
+            for alias in CONTRACT_ALIAS_MAP.get(norm, []):
+                if alias in self.data and self.data[alias] is not None:
+                    self.data[key] = self.data[alias]
+                    break
+            if key in self.data and self.data[key] is not None:
+                continue
+            for artifact in self.data.get("artifacts") or []:
+                path = artifact.get("path") if isinstance(artifact, dict) else artifact
+                if not path:
+                    continue
+                stem = contract_key_norm(Path(str(path)).stem)
+                fmt = contract_key_norm(
+                    (artifact.get("format") if isinstance(artifact, dict) else "")
+                    or Path(str(path)).suffix.lstrip("."))
+                if stem and (stem == norm or stem in norm or norm in stem):
+                    self.data[key] = path
+                    break
+                if fmt and (fmt == norm or (len(fmt) >= 3 and fmt in norm)):
+                    self.data[key] = path
+                    break
+                key_tokens = {x for x in norm.split("_") if len(x) > 2}
+                stem_tokens = {x for x in stem.split("_") if len(x) > 2}
+                if key_tokens & stem_tokens:
+                    self.data[key] = path
+                    break
 
     def finalize(self, status, deliverable=None, result=None, claims=None,
                  uncertainties=None, preserved_facts=None, evidence_map=None,
@@ -1010,6 +1106,7 @@ class ResultBuilder:
             for key, value in extra.items():
                 self.data[key] = value
         self.data["generated_at"] = now_iso()
+        self._apply_contract_aliases()
         self.data["contract_coverage"] = self._contract_coverage()
         self.data["artifact_paths_valid"] = all(a.get("exists") for a in self.data["artifacts"])
         if status in ("completed", "answered"):

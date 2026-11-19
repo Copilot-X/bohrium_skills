@@ -14,7 +14,7 @@
     "output/operations.log.json"
   ],
   "required_fields": [
-    "items",
+    "annotations",
     "evidence"
   ],
   "focus": "阅读批注、锚点、知识沉淀与可检索笔记",
@@ -37,6 +37,125 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "operations": [],
+    "annotations": [],
+    "notes": [],
+    "links": [],
+    "search_index": []
+  },
+  "example": {
+    "case_id": "SYNTH-LIBRARY",
+    "mode": "annotation",
+    "summary": "Synthetic example only.",
+    "items": [
+      {
+        "id": "I001",
+        "path": "synthetic.md",
+        "kind": "text",
+        "metadata": {
+          "title": "Synthetic item"
+        },
+        "version": "v1",
+        "hash": "sha256:synthetic",
+        "status": "indexed",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "operations": [
+      {
+        "action": "index",
+        "target": "synthetic.md",
+        "status": "ok",
+        "detail": "synthetic only"
+      }
+    ],
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "annotations": [
+      {
+        "id": "AN1",
+        "doc": "synthetic.md",
+        "page": 1,
+        "paragraph": "P1",
+        "char_start": 0,
+        "char_end": 10,
+        "quote": "synthetic",
+        "doc_sha256": "synthetic-sha256",
+        "type": "claim",
+        "color": "yellow",
+        "anchor_status": "verified",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "notes": [
+      {
+        "id": "N1",
+        "text": "Synthetic note",
+        "claims": [
+          "synthetic claim"
+        ],
+        "annotation_ids": [
+          "AN1"
+        ]
+      }
+    ],
+    "links": [
+      {
+        "from": "AN1",
+        "to": "N1",
+        "basis": "same quote"
+      }
+    ],
+    "search_index": [
+      {
+        "term": "synthetic",
+        "annotation_ids": [
+          "AN1"
+        ]
+      }
+    ]
+  },
+  "schema_properties": {
+    "items": "文件/记录条目：path、kind、metadata、hash、status、evidence",
+    "operations": "索引/移动/分类/批注等操作及结果",
+    "findings": "检索/问答/批注结论及证据",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "权限、损坏、跳过、冲突",
+    "annotations": "task-specific field required by this sub-challenge",
+    "notes": "task-specific field required by this sub-challenge",
+    "links": "task-specific field required by this sub-challenge",
+    "search_index": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "每条批注有原文锚点、字符区间、anchor_status 与版本/哈希。",
+    "旧版本批注不得自动挂到新版；OCR 低置信度进复核队列。"
+  ]
 }

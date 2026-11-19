@@ -2,26 +2,33 @@
   "case_id": "SYNTH-LIBRARY",
   "mode": "classification",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "items": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "I001",
+      "path": "synthetic.md",
+      "category": "synthetic category",
+      "tags": [
+        "synthetic"
+      ],
+      "confidence": 0.9,
+      "new_name": "synthetic.md",
+      "hash": "sha256:synthetic",
+      "review": false,
+      "rationale": "synthetic only",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
+    }
+  ],
+  "operations": [
+    {
+      "id": "O1",
+      "status": "ok",
+      "from": "synthetic.md",
+      "to": "synthetic category/synthetic.md",
+      "rollback": "move back to synthetic.md"
     }
   ],
   "findings": [
@@ -31,7 +38,7 @@
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
@@ -40,9 +47,20 @@
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "taxonomy": {
+    "categories": [
+      "synthetic category"
+    ],
+    "criteria": {
+      "synthetic category": "synthetic criterion"
+    }
+  },
+  "review_queue": [],
+  "duplicate_groups": [],
+  "version_groups": []
 }

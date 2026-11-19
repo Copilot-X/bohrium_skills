@@ -4,7 +4,7 @@
 
 - 目标：论证链、前提-结论、因果/相关、反例与逻辑跳跃。
 - 主产物：`output/review-report.md`。
-- 必填字段：`findings`, `evidence`。
+- 必填字段：`claim_inventory`, `findings`, `cross_section_checks`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 问题：`location/check_item/issue/severity/comment/evidence`；位置到段落或行。
+- 检查项：`checks[].item/status(pass|fail|not_checked)/detail`；未检查不等于通过。
+- 判断：区分事实错误、证据不足与改进建议；给出可执行修复。
+- 边界：不替代机构审查；材料不足写 `uncertainties` 与人工复核点。
+- 主张清单标 speaker(author/cited/assumption) 与 support/strength；跨章节承诺-交付核对。
+- 误报检查：引用观点/作者假设/学科惯例不得当作作者错误；severity 有判据。

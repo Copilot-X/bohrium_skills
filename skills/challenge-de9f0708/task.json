@@ -14,6 +14,9 @@
     "output/evidence-map.json"
   ],
   "required_fields": [
+    "compliance_checklist",
+    "guideline_source",
+    "review_status",
     "findings",
     "evidence"
   ],
@@ -37,6 +40,93 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "checks": [],
+    "verdict": "",
+    "compliance_checklist": [],
+    "guideline_source": {},
+    "review_status": "",
+    "not_checked": []
+  },
+  "example": {
+    "case_id": "SYNTH-REVIEW",
+    "mode": "compliance-review",
+    "summary": "Synthetic example only.",
+    "findings": [
+      {
+        "id": "C001",
+        "locator": {
+          "path": "synthetic.md",
+          "locator": "P1"
+        },
+        "original_quote": "synthetic source sentence",
+        "rule_id": "SYN-1",
+        "severity": "major",
+        "type": "compliance",
+        "fix": "synthetic fix",
+        "status": "needs_recheck",
+        "false_positive_check": "guideline scope checked",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "checks": [
+      {
+        "item": "synthetic check",
+        "status": "pass",
+        "detail": "synthetic only"
+      }
+    ],
+    "verdict": "major_revision",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "compliance_checklist": [
+      {
+        "facet": "ethics",
+        "rule_id": "SYN-1",
+        "rule_version": "v1",
+        "type": "compliance",
+        "fix": "synthetic fix",
+        "status": "not_checked",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "guideline_source": {
+      "name": "Synthetic guideline",
+      "version": "v1",
+      "date": "2026-01-01"
+    },
+    "review_status": "not_checked",
+    "not_checked": [
+      "No institutional guideline supplied"
+    ]
+  },
+  "schema_properties": {
+    "findings": "task-specific field required by this sub-challenge",
+    "checks": "检查项与 pass/fail/not_checked",
+    "verdict": "总体判断及边界",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "无法判断、材料不足、待复核",
+    "compliance_checklist": "task-specific field required by this sub-challenge",
+    "guideline_source": "task-specific field required by this sub-challenge",
+    "review_status": "task-specific field required by this sub-challenge",
+    "not_checked": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "合规条款绑定 rule_id/version；无指南/批件时标 not_checked，不给出违规结论。",
+    "报告明确“不替代机构审查”；缺定位/依据的检查项降级。"
+  ]
 }

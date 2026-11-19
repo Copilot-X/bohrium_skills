@@ -5,19 +5,97 @@
   "required": [
     "case_id",
     "summary",
-    "queries",
-    "candidates",
+    "patents",
+    "families",
     "evidence"
   ],
   "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "mode": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "summary": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "question": {
+      "type": "string",
+      "description": "task-specific field"
+    },
     "queries": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
     },
     "candidates": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "候选记录：title/authors/year/venue/doi/relevance/reason/evidence",
+      "items": {
+        "type": "object"
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "description": "k、Precision@k、nDCG@k、Recall@k、元数据准确率及计算口径"
+    },
+    "screening": {
+      "type": "object",
+      "description": "include/exclude/uncertain 分层与判据"
+    },
+    "findings": {
+      "type": "array",
+      "description": "关键发现及证据",
+      "items": {
+        "type": "object"
+      }
     },
     "evidence": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "path+locator+quote 的逐字证据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "空结果、冲突、权限、缺失元数据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "patents": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "families": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "legal_status": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "classification": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
     }
   }
 }

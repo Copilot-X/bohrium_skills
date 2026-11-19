@@ -15,6 +15,7 @@
   ],
   "required_fields": [
     "items",
+    "operations",
     "evidence"
   ],
   "focus": "目录/文件清单、元数据、版本关系、哈希与变更日志",
@@ -37,6 +38,98 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "operations": [],
+    "duplicate_groups": [],
+    "version_chain": [],
+    "skipped": []
+  },
+  "example": {
+    "case_id": "SYNTH-LIBRARY",
+    "mode": "file-management",
+    "summary": "Synthetic example only.",
+    "items": [
+      {
+        "id": "I001",
+        "path": "library/original/synthetic.md",
+        "bytes": 42,
+        "sha256": "synthetic-sha256",
+        "source": "input/synthetic.md",
+        "permissions": "rw",
+        "status": "indexed",
+        "target": "library/original/",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "operations": [
+      {
+        "id": "O1",
+        "action": "copy",
+        "status": "ok",
+        "from": "input/synthetic.md",
+        "to": "library/original/synthetic.md",
+        "sha_before": "synthetic-sha256",
+        "sha_after": "synthetic-sha256",
+        "rollback": "delete library/original/synthetic.md"
+      }
+    ],
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "duplicate_groups": [
+      {
+        "group_id": "D1",
+        "members": [
+          "I001"
+        ],
+        "basis": "same sha256"
+      }
+    ],
+    "version_chain": [
+      {
+        "work_id": "W1",
+        "versions": [
+          "I001"
+        ],
+        "basis": "same title+author"
+      }
+    ],
+    "skipped": []
+  },
+  "schema_properties": {
+    "items": "task-specific field required by this sub-challenge",
+    "operations": "task-specific field required by this sub-challenge",
+    "findings": "检索/问答/批注结论及证据",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "权限、损坏、跳过、冲突",
+    "duplicate_groups": "task-specific field required by this sub-challenge",
+    "version_chain": "task-specific field required by this sub-challenge",
+    "skipped": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "落库目录树与源文件一一对应；每个文件有 bytes/sha256/来源/权限/状态/目标路径。",
+    "复制/改名/归档逐个校验哈希；操作有 before/after/rollback；跳过与失败有记录。"
+  ]
 }

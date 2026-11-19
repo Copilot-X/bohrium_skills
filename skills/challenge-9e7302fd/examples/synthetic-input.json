@@ -2,47 +2,68 @@
   "case_id": "SYNTH-REVIEW",
   "mode": "methods-stats-review",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "findings": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "S001",
+      "facet": "statistics",
+      "locator": {
+        "path": "synthetic.md",
+        "locator": "P1"
+      },
+      "original_quote": "synthetic source sentence",
+      "severity": "major",
+      "type": "insufficient_evidence",
+      "status": "open",
+      "fix": "synthetic fix",
+      "assumption_checked": [
+        "normality"
+      ],
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
-  "findings": [
+  "checks": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "item": "synthetic check",
+      "status": "pass",
+      "detail": "synthetic only"
     }
   ],
+  "verdict": "major_revision",
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "facets_checked": [
+    {
+      "facet": "statistics",
+      "status": "checked",
+      "items": [
+        "normality",
+        "multiplicity"
+      ]
+    }
+  ],
+  "decision_rules": [
+    {
+      "rule": "paired vs unpaired",
+      "condition": "independent samples",
+      "decision": "synthetic only"
+    }
+  ],
+  "reporting_checklist": {
+    "n": "reported",
+    "effect": "missing",
+    "ci": "missing",
+    "exact_p": "reported",
+    "df": "missing",
+    "itt": "not_applicable"
+  }
 }

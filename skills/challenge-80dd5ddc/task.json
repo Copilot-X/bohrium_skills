@@ -14,7 +14,7 @@
     "output/operations.log.json"
   ],
   "required_fields": [
-    "items",
+    "answers",
     "evidence"
   ],
   "focus": "知识库问答、检索增强、引用定位与拒答边界",
@@ -37,6 +37,103 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "operations": [],
+    "answers": [],
+    "retrieval": []
+  },
+  "example": {
+    "case_id": "SYNTH-LIBRARY",
+    "mode": "kb-qa",
+    "summary": "Synthetic example only.",
+    "items": [
+      {
+        "id": "I001",
+        "path": "synthetic.md",
+        "kind": "text",
+        "metadata": {
+          "title": "Synthetic item"
+        },
+        "version": "v1",
+        "hash": "sha256:synthetic",
+        "status": "indexed",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "operations": [
+      {
+        "action": "index",
+        "target": "synthetic.md",
+        "status": "ok",
+        "detail": "synthetic only"
+      }
+    ],
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "answers": [
+      {
+        "id": "A1",
+        "question": "Synthetic question",
+        "status": "answered",
+        "sentences": [
+          {
+            "text": "Synthetic answer sentence.",
+            "citations": [
+              {
+                "path": "synthetic.md",
+                "locator": "P1",
+                "quote": "synthetic source sentence"
+              }
+            ]
+          }
+        ],
+        "missing_evidence": [],
+        "conflict": []
+      }
+    ],
+    "retrieval": [
+      {
+        "answer_id": "A1",
+        "record_id": "R001",
+        "locator": "P1",
+        "snippet": "synthetic source sentence"
+      }
+    ]
+  },
+  "schema_properties": {
+    "items": "文件/记录条目：path、kind、metadata、hash、status、evidence",
+    "operations": "索引/移动/分类/批注等操作及结果",
+    "findings": "检索/问答/批注结论及证据",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "权限、损坏、跳过、冲突",
+    "answers": "task-specific field required by this sub-challenge",
+    "retrieval": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "答案每句至少一条 citation；无证据时拒答并写 missing_evidence。",
+    "冲突材料并列；引用必须绑定到可回查的 path/locator/quote。"
+  ]
 }

@@ -2,47 +2,52 @@
   "case_id": "SYNTH-REVIEW",
   "mode": "quality-review",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "findings": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "R001",
+      "facet": "methods",
+      "locator": {
+        "path": "synthetic.md",
+        "locator": "P1"
+      },
+      "original_quote": "synthetic source sentence",
+      "severity": "major",
+      "type": "error",
+      "status": "open",
+      "fix": "synthetic fix",
+      "false_positive_check": "author assumption checked",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
-  "findings": [
+  "checks": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "item": "synthetic check",
+      "status": "pass",
+      "detail": "synthetic only"
     }
   ],
+  "verdict": "major_revision",
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "facets_checked": [
+    {
+      "facet": "methods",
+      "status": "checked",
+      "items": [
+        "synthetic check"
+      ]
+    }
+  ],
+  "review_status": "issues",
+  "not_checked": []
 }

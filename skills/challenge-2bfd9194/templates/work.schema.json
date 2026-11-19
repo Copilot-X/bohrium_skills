@@ -6,14 +6,77 @@
     "case_id",
     "summary",
     "items",
+    "operations",
     "evidence"
   ],
   "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "mode": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "summary": {
+      "type": "string",
+      "description": "task-specific field"
+    },
     "items": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "operations": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "检索/问答/批注结论及证据",
+      "items": {
+        "type": "object"
+      }
     },
     "evidence": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "path+locator+quote 的逐字证据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "权限、损坏、跳过、冲突",
+      "items": {
+        "type": "object"
+      }
+    },
+    "duplicate_groups": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "version_chain": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "skipped": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
     }
   }
 }

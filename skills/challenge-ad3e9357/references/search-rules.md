@@ -4,7 +4,7 @@
 
 - 目标：专利/技术文献检索、同族合并、法律状态与技术分类。
 - 主产物：`output/search-results.json`。
-- 必填字段：`queries`, `candidates`, `evidence`。
+- 必填字段：`patents`, `families`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 查询：`id/round/query/source/purpose/stop_condition`；至少一轮补充查询，停止条件可解释。
+- 候选：`authors/venue/doi/rank/score/relevance/reason/dedupe_key/merged_from`；重复用 DOI 或 title+year 合并并保留依据。
+- 指标：`k`、`precision_at_k`、`ndcg_at_k`、`recall_at_k`、`metadata_accuracy`，写清分子/分母/口径；无法计算写 `not_computable`。
+- 排序：`rank/score/tie_break` 稳定；关键文献在前；空结果、缺失元数据、来源冲突写 `uncertainties`。
+- 专利号/申请号可回溯、同族合并准确率、法律状态与日期完整率、技术分类匹配。
+- 同族合并写 basis；法律状态不能靠标题猜测，必须有来源。

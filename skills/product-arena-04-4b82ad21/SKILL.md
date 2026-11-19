@@ -198,6 +198,12 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 `artifacts[]` 中每个 `exists=true` 的路径都真实可打开。
 `result.result.audit` 与 `citation-audit.json` 同源，不得手工改写。
 
+`evidence_map[]` 的引用项绑定文献记录（`source.path` 指向 `refs.bib`
+或含该条目的稿件 References，`quote` 为条目/标题原文）；贡献项绑定
+稿件段落（`quote` 逐字来自 `path + locator`）。finalize 会逐条校验
+`path + quote`，空 quote 或找不到原文时降级为 `partial` 并写入
+`uncertainties`，不会用“大意”冒充证据。
+
 ## 质量闸门
 
 | # | 检查 | 通过标准 |

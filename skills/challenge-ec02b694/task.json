@@ -10,12 +10,12 @@
   "deliverable": "output/experiment-report.md",
   "output_files": [
     "output/experiment-report.md",
-    "output/plan.json",
     "output/parameter-recommendations.json",
+    "output/validation-plan.json",
     "output/risk-assessment.json"
   ],
   "required_fields": [
-    "steps",
+    "recommendations",
     "parameters",
     "evidence"
   ],
@@ -39,6 +39,126 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "hypothesis": "",
+    "variables": {},
+    "risks": [],
+    "confirmation_items": [],
+    "parameter_space": [],
+    "constraints": [],
+    "history": [],
+    "recommendations": [],
+    "validation_experiment": {}
+  },
+  "example": {
+    "case_id": "SYNTH-EXPERIMENT",
+    "mode": "parameter-optimization",
+    "summary": "Synthetic example only.",
+    "hypothesis": "Synthetic hypothesis",
+    "variables": {
+      "independent": [
+        "Synthetic variable"
+      ],
+      "dependent": [
+        "Synthetic outcome"
+      ],
+      "controls": [
+        "Synthetic control"
+      ]
+    },
+    "steps": [
+      {
+        "id": "S1",
+        "action": "Synthetic step",
+        "parameters": {
+          "temperature": "350 C"
+        },
+        "duration": "2 h",
+        "materials": "Synthetic material"
+      }
+    ],
+    "parameters": [
+      {
+        "name": "temperature",
+        "value": "350",
+        "unit": "C",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "Synthetic risk",
+        "impact": "medium",
+        "mitigation": "Synthetic mitigation"
+      }
+    ],
+    "confirmation_items": [
+      "Synthetic item to confirm"
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "parameter_space": [
+      {
+        "name": "temperature",
+        "range": [
+          300,
+          400
+        ],
+        "unit": "C"
+      }
+    ],
+    "constraints": [
+      {
+        "constraint": "synthetic constraint",
+        "source": "synthetic.md"
+      }
+    ],
+    "history": [
+      {
+        "parameters": {
+          "temperature": 350
+        },
+        "outcome": 92
+      }
+    ],
+    "recommendations": [
+      {
+        "parameters": {
+          "temperature": 350
+        },
+        "expected": "high selectivity",
+        "basis": "synthetic history"
+      }
+    ],
+    "validation_experiment": {
+      "steps": [
+        "synthetic validation"
+      ],
+      "stop_condition": "confirmed or budget exhausted"
+    }
+  },
+  "schema_properties": {
+    "hypothesis": "可检验假设",
+    "variables": "自变量、因变量、对照",
+    "steps": "可执行步骤、参数、时长与材料",
+    "parameters": "参数值、单位与依据",
+    "risks": "风险、影响与处置",
+    "confirmation_items": "需要作者确认的设备/安全/伦理条件",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "未确认、冲突、缺口",
+    "parameter_space": "task-specific field required by this sub-challenge",
+    "constraints": "task-specific field required by this sub-challenge",
+    "history": "task-specific field required by this sub-challenge",
+    "recommendations": "task-specific field required by this sub-challenge",
+    "validation_experiment": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "推荐值有依据；约束明确；给出验证实验与停止条件。"
+  ]
 }

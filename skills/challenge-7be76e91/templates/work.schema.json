@@ -5,19 +5,90 @@
   "required": [
     "case_id",
     "summary",
-    "steps",
-    "parameters",
+    "options",
+    "selection",
     "evidence"
   ],
   "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "mode": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "summary": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "hypothesis": {
+      "type": "string",
+      "description": "可检验假设"
+    },
+    "variables": {
+      "type": "object",
+      "description": "自变量、因变量、对照"
+    },
     "steps": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "可执行步骤、参数、时长与材料",
+      "items": {
+        "type": "object"
+      }
     },
     "parameters": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "参数值、单位与依据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "confirmation_items": {
+      "type": "array",
+      "description": "需要作者确认的设备/安全/伦理条件",
+      "items": {
+        "type": "object"
+      }
     },
     "evidence": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "path+locator+quote 的逐字证据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "未确认、冲突、缺口",
+      "items": {
+        "type": "object"
+      }
+    },
+    "options": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "selection": {
+      "type": "object",
+      "description": "task-specific field required by this sub-challenge"
     }
   }
 }

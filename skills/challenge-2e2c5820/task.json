@@ -10,13 +10,13 @@
   "deliverable": "output/experiment-report.md",
   "output_files": [
     "output/experiment-report.md",
-    "output/plan.json",
-    "output/parameter-recommendations.json",
-    "output/risk-assessment.json"
+    "output/feasibility-review.json",
+    "output/risk-assessment.json",
+    "output/confirmation-items.json"
   ],
   "required_fields": [
-    "steps",
-    "parameters",
+    "feasibility",
+    "risks",
     "evidence"
   ],
   "focus": "设备/材料/时间/预算/安全/伦理可行性与风险",
@@ -39,6 +39,93 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "hypothesis": "",
+    "variables": {},
+    "risks": [],
+    "confirmation_items": [],
+    "feasibility": {}
+  },
+  "example": {
+    "case_id": "SYNTH-EXPERIMENT",
+    "mode": "feasibility",
+    "summary": "Synthetic example only.",
+    "hypothesis": "Synthetic hypothesis",
+    "variables": {
+      "independent": [
+        "Synthetic variable"
+      ],
+      "dependent": [
+        "Synthetic outcome"
+      ],
+      "controls": [
+        "Synthetic control"
+      ]
+    },
+    "steps": [
+      {
+        "id": "S1",
+        "action": "Synthetic step",
+        "parameters": {
+          "temperature": "350 C"
+        },
+        "duration": "2 h",
+        "materials": "Synthetic material"
+      }
+    ],
+    "parameters": [
+      {
+        "name": "temperature",
+        "value": "350",
+        "unit": "C",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "risks": [
+      {
+        "risk": "synthetic risk",
+        "impact": "medium",
+        "mitigation": "synthetic mitigation"
+      }
+    ],
+    "confirmation_items": [
+      "Confirm equipment access"
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "feasibility": {
+      "equipment": [
+        {
+          "item": "synthetic",
+          "status": "to_confirm",
+          "source": "synthetic.md"
+        }
+      ],
+      "materials": [],
+      "time": "to_confirm",
+      "budget": "to_confirm",
+      "safety": "to_confirm",
+      "ethics": "to_confirm"
+    }
+  },
+  "schema_properties": {
+    "hypothesis": "可检验假设",
+    "variables": "自变量、因变量、对照",
+    "steps": "可执行步骤、参数、时长与材料",
+    "parameters": "参数值、单位与依据",
+    "risks": "task-specific field required by this sub-challenge",
+    "confirmation_items": "task-specific field required by this sub-challenge",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "未确认、冲突、缺口",
+    "feasibility": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "每项可行性有条件；风险有处置；未确认不写成可执行。"
+  ]
 }

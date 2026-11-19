@@ -2,26 +2,30 @@
   "case_id": "SYNTH-LIBRARY",
   "mode": "file-search",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "items": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "R001",
+      "rank": 1,
+      "path": "synthetic.md",
+      "version": "v1",
+      "locator": "P1",
+      "snippet": "synthetic source sentence",
+      "hash": "sha256:synthetic",
+      "score_reason": "synthetic only",
+      "excluded_by": [],
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
+    }
+  ],
+  "operations": [
+    {
+      "action": "index",
+      "target": "synthetic.md",
+      "status": "ok",
+      "detail": "synthetic only"
     }
   ],
   "findings": [
@@ -31,7 +35,7 @@
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
@@ -40,9 +44,26 @@
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "filters": {
+    "must": [
+      "synthetic filter"
+    ],
+    "must_not": [],
+    "applied_to": "all records"
+  },
+  "filter_execution": [
+    {
+      "filter": "synthetic filter",
+      "kept": 1,
+      "excluded": 0
+    }
+  ],
+  "no_result": false,
+  "unreadable": [],
+  "version_conflict": []
 }

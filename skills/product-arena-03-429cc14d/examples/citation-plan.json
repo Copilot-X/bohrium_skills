@@ -2,18 +2,38 @@
   "case_id": "SYNTHETIC-CITE",
   "style": "gb",
   "insertions": [
-    {"id": "C001", "paragraph_id": "P005", "sentence_id": "P005-S002",
-     "anchor_text": "can activate CO2 through surface defects",
-     "ref_keys": ["lee2022"], "position": "after_anchor",
-     "reason": "该句关于表面缺陷活化 CO2，由 lee2022 的 operando 研究支撑"},
-    {"id": "C002", "paragraph_id": "P005", "sentence_id": "P005-S003",
-     "anchor_text": "oxygen vacancies increase CO2 conversion",
-     "ref_keys": ["wang2021"], "position": "sentence_end",
-     "reason": "该句关于氧空位与转化率的关系，由 wang2021 支撑"}
+    {
+      "id": "C001",
+      "paragraph_id": "P004",
+      "sentence_id": "P004-S002",
+      "anchor_text": "can activate CO2 through surface defects",
+      "ref_keys": [
+        "lee2022"
+      ],
+      "position": "after_anchor",
+      "reason": "该句关于表面缺陷活化 CO2，由 lee2022 的 operando 研究支撑"
+    },
+    {
+      "id": "C002",
+      "paragraph_id": "P004",
+      "sentence_id": "P004-S003",
+      "anchor_text": "oxygen vacancies increase CO2 conversion",
+      "ref_keys": [
+        "wang2021"
+      ],
+      "position": "sentence_end",
+      "reason": "该句关于氧空位与转化率的关系，由 wang2021 支撑"
+    }
   ],
   "dedupe": [
-    {"keep": "smith2020", "merge": ["smith2020preprint"],
-     "basis": "same DOI 10.1234/jcat.2020.001", "decision": "merge"}
+    {
+      "keep": "smith2020",
+      "merge": [
+        "smith2020preprint"
+      ],
+      "basis": "same DOI 10.1234/jcat.2020.001",
+      "decision": "merge"
+    }
   ],
   "metadata_fixes": [],
   "unresolved": []

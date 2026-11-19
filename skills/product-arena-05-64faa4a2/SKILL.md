@@ -203,8 +203,12 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | `result.json` | `case_id/status/deliverable/preserved_facts/evidence_map/change_log/artifacts/result/output_contract/contract_coverage` |
 
 `result.deliverable.path` 必须是真实存在的 `methods.md`；
-`evidence_map[]` 包含每个步骤与参数的 `source.path/locator`；
-`preserved_facts[]` 记录输入材料中的数字 token。
+`evidence_map[]` 覆盖每个 step、parameter、dataset、baseline 与
+reproducibility 项；每条的 `quote` 必须是 `source.path` 中的逐字行，
+不能写摘要或改写。finalize 会校验 `path + quote`，找不到时写入
+`evidence_problems`、降级为 `partial`，并在 `uncertainties` 说明；
+不得用“概括性操作描述”充当证据。
+`preserved_facts[]` 记录输入材料中的数字 token，并尽量带 `path:L行号`。
 
 ## 质量闸门
 

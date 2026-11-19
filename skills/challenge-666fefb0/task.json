@@ -14,6 +14,7 @@
     "output/operations.log.json"
   ],
   "required_fields": [
+    "taxonomy",
     "items",
     "evidence"
   ],
@@ -37,6 +38,92 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "operations": [],
+    "taxonomy": {},
+    "review_queue": [],
+    "duplicate_groups": [],
+    "version_groups": []
+  },
+  "example": {
+    "case_id": "SYNTH-LIBRARY",
+    "mode": "classification",
+    "summary": "Synthetic example only.",
+    "items": [
+      {
+        "id": "I001",
+        "path": "synthetic.md",
+        "category": "synthetic category",
+        "tags": [
+          "synthetic"
+        ],
+        "confidence": 0.9,
+        "new_name": "synthetic.md",
+        "hash": "sha256:synthetic",
+        "review": false,
+        "rationale": "synthetic only",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "operations": [
+      {
+        "id": "O1",
+        "status": "ok",
+        "from": "synthetic.md",
+        "to": "synthetic category/synthetic.md",
+        "rollback": "move back to synthetic.md"
+      }
+    ],
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "taxonomy": {
+      "categories": [
+        "synthetic category"
+      ],
+      "criteria": {
+        "synthetic category": "synthetic criterion"
+      }
+    },
+    "review_queue": [],
+    "duplicate_groups": [],
+    "version_groups": []
+  },
+  "schema_properties": {
+    "items": "task-specific field required by this sub-challenge",
+    "operations": "task-specific field required by this sub-challenge",
+    "findings": "检索/问答/批注结论及证据",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "权限、损坏、跳过、冲突",
+    "taxonomy": "task-specific field required by this sub-challenge",
+    "review_queue": "task-specific field required by this sub-challenge",
+    "duplicate_groups": "task-specific field required by this sub-challenge",
+    "version_groups": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "分类体系与判据先定义；每个输入文件恰好一个分配结果。",
+    "低置信度/边界案例进 review_queue；改名/移动有 before/after 与回滚。"
+  ]
 }

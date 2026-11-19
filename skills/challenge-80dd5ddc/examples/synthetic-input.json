@@ -2,26 +2,30 @@
   "case_id": "SYNTH-LIBRARY",
   "mode": "kb-qa",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "items": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "I001",
+      "path": "synthetic.md",
+      "kind": "text",
+      "metadata": {
+        "title": "Synthetic item"
+      },
+      "version": "v1",
+      "hash": "sha256:synthetic",
+      "status": "indexed",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
+    }
+  ],
+  "operations": [
+    {
+      "action": "index",
+      "target": "synthetic.md",
+      "status": "ok",
+      "detail": "synthetic only"
     }
   ],
   "findings": [
@@ -31,7 +35,7 @@
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
@@ -40,9 +44,38 @@
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "answers": [
+    {
+      "id": "A1",
+      "question": "Synthetic question",
+      "status": "answered",
+      "sentences": [
+        {
+          "text": "Synthetic answer sentence.",
+          "citations": [
+            {
+              "path": "synthetic.md",
+              "locator": "P1",
+              "quote": "synthetic source sentence"
+            }
+          ]
+        }
+      ],
+      "missing_evidence": [],
+      "conflict": []
+    }
+  ],
+  "retrieval": [
+    {
+      "answer_id": "A1",
+      "record_id": "R001",
+      "locator": "P1",
+      "snippet": "synthetic source sentence"
+    }
+  ]
 }

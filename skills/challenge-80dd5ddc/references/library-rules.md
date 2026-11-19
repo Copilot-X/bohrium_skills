@@ -4,7 +4,7 @@
 
 - 目标：知识库问答、检索增强、引用定位与拒答边界。
 - 主产物：`output/library-results.json`。
-- 必填字段：`items`, `evidence`。
+- 必填字段：`answers`, `evidence`。
 
 ## 2. 证据
 
@@ -35,3 +35,12 @@
 | 合并不同对象 | 事实错误 | 保留 `keep_separate` 与依据 |
 | 伪造在线结果 | 学术不端风险 | 只用输入材料，写缺口 |
 | 静默改数据 | 结果不可复现 | 保留原始快照与变更日志 |
+
+## 6. 本题指标与字段
+
+- 条目：`path/kind/metadata/version/hash/status/evidence`；每个文件或记录一条。
+- 操作：索引/移动/分类/批注/问答均记录 `action/target/status/detail`，失败或跳过不静默。
+- 检索/问答：命中片段 + 路径 + 行号/段落；无证据时拒答，不编造。
+- 分类/批注：每类有判据，低置信度进待复核；批注有原文锚点。
+- 答案每句至少一条 citation；无证据时拒答并写 missing_evidence。
+- 冲突材料并列；引用必须绑定到可回查的 path/locator/quote。

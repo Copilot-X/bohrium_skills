@@ -2,47 +2,69 @@
   "case_id": "SYNTH-EXPERIMENT",
   "mode": "plan-generation",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "hypothesis": "Synthetic hypothesis",
+  "variables": {
+    "independent": [
+      "temperature"
+    ],
+    "dependent": [
+      "selectivity"
+    ],
+    "controls": [
+      "pressure"
+    ]
+  },
+  "steps": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "S1",
+      "action": "synthetic step",
+      "parameters": {
+        "temperature": "350 C"
+      },
+      "duration": "2 h",
+      "materials": "synthetic",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
-  "findings": [
+  "parameters": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "name": "temperature",
+      "value": "350",
+      "unit": "C",
+      "basis": "synthetic.md P1"
     }
+  ],
+  "risks": [
+    {
+      "risk": "Synthetic risk",
+      "impact": "medium",
+      "mitigation": "Synthetic mitigation"
+    }
+  ],
+  "confirmation_items": [
+    "Synthetic item to confirm"
   ],
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "readout": {
+    "metric": "selectivity",
+    "unit": "%",
+    "decision_rule": "synthetic"
+  },
+  "resources": {
+    "equipment": [
+      "synthetic"
+    ],
+    "time": "2 h"
+  }
 }

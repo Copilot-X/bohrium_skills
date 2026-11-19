@@ -2,28 +2,53 @@
   "case_id": "SYNTH-SEARCH",
   "mode": "coverage-analysis",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
+  "question": "Synthetic research question",
   "queries": [
     {
       "id": "Q1",
+      "round": 1,
       "query": "synthetic query",
-      "source": "provided corpus"
+      "source": "provided corpus",
+      "purpose": "recall",
+      "stop_condition": "no new eligible records in 2 rounds"
     }
   ],
   "candidates": [
     {
       "id": "C001",
       "title": "Synthetic paper",
+      "authors": "A. Example",
       "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "venue": "Journal of Synthetic Examples",
+      "doi": "10.0000/synth.001",
+      "relevance": "core",
+      "rank": 1,
+      "score": 1.0,
+      "dedupe_key": "doi:10.0000/synth.001",
+      "merged_from": [],
+      "reason": "Synthetic relevance reason",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
+  "metrics": {
+    "k": 10,
+    "precision_at_k": 1.0,
+    "ndcg_at_k": 1.0,
+    "recall_at_k": 1.0,
+    "metadata_accuracy": 1.0,
+    "definition": "synthetic values; replace with measured values"
+  },
+  "screening": {
+    "include": [
+      "C001"
+    ],
+    "exclude": [],
+    "uncertain": []
+  },
   "findings": [
     {
       "id": "F001",
@@ -31,7 +56,7 @@
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
@@ -40,9 +65,37 @@
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "reference_set": [
+    {
+      "id": "R1",
+      "eligible": true,
+      "hit": true
+    }
+  ],
+  "coverage": {
+    "numerator": 1,
+    "denominator": 1,
+    "ratio": 1.0,
+    "definition": "unique eligible reference items with a verified hit / unique eligible reference items"
+  },
+  "misses": [
+    {
+      "id": "R2",
+      "category": "query_gap",
+      "cause": "synthetic only"
+    }
+  ],
+  "supplement": {
+    "query_id": "Q2",
+    "new_hits": [
+      "R2"
+    ],
+    "marginal_gain": 1
+  },
+  "residual_misses": []
 }

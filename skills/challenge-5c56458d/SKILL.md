@@ -1,6 +1,6 @@
 ---
 name: analysis-database-query-skill
-description: 科研数据库查询与分析：查询设计、模式/字段映射、结果校验与空结果处理。交付清洗表/统计结果/图表/代码/查询结果，保留来源/定位与不确定性，并生成含官方 reading/writing 字段的 result.json。analysis skill with a source-bound work file, evidence checks and an honest result envelope. Use for 科研数据库查询与分析、database-query、analysis、证据绑定、结果复核.
+description: 科研数据库查询与分析：查询设计、模式/字段映射、结果校验与空结果处理。交付SQL、字段映射、结果表与行数校验，保留来源/定位与不确定性，并生成含官方 reading/writing 字段的 result.json。analysis skill with a source-bound work file, evidence checks and an honest result envelope. Use for 科研数据库查询与分析、database-query、analysis、证据绑定、结果复核.
 ---
 
 # 科研数据库查询与分析（analysis track · database-query）
@@ -8,8 +8,8 @@ description: 科研数据库查询与分析：查询设计、模式/字段映射
 ## 用途与触发
 
 task.md 要求“查询设计、模式/字段映射、结果校验与空结果处理”，或 `/input/case.json` 给出 `analysis` / `database-query`
-相关字段时使用。本题属于 **数据分析** 类任务，核心交付是
-**清洗表/统计结果/图表/代码/查询结果**，不是一段泛泛建议。
+相关字段时使用。本题属于 **数据库查询** 类任务，核心交付是
+**SQL、字段映射、结果表与行数校验**，不是一段泛泛建议。
 
 不适用：输入没有可读材料、要求联网获取未提供的数据、或要求替代
 同行评审/机构审查/临床决策。材料不足时只交付可确认部分，并把缺口写成
@@ -44,7 +44,7 @@ mkdir -p /app/work /app/output
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/analysis-plan.json` 的字段契约 |
-| `references/analysis-rules.md` | 数据分析 的可执行规则与失败模式 |
+| `references/analysis-rules.md` | 数据库查询 的可执行规则与失败模式 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
 ## 工作流
@@ -68,37 +68,85 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 ### 第 2 步：写 `work/analysis-plan.json`（约 60% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`analysis`, `results`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+`query`, `results`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
 
 ```json
 {
-  "case_id": "与输入一致",
+  "case_id": "SYNTH-ANALYSIS",
   "mode": "database-query",
-  "summary": "一句话主结果",
-  "question": "研究/审查/分析问题",
-  "queries": [{"id": "Q1", "query": "...", "source": "...", "purpose": "..."}],
-  "candidates": [{"id": "C001", "title": "...", "year": "...",
-                  "relevance": "core|method|background|exclude",
-                  "reason": "...", "evidence": {"path": "...",
-                  "locator": "...", "quote": "逐字原文"}}],
-  "findings": [{"id": "F001", "statement": "...", "severity": "high|medium|low",
-                "evidence": [{"path": "...", "locator": "...", "quote": "..."}]}],
-  "evidence": [{"path": "...", "locator": "...", "quote": "..."}],
-  "uncertainties": [{"item": "...", "reason": "...", "impact": "..."}]
+  "summary": "Synthetic example only.",
+  "analysis": {
+    "question": "Synthetic question",
+    "method": "Synthetic method",
+    "assumptions": [
+      "Synthetic assumption"
+    ],
+    "diagnostics": [
+      "Synthetic diagnostic"
+    ],
+    "steps": [
+      "Synthetic step"
+    ]
+  },
+  "results": [
+    {
+      "id": "R001",
+      "metric": "synthetic_metric",
+      "value": 1,
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "figures": [
+    {
+      "path": "figures/synthetic.svg",
+      "source": "results",
+      "data_source": "output/results.csv",
+      "units": {
+        "x": "s",
+        "y": "%"
+      }
+    }
+  ],
+  "code": "work/analysis.py",
+  "evidence": [
+    {
+      "path": "synthetic.md",
+      "locator": "P1",
+      "quote": "synthetic source sentence"
+    }
+  ],
+  "uncertainties": [],
+  "query": "SELECT * FROM synthetic",
+  "schema_mapping": {
+    "synthetic_col": "synthetic_col"
+  },
+  "permissions": {
+    "status": "ok",
+    "notes": "synthetic only"
+  },
+  "empty_result": {
+    "is_empty": false,
+    "reason": ""
+  }
 }
 ```
 
 同时写以下产物：
 
 - `output/analysis-report.md`
+- `output/query.sql`
+- `output/result-table.csv`
 - `output/results.json`
-- `output/results.csv`
 - `output/execution.log`
 
 - `output/analysis-report.md` 是主交付物，必须真实存在且非空。
 - 所有 `quote` 必须能在对应 `path` 的材料中逐字（允许空白折叠/省略号分段）
   找到；找不到的写入 `uncertainties`，不要改写成“大意”。
-- 不静默修改数据；报告数字必须与结果文件一致；失败要保留日志。
+- 查询可复跑；空结果和权限明确。
 
 ### 第 3 步：finalize（约 30% 预算）
 
@@ -109,12 +157,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/analysis-plan.json`（或 JSON 主产物），检查必填字段 `analysis`, `results`, `evidence`；
+1. 读取 `work/analysis-plan.json`（或 JSON 主产物），检查必填字段 `query`, `results`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
-3. 登记 `output/analysis-report.md` 与 - `output/analysis-report.md`
-- `output/results.json`
-- `output/results.csv`
-- `output/execution.log` 的真实文件；
+3. 登记 `output/analysis-report.md` 与 `output/query.sql`, `output/result-table.csv`, `output/results.json`, `output/execution.log` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
    stdout/stderr 写入 `output/execution.log`；失败不伪造结果；
 5. 写 `output/result.json`，含 `status/result/claims/uncertainties`
@@ -133,23 +178,39 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 - `claims[]`：`findings`/`candidates`/`summary` 的投影；
 - `preserved_facts[]`：证据中的数字/单位（有则填）；
 - `evidence_map[]`：每条证据的 path/locator/quote；
-- `artifacts[]`：主产物与 - `output/analysis-report.md`
-- `output/results.json`
-- `output/results.csv`
-- `output/execution.log`；
+- `artifacts[]`：主产物与 `output/query.sql`, `output/result-table.csv`, `output/results.json`, `output/execution.log`；
 - `uncertainties[]`、`change_log[]`、`output_contract`、`contract_coverage`。
+
+若 `/input/case.json` 的 `output_contract` 含本题特有键（例如
+`cleaned_table`、`quality_report`、`rule_log`、`original_snapshot`），必须：
+
+1. 在 `result.json` 顶层保留原键名；
+2. 优先写同名产物 `output/<field>.json/.csv/.md`，或把对应 canonical
+   字段/artifact 路径填入该键；
+3. finalize 会检查 `contract_coverage`，未覆盖的键会降级 `partial` 并写入
+   `uncertainties`；不要只写 `status/result/claims` 而忽略原契约字段。
 
 ## 质量闸门
 
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/analysis-report.md` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `analysis`, `results`, `evidence` 齐全 |
+| G2 | 必填字段 | `query`, `results`, `evidence` 齐全 |
 | G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
 | G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
 | G5 | 专项 | 查询可复跑；结果与问题对应；权限/空结果明确 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+
+## 评分维度对照
+
+| 评分维度 | 本题要交付的证据 | 主要产物 |
+|---|---|---|
+| 实际效果 | 查询设计、模式/字段映射、结果校验与空结果处理；查询可复跑；结果与问题对应；权限/空结果明确 | `output/analysis-report.md` + evidence |
+| 使用增益 | 可复跑的查询/步骤/规则/日志，以及同条件对照 | `output/query.sql`, `output/result-table.csv`, `output/results.json`, `output/execution.log` |
+| 创新增益 | 本题专项方法（database-query）及其与基线方案的边界 | `references/analysis-rules.md` + `output/analysis-report.md` |
+| 可靠体验 | 空结果、冲突、缺字段、权限/格式错误的识别与降级 | `uncertainties` + `output/result.json` |
+| 生态贡献 | SKILL.md、schema、规则、synthetic 示例可被他人复用 | `SKILL.md` + `templates/` + `references/` + `examples/` |
 
 ## 异常处理
 
@@ -171,19 +232,63 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "case_id": "SYNTH-ANALYSIS",
   "mode": "database-query",
   "summary": "Synthetic example only.",
-  "question": "Synthetic research question",
-  "queries": [{"id": "Q1", "query": "example query", "source": "provided corpus"}],
-  "candidates": [{"id": "C001", "title": "Synthetic paper",
-                  "year": "2026", "relevance": "method",
-                  "reason": "Synthetic relevance reason",
-                  "evidence": {"path": "synthetic.md", "locator": "P001",
-                  "quote": "synthetic source sentence"}}],
-  "findings": [{"id": "F001", "statement": "Synthetic finding",
-                "evidence": [{"path": "synthetic.md", "locator": "P001",
-                "quote": "synthetic source sentence"}]}],
-  "evidence": [{"path": "synthetic.md", "locator": "P001",
-                "quote": "synthetic source sentence"}],
-  "uncertainties": []
+  "analysis": {
+    "question": "Synthetic question",
+    "method": "Synthetic method",
+    "assumptions": [
+      "Synthetic assumption"
+    ],
+    "diagnostics": [
+      "Synthetic diagnostic"
+    ],
+    "steps": [
+      "Synthetic step"
+    ]
+  },
+  "results": [
+    {
+      "id": "R001",
+      "metric": "synthetic_metric",
+      "value": 1,
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "figures": [
+    {
+      "path": "figures/synthetic.svg",
+      "source": "results",
+      "data_source": "output/results.csv",
+      "units": {
+        "x": "s",
+        "y": "%"
+      }
+    }
+  ],
+  "code": "work/analysis.py",
+  "evidence": [
+    {
+      "path": "synthetic.md",
+      "locator": "P1",
+      "quote": "synthetic source sentence"
+    }
+  ],
+  "uncertainties": [],
+  "query": "SELECT * FROM synthetic",
+  "schema_mapping": {
+    "synthetic_col": "synthetic_col"
+  },
+  "permissions": {
+    "status": "ok",
+    "notes": "synthetic only"
+  },
+  "empty_result": {
+    "is_empty": false,
+    "reason": ""
+  }
 }
 ```
 

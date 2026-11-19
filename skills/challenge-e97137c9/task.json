@@ -14,7 +14,10 @@
     "output/references.json"
   ],
   "required_fields": [
-    "question",
+    "screening_criteria",
+    "screening_log",
+    "themes",
+    "gaps",
     "findings",
     "evidence"
   ],
@@ -38,6 +41,123 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "references": [],
+    "gap_analysis": [],
+    "screening_criteria": {},
+    "screening_log": [],
+    "themes": [],
+    "gaps": []
+  },
+  "example": {
+    "case_id": "SYNTH-RESEARCH",
+    "mode": "review-generation",
+    "summary": "Synthetic example only.",
+    "question": "Synthetic research question",
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "sources": [
+          "synthetic.md"
+        ],
+        "support": "partial",
+        "strength": "suggestive",
+        "limitations": [],
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "references": [
+      {
+        "key": "ref1",
+        "title": "Synthetic reference",
+        "doi": null
+      }
+    ],
+    "gap_analysis": [
+      {
+        "gap": "Synthetic gap",
+        "basis": "synthetic.md P1"
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "screening_criteria": {
+      "version": "v1",
+      "include": [
+        "synthetic include"
+      ],
+      "exclude": [
+        "synthetic exclude"
+      ],
+      "priority": []
+    },
+    "screening_log": [
+      {
+        "record_id": "R001",
+        "decision": "include",
+        "reason": "synthetic only",
+        "full_text": false,
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "themes": [
+      {
+        "id": "TH1",
+        "name": "Synthetic theme",
+        "records": [
+          "R001",
+          "R002"
+        ],
+        "boundary": "synthetic only",
+        "conflicts": [],
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "gaps": [
+      {
+        "gap": "Synthetic gap",
+        "basis": "TH1",
+        "alternative_explanations": []
+      }
+    ]
+  },
+  "schema_properties": {
+    "question": "研究问题与范围",
+    "findings": "task-specific field required by this sub-challenge",
+    "references": "引用条目与标识符",
+    "gap_analysis": "研究空白及其证据基础",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "冲突、空白、未覆盖范围",
+    "screening_criteria": "task-specific field required by this sub-challenge",
+    "screening_log": "task-specific field required by this sub-challenge",
+    "themes": "task-specific field required by this sub-challenge",
+    "gaps": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "主题至少 2 条证据；空白由证据推出并排除替代解释。",
+    "每条论断标 support(full/partial/none/unverifiable) 与 strength；引用存在不等于引用支持。"
+  ]
 }

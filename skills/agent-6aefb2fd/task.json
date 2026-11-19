@@ -10,12 +10,12 @@
   "deliverable": "output/analysis-report.md",
   "output_files": [
     "output/analysis-report.md",
-    "output/results.json",
-    "output/results.csv",
-    "output/execution.log"
+    "output/steps.json",
+    "output/intermediate-results",
+    "output/recovery.json"
   ],
   "required_fields": [
-    "analysis",
+    "steps",
     "results",
     "evidence"
   ],
@@ -39,6 +39,114 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "figures": [],
+    "code": "",
+    "tool_calls": [],
+    "intermediate_results": [],
+    "recovery": []
+  },
+  "example": {
+    "case_id": "SYNTH-ANALYSIS",
+    "mode": "multi-step-agent",
+    "summary": "Synthetic example only.",
+    "analysis": {
+      "question": "Synthetic question",
+      "method": "Synthetic method",
+      "assumptions": [
+        "Synthetic assumption"
+      ],
+      "diagnostics": [
+        "Synthetic diagnostic"
+      ],
+      "steps": [
+        "Synthetic step"
+      ]
+    },
+    "results": [
+      {
+        "id": "R001",
+        "metric": "selectivity",
+        "value": 92,
+        "unit": "%",
+        "source": "synthetic.md",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "figures": [
+      {
+        "path": "figures/synthetic.svg",
+        "source": "results",
+        "data_source": "output/results.csv",
+        "units": {
+          "x": "s",
+          "y": "%"
+        }
+      }
+    ],
+    "code": "work/analysis.py",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "steps": [
+      {
+        "id": "S1",
+        "action": "synthetic step",
+        "tool": "synthetic-tool",
+        "params": {},
+        "result": "synthetic only",
+        "status": "ok",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "tool_calls": [
+      {
+        "id": "T1",
+        "step_id": "S1",
+        "status": "ok",
+        "retry": 0
+      }
+    ],
+    "intermediate_results": [
+      {
+        "step_id": "S1",
+        "path": "work/step1.json"
+      }
+    ],
+    "recovery": [
+      {
+        "failure": "synthetic",
+        "action": "retry",
+        "status": "recovered"
+      }
+    ]
+  },
+  "schema_properties": {
+    "analysis": "问题、方法、假设与步骤",
+    "results": "指标、数值、单位、来源与证据",
+    "figures": "图表路径及其数据来源",
+    "code": "真实执行的分析脚本路径",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "异常、缺失、失败与未验证项",
+    "steps": "task-specific field required by this sub-challenge",
+    "tool_calls": "task-specific field required by this sub-challenge",
+    "intermediate_results": "task-specific field required by this sub-challenge",
+    "recovery": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "每步有输入/输出；失败可恢复；最终结果可复算；过程产物进入 output 或报告。"
+  ]
 }

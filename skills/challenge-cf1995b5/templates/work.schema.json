@@ -10,14 +10,75 @@
     "evidence"
   ],
   "properties": {
+    "case_id": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "mode": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "summary": {
+      "type": "string",
+      "description": "task-specific field"
+    },
+    "hypothesis": {
+      "type": "string",
+      "description": "task-specific field required by this sub-challenge"
+    },
+    "variables": {
+      "type": "object",
+      "description": "task-specific field required by this sub-challenge"
+    },
     "steps": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
     },
     "parameters": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "task-specific field required by this sub-challenge",
+      "items": {
+        "type": "object"
+      }
+    },
+    "risks": {
+      "type": "array",
+      "description": "风险、影响与处置",
+      "items": {
+        "type": "object"
+      }
+    },
+    "confirmation_items": {
+      "type": "array",
+      "description": "需要作者确认的设备/安全/伦理条件",
+      "items": {
+        "type": "object"
+      }
     },
     "evidence": {
-      "description": "required by task.json"
+      "type": "array",
+      "description": "path+locator+quote 的逐字证据",
+      "items": {
+        "type": "object"
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "未确认、冲突、缺口",
+      "items": {
+        "type": "object"
+      }
+    },
+    "readout": {
+      "type": "object",
+      "description": "task-specific field required by this sub-challenge"
+    },
+    "resources": {
+      "type": "object",
+      "description": "task-specific field required by this sub-challenge"
     }
   }
 }

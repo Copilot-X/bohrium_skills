@@ -2,45 +2,55 @@
   "case_id": "SYNTH-ANALYSIS",
   "mode": "statistics",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "analysis": {
+    "question": "Synthetic question",
+    "method": "synthetic test",
+    "assumptions": [
+      "normality"
+    ],
+    "assumption_checks": [
+      {
+        "assumption": "normality",
+        "result": "not_checked"
+      }
+    ],
+    "effect_size": "synthetic",
+    "ci": [
+      0,
+      1
+    ],
+    "sample_size": 1
+  },
+  "results": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "R001",
+      "metric": "selectivity",
+      "value": 92,
+      "unit": "%",
+      "source": "synthetic.md",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
-  "findings": [
+  "figures": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "path": "figures/synthetic.svg",
+      "source": "results",
+      "data_source": "output/results.csv",
+      "units": {
+        "x": "s",
+        "y": "%"
+      }
     }
   ],
+  "code": "work/analysis.py",
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],

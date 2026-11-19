@@ -110,7 +110,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 按 `segment_id`/`sentence_id` 精确应用 `before → after`；
+1. 按 `segment_id`/`sentence_id` 精确应用 `before → after`；`before`
+   允许空白折叠（换行/多空格不阻止匹配），但不允许改词或改写；
    找不到或出现多次 → `blocked`，原文不变；
 2. 生成 `output/polished.md`（可编辑主稿）；
 3. 生成 `output/edit-table.json` / `.csv`（逐条修改记录）；

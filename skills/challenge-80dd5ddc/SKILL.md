@@ -1,6 +1,6 @@
 ---
 name: library-kb-qa-skill
-description: 科研知识库问答：知识库问答、检索增强、引用定位与拒答边界。交付文件清单、索引、分类/问答/批注结果，保留来源/定位与不确定性，并生成含官方 reading/writing 字段的 result.json。library skill with a source-bound work file, evidence checks and an honest result envelope. Use for 科研知识库问答、kb-qa、library、证据绑定、结果复核.
+description: 科研知识库问答：知识库问答、检索增强、引用定位与拒答边界。交付逐句引用、拒答与冲突并列，保留来源/定位与不确定性，并生成含官方 reading/writing 字段的 result.json。library skill with a source-bound work file, evidence checks and an honest result envelope. Use for 科研知识库问答、kb-qa、library、证据绑定、结果复核.
 ---
 
 # 科研知识库问答（library track · kb-qa）
@@ -8,8 +8,8 @@ description: 科研知识库问答：知识库问答、检索增强、引用定�
 ## 用途与触发
 
 task.md 要求“知识库问答、检索增强、引用定位与拒答边界”，或 `/input/case.json` 给出 `library` / `kb-qa`
-相关字段时使用。本题属于 **资料库/文件** 类任务，核心交付是
-**文件清单、索引、分类/问答/批注结果**，不是一段泛泛建议。
+相关字段时使用。本题属于 **知识库问答** 类任务，核心交付是
+**逐句引用、拒答与冲突并列**，不是一段泛泛建议。
 
 不适用：输入没有可读材料、要求联网获取未提供的数据、或要求替代
 同行评审/机构审查/临床决策。材料不足时只交付可确认部分，并把缺口写成
@@ -44,7 +44,7 @@ mkdir -p /app/work /app/output
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/library-plan.json` 的字段契约 |
-| `references/library-rules.md` | 资料库/文件 的可执行规则与失败模式 |
+| `references/library-rules.md` | 知识库问答 的可执行规则与失败模式 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
 ## 工作流
@@ -68,23 +68,89 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 ### 第 2 步：写 `work/library-plan.json`（约 60% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`items`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+`answers`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
 
 ```json
 {
-  "case_id": "与输入一致",
+  "case_id": "SYNTH-LIBRARY",
   "mode": "kb-qa",
-  "summary": "一句话主结果",
-  "question": "研究/审查/分析问题",
-  "queries": [{"id": "Q1", "query": "...", "source": "...", "purpose": "..."}],
-  "candidates": [{"id": "C001", "title": "...", "year": "...",
-                  "relevance": "core|method|background|exclude",
-                  "reason": "...", "evidence": {"path": "...",
-                  "locator": "...", "quote": "逐字原文"}}],
-  "findings": [{"id": "F001", "statement": "...", "severity": "high|medium|low",
-                "evidence": [{"path": "...", "locator": "...", "quote": "..."}]}],
-  "evidence": [{"path": "...", "locator": "...", "quote": "..."}],
-  "uncertainties": [{"item": "...", "reason": "...", "impact": "..."}]
+  "summary": "Synthetic example only.",
+  "items": [
+    {
+      "id": "I001",
+      "path": "synthetic.md",
+      "kind": "text",
+      "metadata": {
+        "title": "Synthetic item"
+      },
+      "version": "v1",
+      "hash": "sha256:synthetic",
+      "status": "indexed",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "operations": [
+    {
+      "action": "index",
+      "target": "synthetic.md",
+      "status": "ok",
+      "detail": "synthetic only"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F001",
+      "statement": "Synthetic finding",
+      "evidence": [
+        {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "path": "synthetic.md",
+      "locator": "P1",
+      "quote": "synthetic source sentence"
+    }
+  ],
+  "uncertainties": [],
+  "answers": [
+    {
+      "id": "A1",
+      "question": "Synthetic question",
+      "status": "answered",
+      "sentences": [
+        {
+          "text": "Synthetic answer sentence.",
+          "citations": [
+            {
+              "path": "synthetic.md",
+              "locator": "P1",
+              "quote": "synthetic source sentence"
+            }
+          ]
+        }
+      ],
+      "missing_evidence": [],
+      "conflict": []
+    }
+  ],
+  "retrieval": [
+    {
+      "answer_id": "A1",
+      "record_id": "R001",
+      "locator": "P1",
+      "snippet": "synthetic source sentence"
+    }
+  ]
 }
 ```
 
@@ -97,7 +163,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 - `output/library-results.json` 是主交付物，必须真实存在且非空。
 - 所有 `quote` 必须能在对应 `path` 的材料中逐字（允许空白折叠/省略号分段）
   找到；找不到的写入 `uncertainties`，不要改写成“大意”。
-- 不把未读取的文件写成已索引；权限/损坏/跳过要明确。
+- 无证据拒答；引用必须支持该句。
 
 ### 第 3 步：finalize（约 30% 预算）
 
@@ -108,11 +174,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/library-plan.json`（或 JSON 主产物），检查必填字段 `items`, `evidence`；
+1. 读取 `work/library-plan.json`（或 JSON 主产物），检查必填字段 `answers`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
-3. 登记 `output/library-results.json` 与 - `output/library-results.json`
-- `output/library-index.json`
-- `output/operations.log.json` 的真实文件；
+3. 登记 `output/library-results.json` 与 `output/library-index.json`, `output/operations.log.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
    stdout/stderr 写入 `output/execution.log`；失败不伪造结果；
 5. 写 `output/result.json`，含 `status/result/claims/uncertainties`
@@ -131,22 +195,39 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 - `claims[]`：`findings`/`candidates`/`summary` 的投影；
 - `preserved_facts[]`：证据中的数字/单位（有则填）；
 - `evidence_map[]`：每条证据的 path/locator/quote；
-- `artifacts[]`：主产物与 - `output/library-results.json`
-- `output/library-index.json`
-- `output/operations.log.json`；
+- `artifacts[]`：主产物与 `output/library-index.json`, `output/operations.log.json`；
 - `uncertainties[]`、`change_log[]`、`output_contract`、`contract_coverage`。
+
+若 `/input/case.json` 的 `output_contract` 含本题特有键（例如
+`cleaned_table`、`quality_report`、`rule_log`、`original_snapshot`），必须：
+
+1. 在 `result.json` 顶层保留原键名；
+2. 优先写同名产物 `output/<field>.json/.csv/.md`，或把对应 canonical
+   字段/artifact 路径填入该键；
+3. finalize 会检查 `contract_coverage`，未覆盖的键会降级 `partial` 并写入
+   `uncertainties`；不要只写 `status/result/claims` 而忽略原契约字段。
 
 ## 质量闸门
 
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/library-results.json` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `items`, `evidence` 齐全 |
+| G2 | 必填字段 | `answers`, `evidence` 齐全 |
 | G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
 | G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
 | G5 | 专项 | 答案每句有来源；无证据时拒答；冲突材料并列 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+
+## 评分维度对照
+
+| 评分维度 | 本题要交付的证据 | 主要产物 |
+|---|---|---|
+| 实际效果 | 知识库问答、检索增强、引用定位与拒答边界；答案每句有来源；无证据时拒答；冲突材料并列 | `output/library-results.json` + evidence |
+| 使用增益 | 可复跑的查询/步骤/规则/日志，以及同条件对照 | `output/library-index.json`, `output/operations.log.json` |
+| 创新增益 | 本题专项方法（kb-qa）及其与基线方案的边界 | `references/library-rules.md` + `output/library-results.json` |
+| 可靠体验 | 空结果、冲突、缺字段、权限/格式错误的识别与降级 | `uncertainties` + `output/result.json` |
+| 生态贡献 | SKILL.md、schema、规则、synthetic 示例可被他人复用 | `SKILL.md` + `templates/` + `references/` + `examples/` |
 
 ## 异常处理
 
@@ -168,19 +249,82 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "case_id": "SYNTH-LIBRARY",
   "mode": "kb-qa",
   "summary": "Synthetic example only.",
-  "question": "Synthetic research question",
-  "queries": [{"id": "Q1", "query": "example query", "source": "provided corpus"}],
-  "candidates": [{"id": "C001", "title": "Synthetic paper",
-                  "year": "2026", "relevance": "method",
-                  "reason": "Synthetic relevance reason",
-                  "evidence": {"path": "synthetic.md", "locator": "P001",
-                  "quote": "synthetic source sentence"}}],
-  "findings": [{"id": "F001", "statement": "Synthetic finding",
-                "evidence": [{"path": "synthetic.md", "locator": "P001",
-                "quote": "synthetic source sentence"}]}],
-  "evidence": [{"path": "synthetic.md", "locator": "P001",
-                "quote": "synthetic source sentence"}],
-  "uncertainties": []
+  "items": [
+    {
+      "id": "I001",
+      "path": "synthetic.md",
+      "kind": "text",
+      "metadata": {
+        "title": "Synthetic item"
+      },
+      "version": "v1",
+      "hash": "sha256:synthetic",
+      "status": "indexed",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "operations": [
+    {
+      "action": "index",
+      "target": "synthetic.md",
+      "status": "ok",
+      "detail": "synthetic only"
+    }
+  ],
+  "findings": [
+    {
+      "id": "F001",
+      "statement": "Synthetic finding",
+      "evidence": [
+        {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "path": "synthetic.md",
+      "locator": "P1",
+      "quote": "synthetic source sentence"
+    }
+  ],
+  "uncertainties": [],
+  "answers": [
+    {
+      "id": "A1",
+      "question": "Synthetic question",
+      "status": "answered",
+      "sentences": [
+        {
+          "text": "Synthetic answer sentence.",
+          "citations": [
+            {
+              "path": "synthetic.md",
+              "locator": "P1",
+              "quote": "synthetic source sentence"
+            }
+          ]
+        }
+      ],
+      "missing_evidence": [],
+      "conflict": []
+    }
+  ],
+  "retrieval": [
+    {
+      "answer_id": "A1",
+      "record_id": "R001",
+      "locator": "P1",
+      "snippet": "synthetic source sentence"
+    }
+  ]
 }
 ```
 

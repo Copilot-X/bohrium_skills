@@ -2,47 +2,63 @@
   "case_id": "SYNTH-REVIEW",
   "mode": "logic-review",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "findings": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "L001",
+      "locator": {
+        "path": "synthetic.md",
+        "locator": "P1"
+      },
+      "original_quote": "synthetic source sentence",
+      "severity": "major",
+      "type": "logic_gap",
+      "status": "open",
+      "fix": "synthetic fix",
+      "false_positive_check": "cited view vs author claim checked",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
     }
   ],
-  "findings": [
+  "checks": [
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P001",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "item": "synthetic check",
+      "status": "pass",
+      "detail": "synthetic only"
     }
   ],
+  "verdict": "major_revision",
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "claim_inventory": [
+    {
+      "id": "C1",
+      "claim": "synthetic claim",
+      "type": "causal",
+      "section": "Discussion",
+      "speaker": "author",
+      "support": "partial",
+      "strength": "suggestive",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    }
+  ],
+  "cross_section_checks": [
+    {
+      "promise": "synthetic promise",
+      "delivery": "synthetic delivery",
+      "consistency": "partial"
+    }
+  ]
 }

@@ -2,26 +2,33 @@
   "case_id": "SYNTH-LIBRARY",
   "mode": "file-management",
   "summary": "Synthetic example only.",
-  "question": "Synthetic question",
-  "queries": [
+  "items": [
     {
-      "id": "Q1",
-      "query": "synthetic query",
-      "source": "provided corpus"
-    }
-  ],
-  "candidates": [
-    {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "relevance": "method",
-      "reason": "Synthetic reason",
+      "id": "I001",
+      "path": "library/original/synthetic.md",
+      "bytes": 42,
+      "sha256": "synthetic-sha256",
+      "source": "input/synthetic.md",
+      "permissions": "rw",
+      "status": "indexed",
+      "target": "library/original/",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P001",
+        "locator": "P1",
         "quote": "synthetic source sentence"
       }
+    }
+  ],
+  "operations": [
+    {
+      "id": "O1",
+      "action": "copy",
+      "status": "ok",
+      "from": "input/synthetic.md",
+      "to": "library/original/synthetic.md",
+      "sha_before": "synthetic-sha256",
+      "sha_after": "synthetic-sha256",
+      "rollback": "delete library/original/synthetic.md"
     }
   ],
   "findings": [
@@ -31,7 +38,7 @@
       "evidence": [
         {
           "path": "synthetic.md",
-          "locator": "P001",
+          "locator": "P1",
           "quote": "synthetic source sentence"
         }
       ]
@@ -40,9 +47,28 @@
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P001",
+      "locator": "P1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [],
+  "duplicate_groups": [
+    {
+      "group_id": "D1",
+      "members": [
+        "I001"
+      ],
+      "basis": "same sha256"
+    }
+  ],
+  "version_chain": [
+    {
+      "work_id": "W1",
+      "versions": [
+        "I001"
+      ],
+      "basis": "same title+author"
+    }
+  ],
+  "skipped": []
 }

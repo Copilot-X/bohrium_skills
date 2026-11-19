@@ -15,6 +15,8 @@
   ],
   "required_fields": [
     "findings",
+    "facets_checked",
+    "review_status",
     "evidence"
   ],
   "focus": "论文质量审查、逐条问题、严重度与修改建议",
@@ -37,6 +39,78 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "checks": [],
+    "verdict": "",
+    "facets_checked": [],
+    "review_status": "",
+    "not_checked": []
+  },
+  "example": {
+    "case_id": "SYNTH-REVIEW",
+    "mode": "quality-review",
+    "summary": "Synthetic example only.",
+    "findings": [
+      {
+        "id": "R001",
+        "facet": "methods",
+        "locator": {
+          "path": "synthetic.md",
+          "locator": "P1"
+        },
+        "original_quote": "synthetic source sentence",
+        "severity": "major",
+        "type": "error",
+        "status": "open",
+        "fix": "synthetic fix",
+        "false_positive_check": "author assumption checked",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "checks": [
+      {
+        "item": "synthetic check",
+        "status": "pass",
+        "detail": "synthetic only"
+      }
+    ],
+    "verdict": "major_revision",
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "facets_checked": [
+      {
+        "facet": "methods",
+        "status": "checked",
+        "items": [
+          "synthetic check"
+        ]
+      }
+    ],
+    "review_status": "issues",
+    "not_checked": []
+  },
+  "schema_properties": {
+    "findings": "task-specific field required by this sub-challenge",
+    "checks": "检查项与 pass/fail/not_checked",
+    "verdict": "总体判断及边界",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "无法判断、材料不足、待复核",
+    "facets_checked": "task-specific field required by this sub-challenge",
+    "review_status": "task-specific field required by this sub-challenge",
+    "not_checked": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "每个 finding 有 facet/locator/original_quote/severity/type/fix/误报检查。",
+    "review_status 区分稿件结论与流程状态；未检查项列 not_checked。"
+  ]
 }

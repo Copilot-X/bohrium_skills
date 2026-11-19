@@ -15,8 +15,8 @@
     "output/evidence.json"
   ],
   "required_fields": [
-    "queries",
-    "candidates",
+    "patents",
+    "families",
     "evidence"
   ],
   "focus": "专利/技术文献检索、同族合并、法律状态与技术分类",
@@ -39,6 +39,141 @@
     "results": [],
     "evidence": [],
     "uncertainties": [],
-    "artifacts": []
-  }
+    "artifacts": [],
+    "metrics": {},
+    "screening": {},
+    "patents": [],
+    "families": [],
+    "legal_status": [],
+    "classification": []
+  },
+  "example": {
+    "case_id": "SYNTH-SEARCH",
+    "mode": "patent-search",
+    "summary": "Synthetic example only.",
+    "question": "Synthetic research question",
+    "queries": [
+      {
+        "id": "Q1",
+        "round": 1,
+        "query": "synthetic patent query",
+        "source": "patent corpus",
+        "purpose": "recall"
+      }
+    ],
+    "candidates": [
+      {
+        "id": "C001",
+        "title": "Synthetic paper",
+        "authors": "A. Example",
+        "year": "2026",
+        "venue": "Journal of Synthetic Examples",
+        "doi": "10.0000/synth.001",
+        "relevance": "core",
+        "rank": 1,
+        "score": 1.0,
+        "dedupe_key": "doi:10.0000/synth.001",
+        "merged_from": [],
+        "reason": "Synthetic relevance reason",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "metrics": {
+      "k": 10,
+      "precision_at_k": 1.0,
+      "ndcg_at_k": 1.0,
+      "recall_at_k": 1.0,
+      "metadata_accuracy": 1.0,
+      "definition": "synthetic values; replace with measured values"
+    },
+    "screening": {
+      "include": [
+        "C001"
+      ],
+      "exclude": [],
+      "uncertain": []
+    },
+    "findings": [
+      {
+        "id": "F001",
+        "statement": "Synthetic finding",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    ],
+    "uncertainties": [],
+    "patents": [
+      {
+        "id": "P001",
+        "patent_number": "CN000000A",
+        "title": "Synthetic patent",
+        "applicant": "Example",
+        "filing_date": "2020-01-01",
+        "legal_status": "granted",
+        "classification": "C07C",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      }
+    ],
+    "families": [
+      {
+        "family_id": "F1",
+        "members": [
+          "P001"
+        ],
+        "basis": "priority"
+      }
+    ],
+    "legal_status": [
+      {
+        "patent_id": "P001",
+        "status": "granted",
+        "date": "2021-01-01",
+        "source": "synthetic"
+      }
+    ],
+    "classification": [
+      {
+        "patent_id": "P001",
+        "code": "C07C",
+        "scheme": "IPC"
+      }
+    ]
+  },
+  "schema_properties": {
+    "queries": "task-specific field required by this sub-challenge",
+    "candidates": "候选记录：title/authors/year/venue/doi/relevance/reason/evidence",
+    "metrics": "k、Precision@k、nDCG@k、Recall@k、元数据准确率及计算口径",
+    "screening": "include/exclude/uncertain 分层与判据",
+    "findings": "关键发现及证据",
+    "evidence": "path+locator+quote 的逐字证据",
+    "uncertainties": "空结果、冲突、权限、缺失元数据",
+    "patents": "task-specific field required by this sub-challenge",
+    "families": "task-specific field required by this sub-challenge",
+    "legal_status": "task-specific field required by this sub-challenge",
+    "classification": "task-specific field required by this sub-challenge"
+  },
+  "mode_metrics": [
+    "专利号/申请号可回溯、同族合并准确率、法律状态与日期完整率、技术分类匹配。",
+    "同族合并写 basis；法律状态不能靠标题猜测，必须有来源。"
+  ]
 }

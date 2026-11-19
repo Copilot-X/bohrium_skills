@@ -43,8 +43,9 @@ mkdir -p /app/work /app/output
 | `templates/glossary.schema.json` | `work/glossary.json` 字段说明 |
 | `references/translation-rules.md` | 数字、引用、否定、情态、术语与失败模式 |
 | `examples/source-zh.md` | synthetic 中文原文（非正式案例） |
-| `examples/translation-en.md` | synthetic 英文译文（非正式答案） |
-| `examples/glossary.json` | synthetic 术语表 |
+| `examples/translation-en.md` | synthetic 英文纯译文（非正式答案） |
+| `examples/bilingual.md` | 与 `work/segments.json` 的 P001–P012 对齐的 synthetic 双语示例 |
+| `examples/glossary.json` | synthetic 术语表（锁定术语与别名） |
 
 ## 工作流（译文优先）
 
