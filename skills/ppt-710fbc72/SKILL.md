@@ -1,235 +1,154 @@
 ---
 name: deck-template-adapter
-description: 学术 PPT 模板与格式适配：读取真实母版/版式/占位符/主题字体与页面尺寸，把模型写好的页级内容装进真实版式，或把起始 deck 逐页重定向到目标模板。交付可编辑 PPTX、真实 PDF/PNG 预览（无渲染器时如实说明）、逐页证据映射与可复核的 result.json。Use for PPT templates, master/layout adaptation, starting-deck retargeting, enterprise/conference templates, batch format consistency.
+description: Fit academic content onto a supplied presentation template — audit masters, layouts, fonts and theme colours, map slide roles to real layouts, build the deck and adopt the template package, then report fidelity and every font substitution. Use when the task requires template-compliant formatting.
 ---
 
-# 学术 PPT 模板与格式适配
+# 学术 PPT 模板与格式适配（Template & Format Adaptation）
 
 ## 用途与触发
 
-输入包含真实 `.pptx/.potx` 模板，要求“按模板做 / 套用母版版式 / 统一格式 /
-把起始 deck 适配到目标模板”时使用。核心标准只有三条：
-
-1. 母版、版式、主题、占位符来自真实模板，不是“看起来像”；
-2. 页内文字、数字、图号与源材料一致，不覆盖、不改写事实；
-3. PPTX 与导出件可打开、可编辑、可逐页复核，过程记录可复跑。
-
-**不使用 python-pptx**：模板解析、装配、校验全部用标准库 OOXML。
-
-## 唯一入口
-
-```bash
-export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md 2>/dev/null | head -n 1)")"
-[ -n "$SKILL_DIR" ] || export SKILL_DIR="/skills/weekly-skill"
-python3 "$SKILL_DIR/scripts/main.py" --input /input --work /app/work --output /app/output
-```
-
-- `--stage plan`：只审计模板、归一化 workorder、生成版式映射和
-  `work/deck-spec.skeleton.json`；供模型先看真实版式再写内容。
-- `--stage build`（默认）：装配/重定向、校验、渲染、写 `result.json`。
-- `--spec PATH`：显式指定模型写的 deck spec；默认读 `work/deck-spec.json`。
-- `--no-render`：跳过原生预览；结果会如实标 `partial`，不伪造 PDF。
-
-入口对 `partial` / `input_error` 也写 `<output>/result.json` 并退出 0；
-只有输出目录完全不可写才退出 2。
+task.md 给出**模板**（`.pptx`/`.potx`）并要求"按模板做""适配格式""套用母版"时使用。
+组织方口径（硬约束）：`actual master/layout-based editable template`；
+**模板的母版、版式、主题、字体、配色必须真实被采用**，不是"看起来像"。
 
 ## 输入
 
-| 路径 | 用途 |
-|---|---|
-| `/input/task.md` | 页数、受众、时长、字体下限、导出要求 |
-| `/input/case.json` | `case_id`、`source_materials`、`output_contract` 等原始字段（入口会保留） |
-| `/input/artifacts/slide-workorder.json` | 正式工单：`mode`、`target_template`、`starting_deck`、`slide_count`、`edits`、`preserve` |
-| `/input/materials/*.pptx` | 目标模板；起始 deck 若存在则由 workorder 指定 |
-| 论文/图表/数据 | 模型用平台提供的 PDF 文本/渲染工具读取，不要凭文件名猜内容 |
-
-workorder 优先于文件名猜测；只有缺失时才扫描 `*template*` / `*starting*`。
-
-## 两种模式
-
-- **adapt / retarget**：有 `starting_deck`。保留每页内容、图片和备注，只把
-  母版/版式/主题替换为目标模板，并按 `layout_map` 重定向每页；workorder 的
-  `edits` 逐条应用，未命中的编辑会写异常，不删内容。
-- **build / template+content**：有模板和源材料。模型先把页级内容写成
-  `work/deck-spec.json`，入口再把文字装进真实占位符；模板示例页会被移除。
-
-`mode` 以 workorder 为准；两者都存在且未声明时优先 adapt。
-
-## 模型必须写的内容
-
-deck spec 是接口，不是答案文件。正文、图表引用、讲稿和来源定位由模型根据
-`task.md` 与真实源材料撰写；禁止把抽取式句子当最终稿。
-
-```json
-{
-  "title": "整册标题",
-  "source": "materials/paper.pdf",
-  "slides": [
-    {"role": "title", "title": "主张式标题", "subtitle": "副标题",
-     "notes": "开场讲稿", "source": "paper title"},
-    {"role": "section", "title": "01 问题", "subtitle": "为什么重要"},
-    {"role": "content", "title": "结果主张", "bullets": ["要点 1", "要点 2"],
-     "notes": "结果讲稿", "source": "Fig. 2a; Table 1"},
-    {"role": "figure", "title": "证据图", "image": "materials/fig2a.png",
-     "caption": "Fig. 2a …", "source": "Fig. 2a"},
-    {"role": "closing", "title": "结论", "subtitle": "边界与下一步"}
-  ]
-}
-```
-
-`role` 可取 `title|section|content|two-column|figure|quote|closing`。可选字段
-`bullets_right`、`claims`、`footer`、`layout`（必须来自审计的真实版式名）。
-完整字段、记录文件与 result 契约见 `references/artifact_schema.md`。
+- `/input/task.md`：模板要求、页数、版式规定（标题页/章节页/内容页）、字体下限
+- `/input/case.json`：`case_id`、`template`、`source_materials[]`、`output_contract`
+- 模板文件：`.pptx` / `.potx`
+- 内容：论文/提纲/数据
 
 ## 执行步骤
 
-### 第 1 步（约 15%）：审计与规划
+1. **模板审计**：`/app/work/template-audit.json`
+   ```bash
+   python3 /skills/weekly-skill/scripts/pptx_edit.py inspect materials/template.pptx --json
+   ```
+   记录：`slide_size`、`aspect_ratio`、母版数、每个版式的名称与占位符、
+   主题字体（major/minor）、主题配色、媒体文件。
+2. **可用性判定**：
+   - 版式齐全（标题页 + 内容页 + 章节页）→ 可直接映射；
+   - 只有母版没有内容版式 → 用最接近版式 + 记录 `layout_fallback`；
+   - 模板损坏/无主题 → 停止套用，按默认主题生成并 `status=partial`。
+3. **角色 → 版式映射**：`/app/work/layout-map.json`
+   ```json
+   {"mapping": [
+     {"role": "title", "layout": "Title Slide", "placeholders": ["title", "subtitle"]},
+     {"role": "section", "layout": "Section Header", "placeholders": ["title"]},
+     {"role": "content", "layout": "Title and Content", "placeholders": ["title", "body"]}],
+    "fallbacks": []}
+   ```
+   映射必须基于审计出的**真实版式名**，不凭模板常见命名猜测。
+4. **字体核查**：
+   ```bash
+   font-discovery --list | head -50
+   ```
+   模板字体不在系统 → 选同族替代（衬线↔衬线、无衬线↔无衬线、等宽↔等宽），
+   写入 `font_substitution`：`{original, substitute, reason, where}`。
+5. **内容适配**：按模板版式容量重排内容——
+   - 标题长度受版式宽度限制，超长先压缩措辞，不缩字号；
+   - 正文字号 ≥ 模板规定下限（通常 18–20 pt）；
+   - 图片按占位符比例裁切，不拉伸。
+6. **生成基础 deck**：
+   ```bash
+   python3 /skills/weekly-skill/scripts/make_pptx.py \
+     --spec /app/work/deck-spec.json --out /app/work/deck_base.pptx --json
+   ```
+7. **套用模板**（关键步骤）：
+   ```bash
+   python3 /skills/weekly-skill/scripts/pptx_edit.py apply-template /app/work/deck_base.pptx \
+     --template materials/template.pptx --layout "Title and Content" \
+     --out /app/output/deck.pptx --json
+   ```
+   返回 `fidelity`：
+   - `master+layouts+theme` = 完整继承；
+   - `theme-only` = 只继承主题（模板多母版/多主题时），必须在 `uncertainty` 说明；
+   - `ok=false` = 套用会破坏包，已自动回滚，此时交付基础 deck 并 `status=partial`。
+8. **格式合规核对**：`/app/work/format-check.json`
+   ```json
+   {"slide_size_match": true, "layouts_used": ["Title Slide", "Title and Content"],
+    "fonts_used": ["Liberation Sans"], "fonts_outside_template": [],
+    "min_font_pt": 18, "theme_colors_used": ["1F3864", "595959"],
+    "violations": []}
+   ```
+9. **渲染核对**：`office-renderer` → PDF → `pdf-render-tool` 出 PNG；
+   检查标题未被版式裁切、图片未压字、页脚完整。
+10. **落盘**：`deck.pptx`、`template-audit.json`、`layout-map.json`、
+    `format-check.json`、`preview/`、`result.json`。
 
-```bash
-python3 "$SKILL_DIR/scripts/main.py" --input /input --work /app/work \
-  --output /app/output --stage plan
-```
-
-读取：
-
-- `work/template-audit.json`：真实母版数、每个 layout 的名称/类型/占位符
-  `idx/type/box`、主题字体/配色、页面尺寸、示例页、notes master；
-- `work/layout-map.json`：每页角色与真实版式；
-- `work/ppt-format-spec.json`：角色→版式、字号阶梯、字体策略；
-- `work/deck-spec.skeleton.json`：build 模式下的空槽，仅供模型填写，不是答案。
-
-版式映射规则：content 只选带标题+正文占位符的内容版式，**绝不落到
-section header**；title/section/figure/two-column/closing 各有独立评分；
-找不到时使用最接近的真实版式并在 `exceptions` 记 `layout_fallback`。
-
-### 第 2 步（约 40%）：模型写页级内容
-
-读 `task.md` 和源材料（PDF 用平台 pdf-text-tool / pdf-render-tool），把
-研究问题、方法、结果、限制组织成页级主张：
-
-- 每页一个可讲的主张，标题短于正文；
-- 数字、百分比、样本量、p 值、单位照抄源材料，并写 `source` 定位；
-- 图表用真实图像文件，图号和正文引用一致；
-- 每页写 `notes`（讲稿）和至少一个来源定位；
-- 不把整段论文粘进占位符，不编造缺失数据。
-
-保存为 `/app/work/deck-spec.json`。adapt 模式可跳过本步。
-
-### 第 3 步（约 25%）：装配与校验
-
-```bash
-python3 "$SKILL_DIR/scripts/main.py" --input /input --work /app/work \
-  --output /app/output
-```
-
-入口会：
-
-1. 复制模板的 master/layouts/theme（build 模式移除模板示例页）；
-2. 把文字写入真实占位符；图片等比缩放居中，备注写入 notes；
-3. 保留模板主题字体与主题色，**不做静默字体替换**；
-4. 生成 `output/presentation.pptx`、`output/result.json`、
-   `output/format-check.json`、`output/work/*.json`；
-5. 优先用 LibreOffice/soffice 渲染真实 PDF/PNG。没有渲染器时写
-   `render.unavailable=true`、`status=partial` 和具体 limitation，不写假 PDF。
-
-### 第 4 步（约 20%）：视觉复核与修复
-
-有原生预览时逐页打开 `output/preview/*.png` 或 PDF，检查：标题是否被裁切、
-图片是否压字、页脚/页码、字体回退、模板装饰是否错位。只改 deck spec（措辞、
-页序、图片）后重跑，不要手工改 PPTX 或换字体。
-
-## 质量闸门
-
-| # | 检查 | 通过标准 |
-|---|---|---|
-| G1 | 模板继承 | `checks.template.master/layouts/theme/slide_size` 全 true |
-| G2 | 版式 | 每页 layout 来自目标模板；content 不落在 section header |
-| G3 | 占位符 | 无 `PLACEHOLDER_NOT_IN_LAYOUT`；文字在占位符内 |
-| G4 | 字体 | `fonts.outside_template=[]`；缺失字体只记录，不替换 |
-| G5 | 字号 | 标题 > 正文；正文 ≥18 pt；图注 ≥12 pt；页脚 ≥10 pt |
-| G6 | 内容 | 保留率 ≥0.98；数字不丢；每页有来源定位 |
-| G7 | 图片 | 等比缩放；`aspect_deviation` ≤3% |
-| G8 | 版心 | 无 `SHAPE_OUT_OF_BOUNDS`；`overflow_risks` 清零或已记录 |
-| G9 | 导出 | PPTX 包校验通过；原生 PDF/PNG 与页数一致 |
-| G10 | 记录 | 五类记录齐全；result 的官方字段由入口生成 |
-
-## 输出契约（摘要）
+## 输出契约
 
 ```json
 {
-  "case_id": "与输入一致",
-  "status": "answered|partial|input_error|blocked",
-  "task_status": "completed|partial|input_error",
-  "editable_source": {"path": "presentation.pptx", "format": "pptx", "slide_count": 12},
-  "export_artifact": {"path": "preview/presentation.pdf", "format": "pdf", "native": true},
-  "content_map": [{"slide": 1, "claim": "…", "source": "Fig. 2a", "locator": "…"}],
-  "compliance_checks": {"pptx_valid": true, "template_fidelity": "master+layouts+theme",
-                        "placeholder_used": true, "export_signature": "pdf"},
-  "exceptions": [],
-  "deck": {"template_fidelity": "master+layouts+theme", "aspect_ratio": "16:9"},
-  "render": {"engine": "libreoffice", "native": true, "pdf": "preview/presentation.pdf"},
-  "checks": {"zip_valid": true, "page_count_match": true},
-  "artifacts": [{"role": "editable", "path": "presentation.pptx"}]
+  "case_id": "…",
+  "task_family": "template-adaptation",
+  "status": "completed|partial",
+  "deck": {"path": "deck.pptx", "slide_count": 12,
+           "template": "materials/template.pptx",
+           "template_fidelity": "master+layouts+theme",
+           "aspect_ratio": "16:9"},
+  "artifacts": [
+    {"role": "editable", "path": "deck.pptx", "format": "pptx"},
+    {"role": "audit", "path": "template-audit.json", "format": "json"},
+    {"role": "mapping", "path": "layout-map.json", "format": "json"},
+    {"role": "render", "path": "preview/deck.pdf", "format": "pdf"},
+    {"role": "preview", "path": "preview/slide-01.png", "format": "png"}
+  ],
+  "template": {
+    "slide_size": {"cx": 12192000, "cy": 6858000},
+    "masters": 1,
+    "layouts": [{"name": "Title Slide", "placeholders": ["title", "subtitle"]}],
+    "theme_fonts": ["Liberation Sans"],
+    "theme_colors": ["1F3864", "595959"]
+  },
+  "font_substitution": [
+    {"original": "Arial", "substitute": "Liberation Sans",
+     "reason": "Arial 不在评测镜像字体清单", "where": "theme.minor"}
+  ],
+  "format_check": {"slide_size_match": true, "fonts_outside_template": [],
+                   "min_font_pt": 18, "violations": [],
+                   "layouts_used": ["Title Slide", "Title and Content"]},
+  "checks": {"zip_valid": true, "relationships_resolved": true,
+             "page_count_match": true, "render_ok": true},
+  "uncertainty": [],
+  "change_log": []
 }
 ```
 
-要求：
+## 适配规范
 
-- `status`、`editable_source`、`export_artifact`、`content_map`、
-  `compliance_checks`、`exceptions` 全部由入口生成，模型不要手写；
-- `case.json` 的原始字段（`output_contract`、`source_materials` 等）保留；
-- `work/plan.json`、`work/claim_source.json`、`work/change_log.json`、
-  `work/render_report.json`、`work/time.json` 一并输出并列入 artifacts；
-- 没有原生渲染时 `export_artifact.path=null`、`render.unavailable=true`、
-  `status=partial`，不把结构预览冒充 PDF。
+- 版式只减不增：不新造版式，不把母版元素复制到页面里"伪造"。
+- 颜色：优先用主题色；确需新色时记录 HEX 与用途，不引入与主题冲突的高饱和色。
+- 字体：全文不超过 2 个字体族；标题/正文按模板定义，不自定义混搭。
+- 字号：标题 ≥ 模板规定；正文 ≥ 18 pt；页脚 ≥ 10 pt。
+- 图片：保持原始宽高比；占位符裁切用 `object-fit: cover` 语义，不拉伸。
+- 页脚/页码：沿用模板位置，不遮挡内容。
+- 图表：从源材料重新导出高分辨率版本，不放大位图。
 
 ## 异常处理
 
 | 情况 | 处理 |
 |---|---|
-| 找不到目标模板 | `status=input_error`，`NO_TARGET_TEMPLATE`，仍写 result 并退出 0 |
-| 模板损坏/无 master/theme | `status=input_error`，`TEMPLATE_UNUSABLE`，拒绝套用 |
-| 模板只有少量版式 | 用最接近的真实版式，记 `layout_fallback`，不新造版式 |
-| 起始稿占位符与新版式不一致 | 只重写 `p:ph` 的 type/idx；无对应槽时保留为自由形状并记录 |
-| workorder 编辑未命中 | 不删除内容；`EDIT_NOT_APPLIED` 警告并列出原文 |
-| 字体不在本机 | 保留模板字体声明；记 `FONT_NOT_INSTALLED`，不静默替换 |
-| 图片比例不符 | 等比缩放居中；>3% 偏差记 `IMAGE_STRETCHED` |
-| 无 office 渲染器 | 交付 PPTX + 结构校验；`status=partial`，写 limitation |
-| 无 deck spec 且无起始稿 | 生成明确的 partial 骨架，`DECK_SPEC_MISSING`，不冒充完成 |
+| 模板只有 1 个版式 | 全部内容用该版式，记 `layout_fallback`，`status=partial` |
+| 模板字体全部缺失 | 统一替代并写 `font_substitution`，正文用系统无衬线 |
+| 模板与要求比例冲突 | 以 task.md 为准；无规定则以模板为准 |
+| 套用后包损坏 | 自动回滚，交付基础 deck，`fidelity: "none"`，说明原因 |
+| 占位符容量不足 | 缩短文案，不缩字号；仍不足则拆页 |
+| 渲染工具不可用 | 交付 pptx + 结构校验，不伪造预览 |
 
-## 支持文件
+## 自检
 
-| 文件 | 作用 |
-|---|---|
-| `scripts/main.py` | 唯一入口：发现输入、规划、装配、校验、渲染、写 result |
-| `scripts/spec.py` | workorder 归一化、真实版式映射、deck spec 校验、字体清单 |
-| `scripts/deckkit.py` | 标准库 OOXML：审计、build、retarget、edits、原生预览 |
-| `scripts/verify.py` | 包结构、模板继承、占位符、字体/字号、保留率、图片、溢出 |
-| `scripts/reports.py` | 官方 media 字段、五类记录、result.json 合并 |
-| `scripts/selfcheck.py` | 合成模板/起始稿冒烟测试：`python3 scripts/selfcheck.py` |
-| `references/artifact_schema.md` | workorder、deck spec、format spec、result 与记录字段 |
+- [ ] 版式名来自真实审计，不是猜测
+- [ ] `template_fidelity` 如实填写
+- [ ] 字体替换表完整，无模板外字体残留
+- [ ] 字号不低于下限
+- [ ] 图片未拉伸、未遮挡文字
+- [ ] `verify` 通过，无悬空关系
+- [ ] 有真实渲染预览
 
-不依赖任何外部 Python 包；渲染器可选。
+## 最小示例（示例）
 
-## 最小接口示例（示例，不是正式答案）
-
-```bash
-# 1) 看真实模板与版式
-python3 "$SKILL_DIR/scripts/main.py" --input /input --work /app/work \
-  --output /app/output --stage plan
-# 2) 模型写 /app/work/deck-spec.json
-# 3) 装配 + 校验 + 原生预览
-python3 "$SKILL_DIR/scripts/main.py" --input /input --work /app/work \
-  --output /app/output
-# 输出：presentation.pptx、preview/presentation.pdf、result.json
-```
-
-示例只说明接口和调用顺序，不表示任何正式案例的页数、内容或分数。
-
-## 限制
-
-- 标准库 OOXML 覆盖常见 master/layout/placeholder/notes/media；复杂 SmartArt、
-  OLE、动画不会被重建，重定向时原样保留其包部件。
-- 多母版/多主题模板只能做 theme-only 降级并在 `exceptions` 说明。
-- PDF/PNG 预览依赖 office renderer；没有渲染器时只做结构校验。
-- 本 skill 不解析 PDF 正文，也不补造数据；源材料读取由模型用平台工具完成。
+输入：模板（1 母版 / 11 版式 / Arial 主题）+ 论文 12 页内容。
+输出：`layout-map.json` 3 个角色映射；`font_substitution` 1 条（Arial→Liberation Sans）；
+`apply-template` 返回 `master+layouts+theme`；`format_check.violations = []`；
+`preview/deck.pdf` 12 页；`status: "completed"`。

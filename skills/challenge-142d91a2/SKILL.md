@@ -11,19 +11,6 @@ task.md 要求"开题报告""研究计划书""proposal defence"时使用。
 与基金申请（`d403dce6`）的区别：本题更强调**研究设计是否可执行**与**时间/风险安排**，
 不涉及经费与资助政策。
 
-## 支持文件（必须使用）
-
-| 文件 | 何时用 | 用法 |
-|---|---|---|
-| `references/proposal-writing-playbook.md` | 收窄问题、建假设/设计/时间线前 | 先读；按 PICO、可证伪、红队六问执行 |
-| `templates/proposal-plan.json` | 计划骨架 | 复制后填 question/objectives/design/plan/risks/ethics/fact_ledger |
-| `templates/proposal-brief.md` | 写正文 | 按 11 节骨架写，不虚构预实验/文献 |
-| `scripts/check_proposal.py` | 交付前 | `python3 {SKILL_DIR}/scripts/check_proposal.py --result /app/output/result.json --brief /app/output/proposal.md --root /app/output --json` |
-
-`{SKILL_DIR}` 通常为 `/skills/weekly-skill`。校验器检查 PICO、假设可证伪、目标-设计对齐、
-时间线里程碑、风险 Plan B、伦理状态与 fact_ledger。不要为了通过而把
-`to_supplement` 改成 `confirmed`。
-
 ## 输入
 
 - `/input/task.md`：学位层次（博/硕）、学科、篇幅、章节要求、答辩场景
@@ -51,21 +38,6 @@ task.md 要求"开题报告""研究计划书""proposal defence"时使用。
 7. **伦理与合规**：涉及人/动物/数据隐私时写审批与知情同意；材料未提供则标
    `to_be_obtained`。
 8. **落盘**：`proposal.md`、`plan.json`、`result.json`。
-9. **交付校验**：运行 `check_proposal.py`，检查 PICO、假设可证伪、目标-设计对齐、
-   时间线、风险与事实台账；有 problem 先修，修不了标 `status=partial`。
-
-## 官方输出契约（必须补齐）
-
-官方 `example-input` 的 `output_contract` 要求顶层字段：`deliverable`、`preserved_facts`、`evidence_map`、`change_log`。
-题目原有字段全部保留；交付前运行：
-
-```bash
-python3 {SKILL_DIR}/scripts/emit_official.py \
-  --result /app/output/result.json --out /app/output/result.json \
-  --profile writing --json
-```
-
-该适配器只补齐官方别名，不改变任务字段；`validate_result.py` 之后仍需运行。
 
 ## 输出契约
 
@@ -74,132 +46,32 @@ python3 {SKILL_DIR}/scripts/emit_official.py \
   "case_id": "…",
   "task_family": "research-proposal",
   "status": "completed|partial",
-  "proposal": {
-    "path": "proposal.md",
-    "language": "zh|en",
-    "word_count": 0,
-    "degree": "phd|master|undergrad"
-  },
+  "proposal": {"path": "proposal.md", "language": "zh|en", "word_count": 0,
+               "degree": "phd|master|undergrad"},
   "artifacts": [
-    {
-      "role": "editable",
-      "path": "proposal.md",
-      "format": "markdown"
-    },
-    {
-      "role": "plan",
-      "path": "plan.json",
-      "format": "json"
-    }
+    {"role": "editable", "path": "proposal.md", "format": "markdown"},
+    {"role": "plan", "path": "plan.json", "format": "json"}
   ],
-  "question": {
-    "question": "…",
-    "hypotheses": [
-      "H1"
-    ],
-    "scope": {
-      "included": "…",
-      "excluded": [
-        "…"
-      ]
-    }
-  },
-  "gap": [
-    {
-      "statement": "…",
-      "evidence": {
-        "path": "…",
-        "locator": "p.3"
-      },
-      "kind": "reported|inferred"
-    }
-  ],
-  "objectives": [
-    {
-      "objective_id": "O1",
-      "text": "…",
-      "module": "M1",
-      "indicator": "…",
-      "criterion": "…"
-    }
-  ],
+  "question": {"question": "…", "hypotheses": ["H1"],
+               "scope": {"included": "…", "excluded": ["…"]}},
+  "gap": [{"statement": "…", "evidence": {"path": "…", "locator": "p.3"},
+           "kind": "reported|inferred"}],
+  "objectives": [{"objective_id": "O1", "text": "…", "module": "M1",
+                  "indicator": "…", "criterion": "…"}],
   "design": [
-    {
-      "module": "M1",
-      "materials": "…",
-      "groups": "…",
-      "measurements": [
-        "…"
-      ],
-      "statistics": "…",
-      "criterion": "…",
-      "sample_size_basis": "…"
-    }
+    {"module": "M1", "materials": "…", "groups": "…", "measurements": ["…"],
+     "statistics": "…", "criterion": "…", "sample_size_basis": "…"}
   ],
   "plan": [
-    {
-      "phase": "Q1",
-      "period": "2026-12 → 2027-02",
-      "tasks": [
-        "…"
-      ],
-      "milestone": "…",
-      "deliverable": "…",
-      "critical_path": true
-    }
+    {"phase": "Q1", "period": "2026-12 → 2027-02", "tasks": ["…"],
+     "milestone": "…", "deliverable": "…", "critical_path": true}
   ],
-  "risks": [
-    {
-      "risk": "…",
-      "trigger": "…",
-      "plan_b": "…",
-      "impact": "high|medium|low"
-    }
-  ],
-  "ethics": {
-    "required": true,
-    "status": "to_be_obtained|provided|not_applicable",
-    "detail": "…"
-  },
-  "fact_ledger": [
-    {
-      "fact_id": "F1",
-      "statement": "…",
-      "status": "confirmed|user_stated|to_supplement|unusable",
-      "source": "materials/…"
-    }
-  ],
-  "one_minute_retelling": [
-    "问题",
-    "缺口",
-    "路线",
-    "价值",
-    "可验证结局"
-  ],
-  "red_team_answers": [
-    {
-      "question": "为什么重要",
-      "answer": "…"
-    }
-  ],
-  "support_files_used": [
-    "references/proposal-writing-playbook.md",
-    "scripts/check_proposal.py"
-  ],
-  "gaps": [
-    {
-      "item": "…",
-      "owner": "…"
-    }
-  ],
+  "risks": [{"risk": "…", "trigger": "…", "plan_b": "…", "impact": "high|medium|low"}],
+  "ethics": {"required": true, "status": "to_be_obtained|provided|not_applicable",
+             "detail": "…"},
+  "gaps": [{"item": "…", "owner": "…"}],
   "uncertainty": [],
-  "change_log": [],
-  "deliverable": {
-    "path": "…",
-    "format": "markdown"
-  },
-  "preserved_facts": [],
-  "evidence_map": []
+  "change_log": []
 }
 ```
 
@@ -238,13 +110,11 @@ python3 {SKILL_DIR}/scripts/emit_official.py \
 
 ## 自检
 
-- [ ] 科学问题具体、PICO/scope 齐全，假设可证伪
-- [ ] 每个目标有指标与判据，且与设计模块对齐
-- [ ] 设计可执行（材料、分组、测量、统计、样本依据齐全）
-- [ ] 时间线覆盖全部模块，里程碑可交付，关键路径标注
-- [ ] 风险有触发条件、影响与 Plan B
-- [ ] 伦理状态与 `fact_ledger` 已写，未把待补写成已证实
-- [ ] `check_proposal.py` 返回 `ok: true`
+- [ ] 科学问题具体、假设可证伪
+- [ ] 每个目标有指标与判据
+- [ ] 设计可执行（材料、分组、统计齐全）
+- [ ] 时间线覆盖全部模块，关键路径标注
+- [ ] 风险有触发条件与 Plan B
 - [ ] 文献结论有出处，未虚构
 
 ## 快速路径（预算内）
@@ -296,14 +166,13 @@ python3 {SKILL_DIR}/scripts/emit_official.py \
 
 ## 交付清单
 
-- [ ] `/app/output/result.json` 含 `case_id`、`question`、`objectives[]`、`design[]`、
-      `plan[]`、`risks[]`、`ethics`、`fact_ledger[]`、`support_files_used`
+- [ ] `/app/output/result.json` 含 `case_id`、`question`、`hypotheses[]`、`design_matrix`、`timeline`
 - [ ] `proposal.md` 与 `plan.json` 真实存在
-- [ ] 问题符合 PICO 且可检验；每条假设可证伪
-- [ ] 目标-方法-分析逐条对齐，样本量有依据
-- [ ] 时间线含里程碑与缓冲；风险有 Plan B
-- [ ] 伦理有交代；事实台账区分 confirmed/to_supplement
-- [ ] `check_proposal.py` 通过
+- [ ] 问题符合 PICO 且可检验
+- [ ] 每条假设可证伪并有判据
+- [ ] 目标-方法-分析逐条对齐
+- [ ] 时间线含里程碑与缓冲
+- [ ] 风险有备选、伦理有交代
 
 ## 最小示例（示例）
 

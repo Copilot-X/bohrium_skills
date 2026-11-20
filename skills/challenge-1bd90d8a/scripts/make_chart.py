@@ -302,18 +302,17 @@ class Panel:
 
     def _draw_title(self):
         title = self.spec.get("title")
-        label_w = self.fs * 2.0 if self.pid else 0.0
-        if self.pid:
-            self.out.append(
-                f'<text x="{self.x + 2:.2f}" y="{self.y + self.fs * 1.15:.2f}" '
-                f'font-family="{escape(self.ff)}" font-size="{self.fs * 1.05:.2f}" '
-                f'font-weight="bold" fill="#222222">({escape(self.pid)})</text>')
         if title:
             ty = self.y + self.fs * 1.15
             self.out.append(
-                f'<text x="{self.x + 2 + label_w:.2f}" y="{ty:.2f}" font-family="{escape(self.ff)}" '
+                f'<text x="{self.x + 2:.2f}" y="{ty:.2f}" font-family="{escape(self.ff)}" '
                 f'font-size="{self.fs * 1.05:.2f}" font-weight="bold" fill="#222222">'
                 f'{escape(title)}</text>')
+        if self.pid:
+            self.out.append(
+                f'<text x="{self.x:.2f}" y="{self.y + self.fs * 1.9:.2f}" font-family="{escape(self.ff)}" '
+                f'font-size="{self.fs * 1.15:.2f}" font-weight="bold" fill="#222222">'
+                f'({escape(self.pid)})</text>')
 
     def _draw_legend(self):
         if len(self.series) <= 1 and not self.spec.get("legend"):

@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.5",
+  "case_id": "REPLACE-WITH-CASE-ID",
+  "direction": "zh->en",
+  "register": {
+    "genre": "abstract",
+    "formality": "academic",
+    "person": "third-person",
+    "tense": "present-for-claims; past-for-methods",
+    "english_variant": "en-US",
+    "avoid": ["don't", "can't"]
+  },
+  "do_not_translate": [
+    {"text": "CeO2", "reason": "chemical formula"}
+  ],
+  "terms": [
+    {
+      "source": "氧空位",
+      "target": "oxygen vacancy",
+      "locked": true,
+      "aliases": ["oxygen vacancies", "oxygen-vacancy"],
+      "forbidden": ["oxygen defect"]
+    }
+  ],
+  "abbreviations": [
+    {
+      "short": "BET",
+      "full_source": "Brunauer-Emmett-Teller",
+      "full_target": "Brunauer-Emmett-Teller",
+      "first_use": "S06",
+      "expand_on_first_use": false
+    }
+  ],
+  "conflicts": [],
+  "updated_at": "YYYY-MM-DD"
+}

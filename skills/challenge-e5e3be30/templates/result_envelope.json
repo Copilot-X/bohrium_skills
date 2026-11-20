@@ -1,0 +1,36 @@
+{
+  "case_id": "REPLACE_WITH_INPUT_CASE_ID",
+  "task_family": "reading|writing|graphics|slides|other",
+  "status": "partial",
+  "result": {},
+  "artifacts": [
+    {
+      "id": "main",
+      "path": "result.json",
+      "format": "json",
+      "description": "Primary structured result"
+    }
+  ],
+  "sources": [
+    {
+      "doc_id": "DOC_ID",
+      "locator": "paragraph_id=p1",
+      "quote": "verbatim excerpt"
+    }
+  ],
+  "uncertainty": [
+    {
+      "item": "what is uncertain",
+      "reason": "why",
+      "impact": "how it affects the deliverable"
+    }
+  ],
+  "change_log": [
+    {
+      "step": 1,
+      "action": "read input and built paragraph index",
+      "evidence": "/app/work/index.json"
+    }
+  ],
+  "contract_source": "task.md|schema|inferred"
+}

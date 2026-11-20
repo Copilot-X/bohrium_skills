@@ -39,16 +39,12 @@ DEFAULT_FILL = "#ffffff"
 DEFAULT_STROKE = "#333333"
 ACCENT = "#0072B2"
 EDGE_STYLE = {
-    "activate":    {"color": "#0072B2", "marker": "blue", "dash": None, "width": 1.4},
+    "activate":    {"color": "#0072B2", "marker": "arrow", "dash": None, "width": 1.4},
     "inhibit":     {"color": "#D55E00", "marker": "bar", "dash": None, "width": 1.4},
     "flow":        {"color": "#333333", "marker": "arrow", "dash": None, "width": 2.0},
     "translocate": {"color": "#333333", "marker": "arrow", "dash": "5 3", "width": 1.4},
     "bind":        {"color": "#666666", "marker": "none", "dash": None, "width": 1.2},
-    "inferred":    {"color": "#666666", "marker": "gray", "dash": "5 3", "width": 1.2},
-    "yes":         {"color": "#0072B2", "marker": "blue", "dash": None, "width": 1.6},
-    "no":          {"color": "#D55E00", "marker": "orange", "dash": "5 3", "width": 1.6},
-    "loop":        {"color": "#666666", "marker": "gray", "dash": "4 4", "width": 1.3},
-    "signal":      {"color": "#666666", "marker": "gray", "dash": "2 3", "width": 1.0},
+    "inferred":    {"color": "#666666", "marker": "arrow", "dash": "5 3", "width": 1.2},
     "default":     {"color": "#333333", "marker": "arrow", "dash": None, "width": 1.3},
 }
 
@@ -63,7 +59,7 @@ def text_width(s, size_px):
         elif ch in "mwMW@%":
             w += size_px * 0.95
         else:
-            w += size_px * 0.60
+            w += size_px * 0.56
     return w
 
 
@@ -88,17 +84,6 @@ def wrap_label(label, max_width, size_px):
 
     lines, cur = [], ""
     for tok in tokens:
-        # A single long token (e.g. a hyphenated apparatus name) must be
-        # broken too, otherwise it silently overflows the node box.
-        if text_width(tok, size_px) > max_width:
-            for ch in tok:
-                cand = cur + ch
-                if text_width(cand, size_px) <= max_width or not cur:
-                    cur = cand
-                else:
-                    lines.append(cur.rstrip())
-                    cur = ch
-            continue
         cand = cur + tok
         if text_width(cand, size_px) <= max_width or not cur:
             cur = cand
@@ -126,7 +111,6 @@ class Diagram:
         self.nodes = [dict(n) for n in spec.get("nodes", [])]
         self.edges = [dict(e) for e in spec.get("edges", [])]
         self.groups = spec.get("groups", []) or []
-        self.conditions = spec.get("conditions", []) or []
         self.by_id = {n["id"]: n for n in self.nodes}
         self.title = spec.get("title")
         self.footnote = spec.get("footnote")
@@ -139,33 +123,23 @@ class Diagram:
             label = str(n.get("label", n["id"]))
             sub = n.get("sublabel")
             inner = float(n.get("font_scale", 1.0)) * self.fs
-            max_w = float(n.get("max_text_px", 0)) or min(self.W * 0.22, 120.0)
+            max_w = float(n.get("max_text_px", 0)) or min(self.W * 0.28, 150.0)
             lines = wrap_label(label, max_w, inner)
-            sub_lines = wrap_label(str(sub), max_w, inner * 0.9) if sub else []
+            sub_lines = wrap_label(str(sub), max_w, inner * 0.86) if sub else []
             n["_lines"] = lines
             n["_sub_lines"] = sub_lines
-            tw = max([text_width(x, inner) for x in lines] +
-                     [text_width(x, inner * 0.9) for x in sub_lines] + [0])
-            pad_x = inner * 1.35
-            line_h = inner * 1.24
             if n.get("w"):
                 n["_w"] = float(n["w"])
             else:
+                tw = max([text_width(x, inner) for x in lines] +
+                         [text_width(x, inner * 0.86) for x in sub_lines] + [0])
+                pad_x = inner * 1.1
                 n["_w"] = max(30.0, tw + 2 * pad_x)
             if n.get("h"):
                 n["_h"] = float(n["h"])
             else:
-                n["_h"] = max(18.0, len(lines) * line_h + len(sub_lines) * line_h * 0.94 + inner * 1.1)
-            if shape == "diamond":
-                # A diamond only exposes ~2/3 of its width at the top/bottom
-                # text lines; enlarge it so the question stays inside.
-                n["_w"] = max(n["_w"], tw * 1.9 + 2 * pad_x, 100.0)
-                n["_h"] = max(n["_h"] * 1.8,
-                              (len(lines) + len(sub_lines)) * line_h * 2.4 + inner * 1.6,
-                              60.0)
-            if shape == "hexagon":
-                # The slanted sides eat horizontal room at the text baseline.
-                n["_w"] = max(n["_w"], tw * 1.28 + 2 * pad_x)
+                line_h = inner * 1.24
+                n["_h"] = max(18.0, len(lines) * line_h + len(sub_lines) * line_h * 0.9 + inner * 1.1)
             if shape == "circle":
                 d = max(n["_w"], n["_h"])
                 n["_w"] = n["_h"] = d
@@ -183,44 +157,18 @@ class Diagram:
         ids = [n["id"] for n in self.nodes]
         has_rank = any("rank" in n for n in self.nodes)
         if not has_rank:
-            # Assign ranks on the forward DAG. Feedback edges (or edges that
-            # would close a cycle) are ignored for ranking so a loop back to
-            # an earlier stage cannot inflate every downstream rank.
-            adj = {i: [] for i in ids}
-            indeg = {i: 0 for i in ids}
-
-            def reaches(src, dst):
-                stack, seen = [src], set()
-                while stack:
-                    cur = stack.pop()
-                    if cur == dst:
-                        return True
-                    if cur in seen:
-                        continue
-                    seen.add(cur)
-                    stack.extend(adj.get(cur, []))
-                return False
-
-            ordered_edges = sorted(
-                self.edges,
-                key=lambda e: 1 if (e.get("feedback") or e.get("dashed")) else 0)
-            for e in ordered_edges:
-                a, b = e.get("from"), e.get("to")
-                if a not in adj or b not in adj or a == b:
-                    continue
-                if reaches(b, a):
-                    continue
-                adj[a].append(b)
-                indeg[b] += 1
-            queue = sorted(i for i in ids if indeg[i] == 0)
             rank = {i: 0 for i in ids}
-            while queue:
-                cur = queue.pop(0)
-                for nxt in adj[cur]:
-                    rank[nxt] = max(rank[nxt], rank[cur] + 1)
-                    indeg[nxt] -= 1
-                    if indeg[nxt] == 0:
-                        queue.append(nxt)
+            for _ in range(len(ids)):
+                changed = False
+                for e in self.edges:
+                    a, b = e.get("from"), e.get("to")
+                    if a not in rank or b not in rank:
+                        continue
+                    if rank[b] < rank[a] + 1 and rank[a] + 1 < len(ids):
+                        rank[b] = rank[a] + 1
+                        changed = True
+                if not changed:
+                    break
             for n in self.nodes:
                 n["rank"] = rank.get(n["id"], 0)
 
@@ -250,24 +198,8 @@ class Diagram:
         if self.direction == "LR":
             widths = [max([n["_w"] for n in cols[r]] + [1]) for r in ranks]
             total_w = sum(widths)
-            usable_w = max(60.0, self.W - 2 * self.margin)
-            if total_w > usable_w and n_rank:
-                target = usable_w / n_rank
-                cap = max(28.0, target - self.fs * 2.4)
-                for n in self.nodes:
-                    n["max_text_px"] = min(float(n.get("max_text_px", 150.0)), cap)
-                self.measure()
-                widths = [max([n["_w"] for n in cols[r]] + [1]) for r in ranks]
-                total_w = sum(widths)
-            if total_w > usable_w:
-                scale = usable_w / max(1.0, total_w)
-                for n in self.nodes:
-                    n["_w"] = max(24.0, n["_w"] * scale)
-                    n["_h"] = max(16.0, n["_h"] * min(1.0, scale * 1.1))
-                widths = [max([n["_w"] for n in cols[r]] + [1]) for r in ranks]
-                total_w = sum(widths)
-            gap = (usable_w - total_w) / max(1, n_rank - 1) if n_rank > 1 else 0
-            gap = max(0.0, gap)
+            gap = (self.W - 2 * self.margin - total_w) / max(1, n_rank - 1) if n_rank > 1 else 0
+            gap = max(gap, self.fs * 2.6)
             xs, cursor = {}, self.margin
             for r, w in zip(ranks, widths):
                 xs[r] = cursor + w / 2
@@ -281,19 +213,6 @@ class Diagram:
                     n["_cx"] = xs[r]
                     n["_cy"] = (top + bottom) / 2 if m == 1 else top + step * (k + 0.5)
         else:
-            max_items = max([len(cols[r]) for r in ranks] + [1])
-            step = (self.W - 2 * self.margin) / max(1, max_items)
-            cap = max(28.0, step - self.fs * 2.6)
-            remeasure = False
-            for n in self.nodes:
-                if float(n.get("max_text_px", 120.0)) > cap:
-                    n["max_text_px"] = cap
-                    remeasure = True
-            if remeasure:
-                self.measure()
-            for n in self.nodes:
-                if n["_w"] > step - self.fs * 0.6:
-                    n["_w"] = max(24.0, step - self.fs * 0.6)
             heights = [max([n["_h"] for n in cols[r]] + [1]) for r in ranks]
             total_h = sum(heights)
             gap = (bottom - top - total_h) / max(1, n_rank - 1) if n_rank > 1 else 0
@@ -327,15 +246,17 @@ class Diagram:
     def svg_defs(self):
         defs = ['<defs>']
         for name, color in (("arrow", "#333333"), ("arrow-blue", "#0072B2"),
-                            ("arrow-orange", "#D55E00"), ("arrow-gray", "#666666")):
-            defs.append(
-                f'<marker id="{name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" '
-                f'markerHeight="6" orient="auto">'
-                f'<path d="M1,1 L9,5 L1,9 z" fill="{color}"/></marker>')
-        defs.append(
-            '<marker id="arrow-inhibit" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" '
-            'markerHeight="5" orient="auto">'
-            '<path d="M5,1 L5,9" stroke="#D55E00" stroke-width="2" fill="none"/></marker>')
+                            ("arrow-inhibit", "#D55E00"), ("arrow-gray", "#666666")):
+            if name == "arrow-inhibit":
+                defs.append(
+                    f'<marker id="{name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" '
+                    f'markerHeight="5" orient="auto">'
+                    f'<path d="M5,1 L5,9" stroke="{color}" stroke-width="2" fill="none"/></marker>')
+            else:
+                defs.append(
+                    f'<marker id="{name}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" '
+                    f'markerHeight="6" orient="auto">'
+                    f'<path d="M1,1 L9,5 L1,9 z" fill="{color}"/></marker>')
         defs.append('</defs>')
         return "".join(defs)
 
@@ -394,8 +315,8 @@ class Diagram:
         inner = float(n.get("font_scale", 1.0)) * self.fs
         color = n.get("text_color", "#222222")
         line_h = inner * 1.24
-        total = len(n["_lines"]) * line_h + len(n["_sub_lines"]) * line_h * 0.94
-        ty = cy - total / 2 + inner * 0.9
+        total = len(n["_lines"]) * line_h + len(n["_sub_lines"]) * line_h * 0.9
+        ty = cy - total / 2 + inner * 0.86
         for line in n["_lines"]:
             self.out.append(
                 f'<text x="{cx:.2f}" y="{ty:.2f}" font-family="{escape(self.ff)}" '
@@ -406,9 +327,9 @@ class Diagram:
             ty += line_h * 0.06
             self.out.append(
                 f'<text x="{cx:.2f}" y="{ty:.2f}" font-family="{escape(self.ff)}" '
-                f'font-size="{inner * 0.9:.2f}" text-anchor="middle" fill="{color}" '
+                f'font-size="{inner * 0.86:.2f}" text-anchor="middle" fill="{color}" '
                 f'fill-opacity="0.88">{escape(line)}</text>')
-            ty += line_h * 0.94
+            ty += line_h * 0.9
         self.out.append('</g>')
 
     # ------------------------------------------------------------------
@@ -435,62 +356,35 @@ class Diagram:
             mx = (x1 + x2) / 2
             return f"M{x1:.2f},{y1:.2f} C{mx:.2f},{y1:.2f} {mx:.2f},{y2:.2f} {x2:.2f},{y2:.2f}", \
                    ((x1 + x2) / 2, (y1 + y2) / 2)
-        else:
-            pts.append((x2, y2))
-        lx = (x1 + x2) / 2
-        ly = (y1 + y2) / 2
-        dx, dy = x2 - x1, y2 - y1
-        length = math.hypot(dx, dy) or 1.0
-        nx, ny = -dy / length, dx / length
-        offset = self.fs * 2.6
-
-        def clearance(px, py):
-            best = 1e9
-            for node in self.nodes:
-                ddx = (px - node["_cx"]) / (node["_w"] / 2 + 2)
-                ddy = (py - node["_cy"]) / (node["_h"] / 2 + 2)
-                best = min(best, math.hypot(ddx, ddy))
-            return best
-
-        cand_a = (lx + nx * offset, ly + ny * offset)
-        cand_b = (lx - nx * offset, ly - ny * offset)
-        lx, ly = (cand_a if clearance(*cand_a) >= clearance(*cand_b) else cand_b)
-        return ("M" + " L".join(f"{px:.2f},{py:.2f}" for px, py in pts),
-                (lx, ly), (x1, y1), (x2, y2))
-
-    @staticmethod
-    def marker_id(kind):
-        marker = EDGE_STYLE.get(kind, EDGE_STYLE["default"])["marker"]
-        return {"arrow": "arrow", "blue": "arrow-blue", "orange": "arrow-orange",
-                "gray": "arrow-gray", "bar": "arrow-inhibit", "none": None}.get(marker)
+        return "M" + " L".join(f"{px:.2f},{py:.2f}" for px, py in pts), \
+               (sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts))
 
     def draw_edge(self, e):
         geo = self.edge_geometry(e)
         if not geo:
             return
-        d, (lx, ly), (x1, y1), (x2, y2) = geo
+        d, (lx, ly) = geo
         kind = e.get("kind", "default")
         style = dict(EDGE_STYLE.get(kind, EDGE_STYLE["default"]))
         if e.get("color"):
             style["color"] = e["color"]
         if e.get("dashed"):
             style["dash"] = "5 3"
-        marker_id = self.marker_id(kind)
-        both = bool(e.get("bidirectional")) or str(e.get("direction", "")).lower() == "undetermined"
+        marker = style["marker"]
+        marker_id = {"arrow": "arrow", "bar": "arrow-inhibit", "none": None}.get(marker)
+        if kind == "activate":
+            marker_id = "arrow-blue"
+        if kind == "inferred":
+            marker_id = "arrow-gray"
         dash = f' stroke-dasharray="{style["dash"]}"' if style["dash"] else ""
-        mk = (f' marker-end="url(#{marker_id})"' if marker_id else "")
-        if both and marker_id:
-            mk += f' marker-start="url(#{marker_id})"'
+        mk = f' marker-end="url(#{marker_id})"' if marker_id else ""
         self.out.append(f'<g id="{escape(str(e.get("id", "edge")))}" data-kind="{escape(kind)}" '
-                        f'data-source="{escape(str(e.get("source", "")))}"'
-                        f' data-from-port="{escape(str(e.get("from_port", "")))}"'
-                        f' data-to-port="{escape(str(e.get("to_port", "")))}"'
-                        f' data-direction="{escape(str(e.get("direction", "")))}">')
+                        f'data-source="{escape(str(e.get("source", "")))}">')
         self.out.append(f'<path d="{d}" fill="none" stroke="{style["color"]}" '
                         f'stroke-width="{style["width"]}" stroke-linejoin="round"{dash}{mk}/>')
         label = e.get("label")
         if label:
-            size = self.fs * 0.9
+            size = self.fs * 0.92
             tw = text_width(str(label), size)
             self.out.append(
                 f'<rect x="{lx - tw / 2 - 2:.2f}" y="{ly - size * 0.78:.2f}" '
@@ -500,31 +394,6 @@ class Diagram:
                 f'<text x="{lx:.2f}" y="{ly + size * 0.12:.2f}" font-family="{escape(self.ff)}" '
                 f'font-size="{size:.2f}" text-anchor="middle" fill="{style["color"]}">'
                 f'{escape(str(label))}</text>')
-        size = self.fs * 0.88
-        dx, dy = (x2 - x1), (y2 - y1)
-        length = math.hypot(dx, dy) or 1.0
-        show_ports = bool(e.get("show_ports"))
-        for key, px, py in (("from_port", x1, y1), ("to_port", x2, y2)):
-            text = e.get(key)
-            if not show_ports or not text or length < self.fs * 3.2:
-                # Keep the port in data-from-port/data-to-port and in
-                # result.json even when the gap is too short to label.
-                continue
-            # Put the port name just inside the edge, offset perpendicular to
-            # the line, with a white halo so it stays readable on top of it.
-
-            ox, oy = -dy / length, dx / length
-            if oy > 0:
-                ox, oy = -ox, -oy
-            frac = 0.22 if key == "from_port" else 0.78
-            tx = x1 + dx * frac + ox * size * 0.9
-            ty = y1 + dy * frac + oy * size * 0.9
-            anchor = "start" if key == "from_port" else "end"
-            self.out.append(
-                f'<text x="{tx:.2f}" y="{ty:.2f}" font-family="{escape(self.ff)}" '
-                f'font-size="{size:.2f}" text-anchor="{anchor}" fill="#555555" '
-                f'stroke="#ffffff" stroke-width="2" paint-order="stroke">'
-                f'{escape(str(text))}</text>')
         self.out.append('</g>')
 
     # ------------------------------------------------------------------
@@ -549,101 +418,15 @@ class Diagram:
             if g.get("label"):
                 self.out.append(
                     f'<text x="{x0 + self.fs * 0.6:.2f}" y="{y0 + self.fs * 1.05:.2f}" '
-                    f'font-family="{escape(self.ff)}" font-size="{self.fs * 0.9:.2f}" '
+                    f'font-family="{escape(self.ff)}" font-size="{self.fs * 0.92:.2f}" '
                     f'fill="#555555" font-style="italic">{escape(str(g["label"]))}</text>')
-            self.out.append('</g>')
-
-    def draw_conditions(self):
-        """Draw condition callouts in a band below the schematic."""
-        blocks = []
-        for c in self.conditions:
-            loc = self.by_id.get(c.get("location"))
-            if not loc:
-                continue
-            params = c.get("params")
-            if isinstance(params, dict):
-                ptxt = ", ".join(f"{k} {v}" for k, v in params.items())
-            elif isinstance(params, list):
-                ptxt = ", ".join(str(p) for p in params)
-            else:
-                ptxt = str(params or "")
-            label = f"{c.get('id', 'P')}: {ptxt}" if ptxt else str(c.get("id", "P"))
-            size = self.fs * 0.9
-            max_w = min(self.W * 0.32, 190.0)
-            lines = wrap_label(label, max_w, size)
-            tw = max([text_width(line, size) for line in lines] + [1.0])
-            line_h = size * 1.22
-            block_h = line_h * len(lines) + size * 0.55
-            blocks.append({"cond": c, "loc": loc, "lines": lines, "tw": tw,
-                           "block_h": block_h, "size": size, "line_h": line_h})
-        if not blocks:
-            return
-
-        max_bottom = max(item["loc"]["_cy"] + item["loc"]["_h"] / 2
-                         for item in blocks)
-        row_h = max(item["block_h"] for item in blocks)
-        gap = self.fs * 1.2
-        by0 = max_bottom + self.fs * 2.2
-        legend_h = self.fs * 2.2 if self.spec.get("legend") else 0.0
-        limit = self.H - self.margin - legend_h - row_h
-        by0 = min(by0, max(self.margin, limit))
-        rows = []
-        for item in sorted(blocks, key=lambda it: it["loc"]["_cx"]):
-            item["bw"] = item["tw"] + self.fs * 1.4
-            placed = False
-            for row in rows:
-                bx = item["loc"]["_cx"] - item["bw"] / 2
-                bx = max(self.margin, min(bx, self.W - self.margin - item["bw"]))
-                for prev in row:
-                    bx = max(bx, prev["x"] + prev["bw"] + gap)
-                if bx + item["bw"] <= self.W - self.margin:
-                    item["x"] = bx
-                    row.append(item)
-                    placed = True
-                    break
-            if not placed:
-                bx = max(self.margin, min(item["loc"]["_cx"] - item["bw"] / 2,
-                                          self.W - self.margin - item["bw"]))
-                item["x"] = bx
-                rows.append([item])
-        placed = []
-        for row_index, row in enumerate(rows):
-            by = by0 + row_index * (row_h + gap)
-            for item in row:
-                placed.append((item, by))
-        # Leaders first so a later box never sits on top of an earlier leader.
-        for item, by in placed:
-            loc = item["loc"]
-            cx = item["x"] + item["bw"] / 2
-            self.out.append(
-                f'<line x1="{loc["_cx"]:.2f}" y1="{loc["_cy"] + loc["_h"] / 2:.2f}" '
-                f'x2="{cx:.2f}" y2="{by:.2f}" stroke="#999999" '
-                f'stroke-width="0.7" stroke-dasharray="3 2"/>')
-        for item, by in placed:
-            cx = item["x"] + item["bw"] / 2
-            self.out.append(
-                f'<g id="{escape(str(item["cond"].get("id", "condition")))}" '
-                f'data-role="condition" '
-                f'data-source="{escape(str(item["cond"].get("source", "")))}">')
-            self.out.append(
-                f'<rect x="{item["x"]:.2f}" y="{by - item["size"] * 0.18:.2f}" '
-                f'width="{item["bw"]:.2f}" height="{item["block_h"]:.2f}" rx="2" '
-                f'fill="#ffffff" fill-opacity="0.9" stroke="#dddddd" '
-                f'stroke-width="0.6"/>')
-            ty = by + item["size"] * 0.95
-            for line in item["lines"]:
-                self.out.append(
-                    f'<text x="{cx:.2f}" y="{ty:.2f}" font-family="{escape(self.ff)}" '
-                    f'font-size="{item["size"]:.2f}" text-anchor="middle" '
-                    f'fill="#444444">{escape(line)}</text>')
-                ty += item["line_h"]
             self.out.append('</g>')
 
     def draw_legend(self):
         items = self.spec.get("legend") or []
         if not items:
             return
-        fs = self.fs * 0.9
+        fs = self.fs * 0.92
         y = self.H - self.margin + fs * 0.2
         x = self.margin
         self.out.append('<g id="legend" data-role="legend">')
@@ -651,7 +434,7 @@ class Diagram:
             kind = item.get("kind", "default")
             style = EDGE_STYLE.get(kind, EDGE_STYLE["default"])
             dash = f' stroke-dasharray="{style["dash"]}"' if style["dash"] else ""
-            marker_id = self.marker_id(kind)
+            marker_id = {"arrow": "arrow", "bar": "arrow-inhibit", "none": None}.get(style["marker"])
             mk = f' marker-end="url(#{marker_id})"' if marker_id else ""
             self.out.append(f'<path d="M{x:.2f},{y:.2f} L{x + fs * 2.2:.2f},{y:.2f}" fill="none" '
                             f'stroke="{style["color"]}" stroke-width="{style["width"]}"{dash}{mk}/>')
@@ -659,9 +442,6 @@ class Diagram:
                 f'<text x="{x + fs * 2.7:.2f}" y="{y + fs * 0.34:.2f}" font-family="{escape(self.ff)}" '
                 f'font-size="{fs:.2f}" fill="#333333">{escape(str(item.get("label", kind)))}</text>')
             x += fs * 2.7 + text_width(str(item.get("label", kind)), fs) + fs * 2.0
-            if x > self.W - self.margin - fs * 4:
-                x = self.margin
-                y += fs * 1.6
         self.out.append('</g>')
 
     def draw_header(self):
@@ -681,15 +461,10 @@ class Diagram:
         if not notes:
             return
         text = "  ".join(notes)
-        max_w = max(80.0, self.W - 2 * self.margin - self.fs * 2.0)
-        lines = wrap_label(text, max_w, self.fs * 0.88)
-        y = self.H - self.margin * 1.8 - self.fs * 0.5 - (len(lines) - 1) * self.fs * 0.95
-        for line in lines:
-            self.out.append(
-                f'<text x="{self.margin:.2f}" y="{y:.2f}" '
-                f'font-family="{escape(self.ff)}" font-size="{self.fs * 0.88:.2f}" '
-                f'fill="#666666">{escape(line)}</text>')
-            y += self.fs * 0.95
+        self.out.append(
+            f'<text x="{self.margin:.2f}" y="{self.H - self.margin * 0.55:.2f}" '
+            f'font-family="{escape(self.ff)}" font-size="{self.fs * 0.82:.2f}" '
+            f'fill="#666666">{escape(text)}</text>')
 
     # ------------------------------------------------------------------
     def render(self):
@@ -707,20 +482,17 @@ class Diagram:
             self.draw_edge(e)
         for n in self.nodes:
             self.draw_node(n)
-        self.draw_conditions()
         self.draw_header()
         self.draw_legend()
         self.draw_footnote()
 
-        background = ""
-        if not self.spec.get("transparent"):
-            background = f'<rect x="0" y="0" width="{self.W:.2f}" height="{self.H:.2f}" fill="#ffffff"/>\n'
         svg = (
             f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" width="{self.width_mm:.1f}mm" '
             f'height="{self.height_mm:.1f}mm" viewBox="0 0 {self.W:.2f} {self.H:.2f}">\n'
             f'<title>{escape(str(self.fig_id))}</title>\n'
-            + background + self.svg_defs() + "\n" + "".join(self.out) + "\n</svg>\n"
+            f'<rect x="0" y="0" width="{self.W:.2f}" height="{self.H:.2f}" fill="#ffffff"/>\n'
+            + self.svg_defs() + "\n" + "".join(self.out) + "\n</svg>\n"
         )
         return svg
 

@@ -1,278 +1,263 @@
 ---
-name: scientific-schematic-editor
-description: 科研示意图生成与编辑：从材料建立实体-关系-证据台账，按来源约束布局，交付可编辑 SVG 与真实 PDF/PNG，并给出逐元素来源、图注、alt text 和保真检查。Build or edit a source-bound scientific schematic with a claim ledger, editable SVG, real exports and a visual audit. Use for 科研示意图、机制图、关系图、流程图、图形改稿、示意图编辑。
+name: editable-schematic-builder
+description: 科研示意图生成与编辑：先从材料抽出实体与关系，再交付真实可编辑 SVG（文字保持 <text>、节点/边各有 <g id>），随后真实导出 PDF/PNG；改图时保留工单未点名的全部元素并给出逐元素来源映射。Build or edit a source-bound scientific schematic with an editable SVG, real exports, per-element source map and source-preserving edits. Use for 科研示意图、机制图、关系图、流程图、图形改稿、示意图编辑。
 ---
 
-# 科研示意图生成与编辑（Evidence-Bound Schematic）
+# 科研示意图生成与编辑（Editable Relationship Schematic）
 
 ## 用途与触发
 
-task.md 要求“画科研示意图 / 机制图 / 关系图 / 流程图”，或要求在已有图上做
-source-preserving edit 时使用。交付物不是“一张好看的图”，而是：
+task.md 要求"画科研示意图 / 机制图 / 关系图 / 流程图"或"在给定图上修改"时使用。
+交付物是：**一张真实可编辑的 SVG + 真实导出件（PDF/PNG）+ 逐元素来源映射**。
+组织方 workorder 为 `editable_relationship_schematic`；"导出成功"不等于科学正确，
+判分仍看实体、关系、方向、层级与材料是否对得上。
 
-**材料 → 实体/关系台账 → 可编辑 SVG → 真实 PDF/PNG → 逐元素来源与视觉复核。**
+## 输入
 
-组织方 workorder 为 `editable_relationship_schematic`。评分看实体、关系、方向、
-层级、数值/单位与来源是否一致；“导出成功”不等于科学正确。
+- `/input/task.md`：图的用途、画布/栏宽、必须出现的实体与关系、语言、导出格式；**以它为准**。
+- `/input/case.json`：`case_id`、`workorder`、`source_materials[]`、`starting_figure`（若有）。
+- 材料：正文方法/结果段、表格、图注、已有图片；PDF 用实际文件，不靠标签猜内容。
+- 编辑模式额外输入：起始 SVG（或可解析的矢量源）与修改点。
+- 环境工具：不用假设；用 `export_schematic.py` 自动探测或 `command -v rsvg-convert inkscape`。
 
-## 输入与先判定
+## 交付物优先流程（必须按顺序）
 
-- `/input/task.md`：图的用途、画布/栏宽、必须出现的实体与关系、语言、导出格式。
-- `/input/case.json`：`case_id`、`workorder`、`source_materials[]`、`starting_figure`。
-- 材料：方法/结果段、表格、图注、已有矢量图；PDF 读实际文件，不靠文件名猜内容。
-- 先判定 `mode = create | edit`；编辑模式必须先复制起始图，禁止整图重画冒充编辑。
+### 第 1 步（约 15% 预算）：读题并列出契约
 
-## 支持文件（按需使用；失败不阻塞主交付物）
+读 `/input/task.md`、`/input/case.json` 和材料，写下（可记在 `/app/work/contract.md`）：
 
-先解析安装目录，不要照抄字面占位符：
-
-```bash
-export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md 2>/dev/null | head -n 1)")"
-[ -f "$SKILL_DIR/SKILL.md" ] || export SKILL_DIR="/skills/weekly-skill"
-mkdir -p /app/work /app/output/figures /app/output/preview
-echo "SKILL_DIR=$SKILL_DIR"
-```
-
-| 文件 | 何时用 | 用法 |
-|---|---|---|
-| `references/schematic-editing-playbook.md` | 建表、语义核对、改稿前 | 按小节查阅；与 task.md 冲突时以 task.md 为准 |
-| `templates/entities.json` | 新建模式起步 | 复制后替换；模板是示例，不是证据 |
-| `scripts/build_schematic.py` | 表驱动出 SVG | 见第 3 步；结构错误返回 JSON，不 traceback |
-| `scripts/svg_export.py` | 真实导出 PDF/PNG | 运行时探测 cairosvg/rsvg/inkscape；都不可用时用 matplotlib 重绘 SVG 图元 |
-| `scripts/check_schematic_result.py` | 可选结构审计 | 缺文件/空表返回 JSON；失败写 `audit_failed`，不阻塞 |
-| `scripts/compare_svg.py` | 编辑范围核对 | 比较 before/after 的 `g id` 与文字 |
-| `README.md` | 接口/依赖/限制速查 | 与本文同步 |
-
-脚本是加速器。命令失败或时间不足时，手工完成同一检查，并把
-`audit_unavailable` / `renderer_error` 写入 `exceptions`；不要为了过 checker
-删掉真实元素或编造字段。
-
-## 执行步骤（交付物优先）
-
-### 第 1 步（约 10–15% 预算）：读题，锁定图面契约
-
-在 `/app/work/contract.md` 写清：
-
-- `case_id`、`mode`、图型、画布尺寸、栏宽、语言、目标格式；
+- `case_id`、图型、画布尺寸/栏宽、目标格式；
 - 必须出现的实体、关系、方向、数值/单位、图例项；
-- 材料路径 + 可定位位置（页/段/图注/表行）；
-- 输出契约要求的全部字段（任务字段 + media 官方别名）；
-- 起始图路径与修改工单（编辑模式）。
+- 新建还是编辑（`starting_figure` 是否存在）；
+- 输出契约要求的所有字段。
 
-这一步不跑脚本、不套模板。先确认“这张图要回答什么科学问题”。
+不要在这一步运行脚本或搭模板。
 
-### 第 2 步（约 20% 预算）：建立实体—关系—证据台账
+### 第 2 步（约 40% 预算）：先落盘完整可用的主交付物 SVG
 
-写 `/app/work/entities.json`：
+目标路径：`/app/output/figures/fig1.svg`（按 task.md 命名）。
 
-```json
-{
-  "figure_id": "Fig.1",
-  "entities": [
-    {"id": "E1", "label": "Catalyst A", "kind": "material",
-     "source": {"path": "materials/method.md", "locator": "§2.1", "quote": "…"}}
-  ],
-  "relations": [
-    {"id": "R1", "from": "E1", "to": "E2", "semantic": "flow",
-     "label": "conversion", "direction": "forward", "kind": "reported",
-     "source": {"path": "materials/results.md", "locator": "Fig.2a", "quote": "…"}}
-  ],
-  "groups": [{"id": "G1", "label": "Reactor", "nodes": ["E1", "E2"]}],
-  "legend": [{"kind": "flow", "label": "material flow"}],
-  "values": [{"element_id": "R1", "value": "92", "unit": "%",
-              "source": "Fig.2a"}]
-}
-```
-
-硬规则：
-
-- 一个实体一个节点；同义名/别名放 `aliases[]`，不另造节点；
-- 每条 `reported` 关系必须有 `source{path,locator,quote?}`；
-- 材料只说“相关/伴随”时用 `association`，不画因果箭头；
-- 证据不足但读者需要理解的连接标 `kind: "inferred"`，图面灰色虚线，并逐条写
-  `schematic_disclaimers`；
-- 材料没有的实体、数值、浓度、时间点、单位一律不补；
-- 被裁掉的支路写 `omitted[]` 与理由；冲突写 `conflicts[]`。
-
-### 第 3 步（约 35% 预算）：先落盘完整可编辑 SVG
-
-优先用表驱动，减少手写坐标：
-
-```bash
-python3 "$SKILL_DIR/scripts/build_schematic.py" \
-  --entities /app/work/entities.json \
-  --out /app/output/figures/fig1.svg --json
-```
-
-编辑模式：先 `cp /input/starting-figure.svg /app/work/start.svg`，只改工单点名的
-`<g id>`；未点名的节点、边、文字、坐标、样式保持原样。不要整图重画。
-
-SVG 硬性结构（评委会直接看）：
-
-- 根 `<svg>` 有 `xmlns`、`viewBox`、白色背景、`<title>`/`<desc>`；
-- 所有文字是 `<text>`，不转曲、不位图化；
-- 每个实体 `<g id="E1">`、每条关系 `<g id="R1">`，id 与台账一致；
-- 无 `<script>`、无 http/file 外部引用；
-- 文字在框内、不压线、不与箭头重叠；字号 ≥7 pt；
+- **新建模式**：直接写 SVG，或用可选的 `build_schematic.py` 由实体表生成。
+- **编辑模式**：先把起始 SVG 复制到输出路径，再**只改工单点名的元素**；
+  未点名的节点、边、文字、坐标、样式保持原样；不要整图重画冒充编辑。
+- SVG 硬性结构（评委会直接看）：
+  - 根元素 `<svg>` 带 `viewBox`；
+  - 所有文字是 `<text>`，不要转曲、不要用位图文字；
+  - 每个节点 `<g id="E1">`、每条边 `<g id="R1">`，id 与实体/关系表一致；
+  - 无 `<script>`，无 http/file 外部引用（自包含）；位图只用 data: URI 或同目录文件并注明来源；
+  - 文本落在框内、不压线、不与箭头重叠；字号 ≥7 pt。
 - 关系语义：激活实线箭头、抑制 T 形端、流向/转化实线箭头、转运虚线、
-  包含用分区框、结合用细实线无箭头；同一图内线型语义不混用；
-- 图例覆盖实际使用的线型/形状；数值编码有单位、尺度和来源。
+  包含用分区框；推断关系用灰色虚线并在图注说明。同一图内不混用相同含义的线型。
+- **这一步结束时必须有一个真实、可单独打开的 SVG**；后面全部失败也还能交付它。
 
-这一步结束必须有一个**单独可打开、可评价**的 SVG；后续导出失败也还能交付它。
+### 第 3 步（约 25% 预算）：补齐结构化字段
 
-### 第 4 步（约 15% 预算）：真实导出 PDF/PNG
+- 实体/关系表：每个元素有 `id/label/type` 与 `source{path,locator}`；推断项标 `kind: inferred`。
+- `element_source_map` / `content_map`：覆盖每个节点与边。
+- 编辑模式：`edit.diff`（added/modified/removed/unchanged）、`edit.preserved`、`edit.removed`；
+  文字没变但坐标变了的，也要在 `edit.diff` 里记 `modified` 并说明。
+- `checks` / `compliance_checks`：只写实际检查过的项，布尔值必须与事实一致。
+- media 官方别名字段：`status`、`editable_source`、`export_artifact`、`content_map`、
+  `compliance_checks`、`exceptions`（见输出契约）。
+- 先写 `result.json` 草稿并落盘，再继续。
+
+### 第 4 步（约 15% 预算）：真实导出，再做可选审计
 
 ```bash
-python3 "$SKILL_DIR/scripts/svg_export.py" \
-  --svg /app/output/figures/fig1.svg --outdir /app/output \
-  --formats pdf,png --dpi 300 --basename fig1 --json
+python3 "$SKILL_DIR/scripts/export_schematic.py" \
+  --svg /app/output/figures/fig1.svg --outdir /app/output --dpi 300 --json
 ```
 
-- 探测顺序：cairosvg → rsvg-convert → inkscape → matplotlib 图元重绘；
-- 每个输出必须通过 `%PDF` / `\x89PNG` 文件头与尺寸校验；
-- 全部失败：交付 SVG + 自包含 HTML 预览，`status: "partial"`，
-  `export_artifact: null`，`exceptions` 写 `export_unavailable`；
-- 不得用 SVG/HTML 冒充 PDF/PNG，不得写不存在的尺寸或 dpi。
-
-### 第 5 步（约 10% 预算）：写 result.json、图注与视觉复核
-
-先写 `/app/output/result.json`，再跑可选审计：
+- 探测顺序固定为 `cairosvg` → `rsvg-convert` → `inkscape`；输出必须通过
+  PNG `\x89PNG` / PDF `%PDF` 文件头校验，校验失败的文件会被删除，**绝不伪造导出件**。
+- 全部不可用：交付 SVG + **自包含 HTML 预览**（脚本自动生成），
+  `status: "partial"`，`exceptions` 写 `export_unavailable`，`export_artifact: null`。
+- 可选审计（失败不阻塞交付）：
 
 ```bash
 python3 "$SKILL_DIR/scripts/check_schematic_result.py" \
   --result /app/output/result.json --entities /app/work/entities.json \
   --svg /app/output/figures/fig1.svg --root /app/output --json
+python3 "$SKILL_DIR/scripts/compare_svg.py" \
+  --before /app/work/start.svg --after /app/output/figures/fig1.svg \
+  --workorder /app/work/workorder.json --json
 ```
 
-**强制视觉复核**（不是可选）：打开导出的 PNG/PDF，逐项检查：
+`check_schematic_result.py` 的退出码：`0` 通过、`1` 有问题、`2` result 不可读；
+`compare_svg.py`：`0` 改动在范围内、`1` 越界、`2` SVG/workorder 不可读。
+**非 0 = 审计未通过，但不阻塞交付**：把失败原因写进 `exceptions`
+（`audit_unavailable` / `audit_failed`）与 `uncertainty`，继续手工核对。
+不要为了过 checker 删减真实内容或编造字段。
 
-1. 每个实体/关系是否都在图中，且方向正确；
-2. 文字是否被裁切、溢出、压线或与箭头重叠；
-3. 图例是否覆盖实际线型，颜色/形状是否与分类数一致；
-4. 缩略到 300 px 宽后主信息是否仍可读；
-5. 推断关系是否有虚线 + 免责说明。
+### 第 5 步（约 5% 预算）：落盘核对
 
-发现问题就改 SVG 或台账后重渲染；最多 2 轮。无法修复的写进 `uncertainty`，
-不要声称“已通过视觉检查”。
+- `result.json` 能被 `json.load`；`case_id` 与输入一致；
+- `artifacts[]` / `editable_source` / `export_artifact` 的路径都真实存在；
+- `content_map` 覆盖每个实体/关系；编辑模式 `preserved` 与对比结果一致；
+- `status` 诚实：缺导出就是 `partial`，缺输入就是 `input_error`。
 
-## 输出契约（任务字段 + media 官方别名）
+## 支持文件（按需使用，不阻塞）
+
+**先解析 skill 目录，不要照抄字面占位符**（平台可能装到 `/skills/weekly-skill`，
+也可能装到题目专属目录）：
+
+```bash
+export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md | head -n 1)")"
+if [ -z "$SKILL_DIR" ] || [ ! -f "$SKILL_DIR/scripts/build_schematic.py" ]; then
+  echo "SKILL_DIR not resolved; list /skills and set it manually" >&2
+fi
+echo "SKILL_DIR=$SKILL_DIR"
+```
+
+确认 `$SKILL_DIR` 非空且目录存在后，再用 `"$SKILL_DIR/scripts/..."`。
+本地测试时脚本名可能带保护后缀 `.py.md`，运行时包内已还原为 `.py`。
+
+| 文件 | 何时用 | 命令/说明 |
+|---|---|---|
+| `references/schematic-editing-playbook.md` | 建表、改稿、语义核对前 | 可选方法参考；与 task.md 冲突时以 task.md 为准 |
+| `templates/entities.json` | 新建模式起步 | 可选；复制后替换，模板来源是示例，不能当证据 |
+| `scripts/build_schematic.py` | 想用表驱动出图时 | `python3 "$SKILL_DIR/scripts/build_schematic.py" --entities /app/work/entities.json --out /app/output/figures/fig1.svg --json`；结构错误返回 JSON（exit 2），不会 traceback |
+| `scripts/export_schematic.py` | 需要 PDF/PNG 或降级预览 | 见第 4 步；无渲染器时生成 HTML 预览并报 `export_unavailable` |
+| `scripts/check_schematic_result.py` | 交付前自查 | 见第 4 步；缺文件/空表也返回可读 JSON |
+| `scripts/compare_svg.py` | 编辑模式核对改动范围 | 先写 `/app/work/workorder.json`：`{"targets":["E2"],"add":["E6"],"remove":["E3"],"source":"task.md §…"}` |
+| `README.md` | 安装/接口/限制速查 | 与 SKILL.md 同步维护的简明说明 |
+
+- **脚本是可选加速器**：命令失败、路径不存在或时间不足时，直接手工完成同一检查，
+  并在 `uncertainty`/`exceptions` 记录 `audit_unavailable`。
+- **不要为了通过 checker 而删减真实内容或编造字段。**
+- 不要依赖 `latex-compiler`、`office-renderer`、`pdf-render-tool`、`browser-automation`
+  等不确定工具；导出只用第 4 步的三个探测目标。
+
+## 输出契约
+
+任务字段与 media 官方别名**同时存在**；官方字段是追加，不是替换。
 
 ```json
 {
-  "case_id": "与输入一致",
+  "case_id": "case-001",
   "task_family": "schematic",
   "workorder": "editable_relationship_schematic",
-  "status": "answered|partial|insufficient_evidence|input_error",
-  "task_status": "completed|partial|input_error",
-  "figure": {"figure_id": "Fig.1", "canvas_mm": [180, 90],
-             "entities": 4, "relations": 3, "inferred": 1},
+  "status": "answered",
+  "task_status": "completed",
+  "figure": {
+    "figure_id": "Fig.1", "canvas_mm": [180, 90],
+    "nodes": 4, "edges": 3, "compartments": 1, "inferred": 1
+  },
   "artifacts": [
     {"role": "editable", "path": "figures/fig1.svg", "format": "svg"},
     {"role": "export", "path": "figures/fig1.pdf", "format": "pdf"},
     {"role": "preview", "path": "preview/fig1.png", "format": "png",
      "width_px": 2126, "height_px": 1063, "dpi": 300}
   ],
-  "entities": [
-    {"element_id": "E1", "label": "Catalyst A", "kind": "material",
-     "source": {"path": "materials/method.md", "locator": "§2.1"},
-     "status": "reported"}
+  "element_source_map": [
+    {"element_id": "E1", "maps_to": {"path": "materials/method.md", "locator": "§2.1"},
+     "kind": "reported", "label": "Catalyst A"},
+    {"element_id": "R3", "maps_to": {"path": "materials/results.md", "locator": "p.5"},
+     "kind": "inferred", "note": "材料只说明相关，方向为示意"}
   ],
-  "relations": [
-    {"id": "R1", "from": "E1", "to": "E2", "semantic": "flow",
-     "label": "conversion", "direction": "forward", "status": "reported",
-     "source": {"path": "materials/results.md", "locator": "Fig.2a"}}
-  ],
-  "visual_claim_ledger": [
-    {"claim_id": "C1", "text": "A converts 92% at 350 °C",
-     "visual_elements": ["E1", "R1", "E2"],
-     "evidence": [{"path": "materials/results.md", "locator": "Fig.2a"}],
-     "status": "reported"}
-  ],
-  "content_map": [
-    {"element_id": "E1", "element_type": "entity", "kind": "reported",
-     "maps_to": {"path": "materials/method.md", "locator": "§2.1"}},
-    {"element_id": "R1", "element_type": "relation", "kind": "reported",
-     "maps_to": {"path": "materials/results.md", "locator": "Fig.2a"}}
-  ],
-  "edit": {"mode": "create", "starting_figure": null, "diff": [],
-           "preserved": [], "removed": []},
-  "caption": "一句话图注，只描述图中可见内容与来源。",
-  "alt_text": "面向无障碍的等价描述；不引入图中没有的结论。",
-  "checks": {"xml_valid": true, "text_as_text": true, "external_refs": 0,
-             "named_groups": 7, "text_fit": true, "arrow_clearance": true,
-             "legend_complete": true, "visual_reviewed": true},
-  "compliance_checks": {"xml_valid": true, "text_as_text": true,
-                        "no_external_refs": true, "export_signature": "pdf",
-                        "dpi": 300, "coverage": "all_entities_relations"},
+  "edit": {
+    "mode": "edit",
+    "starting_figure": "materials/fig1_start.svg",
+    "diff": [{"element_id": "E2", "action": "modified",
+              "before": "Catalyst", "after": "Catalyst A"}],
+    "preserved": ["E1", "E3", "R1"],
+    "removed": []
+  },
+  "checks": {
+    "xml_valid": true, "text_as_text": true, "external_refs": 0,
+    "named_groups": 9, "fonts": ["Liberation Sans"],
+    "viewbox_check": true, "marker_check": true,
+    "text_fit_check": true, "arrow_clearance_check": true,
+    "export_from_source": true, "entity_group_coverage": "4/4"
+  },
+  "schematic_disclaimers": ["R3 为推断关系，材料只说明两者相关"],
+  "uncertainty": [],
+  "change_log": [{"action": "modified", "element_id": "E2",
+                  "detail": "按工单更新标签；其余元素保持不变"}],
+  "support_files_used": ["scripts/build_schematic.py",
+                         "scripts/export_schematic.py"],
   "editable_source": {"path": "figures/fig1.svg", "format": "svg"},
   "export_artifact": {"path": "figures/fig1.pdf", "format": "pdf"},
-  "exceptions": [],
-  "uncertainty": [],
-  "change_log": []
+  "content_map": [
+    {"element_id": "E1", "maps_to": {"path": "materials/method.md", "locator": "§2.1"},
+     "kind": "reported"}
+  ],
+  "compliance_checks": {
+    "xml_valid": true, "text_as_text": true, "no_external_refs": true,
+    "export_signature": "pdf", "dpi": 300, "dpi_source": "exported by rsvg-convert"
+  },
+  "exceptions": []
 }
 ```
 
-规则：
+字段规则：
 
-- `status` 用 media 词表；`answered` 表示主图与要求的导出件都完成，缺导出写
-  `partial`，缺输入写 `input_error`。
-- `editable_source` 指向真实 SVG；`export_artifact` 只在真实 PDF/PNG 存在时写对象，
-  否则 `null`。
-- `content_map` 覆盖每个实体与关系；`visual_claim_ledger` 覆盖图中每个科学断言。
-- `checks`/`compliance_checks` 只写实际测过的项；`visual_reviewed` 必须真的打开过
-  预览文件才能写 `true`。
-- 编辑模式 `edit.diff` 的 action 只能是 `added|modified|removed|unchanged`；
-  未点名元素列入 `preserved`。
+- `status` 用官方词表：`answered`（主图与要求导出件都完成）、`partial`（缺导出/缺材料等）、
+  `insufficient_evidence`、`input_error`；`task_status` 保留原题口径。
+- `editable_source` 必须指向真实存在的 SVG；`export_artifact` 指向真实 PDF/PNG，
+  没有就写 `null`（不得指向 SVG 或 HTML 冒充）。
+- `content_map` 与 `element_source_map` 内容一致，覆盖每个实体与关系。
+- `compliance_checks` 与 `checks` 一致，只写实测项。
+- `exceptions` 代码建议：`export_unavailable`、`missing_material`、`missing_target`、
+  `audit_unavailable`、`audit_failed`、`svg_parse_error`、`input_error`。
+- 无渲染器时：`artifacts` 用 `{"role":"preview","path":"preview/fig1.html","format":"html"}`，
+  `status: "partial"`，`export_artifact: null`，`exceptions` 写 `export_unavailable`。
+- 不要用通用适配器（如 `emit_official.py`）把 HTML 预览写成 `export_artifact`；
+  没有真实 PDF/PNG 时手工保留 `null`，宁缺毋假。
+
+## 质量闸门
+
+**必须（缺一不可）**
+
+| # | 检查 | 通过标准 |
+|---|---|---|
+| M1 | 主交付物 | `figures/fig1.svg` 存在、可解析、有 `viewBox` |
+| M2 | 可编辑性 | 文字为 `<text>`；每个节点/边都有 `<g id>`；无转曲 |
+| M3 | 自包含 | 无 `<script>`、无 http/file 外部引用 |
+| M4 | 契约 | `result.json` 可解析；`case_id`、`artifacts`、`element_source_map`、`checks` 与 6 个 media 别名齐全 |
+| M5 | 来源 | `content_map` 覆盖每个实体/关系；推断项有 `inferred` 与免责说明 |
+| M6 | 导出诚实 | 每个导出件路径存在且文件头正确；没有就 `partial` + `export_unavailable`，不得伪造 |
+| M7 | 编辑范围 | 编辑模式未点名元素保留；`edit.diff` action 合法；`preserved` 可核对 |
+
+**建议（尽力而为）**
+
+- 语义线型一致、图例覆盖实际线型、箭头不压字、节点不重叠、字号 ≥7 pt；
+- 色盲友好（Okabe–Ito），灰度打印仍可区分；
+- `check_schematic_result.py` 返回 `ok: true`；`compare_svg.py` 无 violations；
+- 导出 PDF 且 PNG ≥300 dpi；字体名记录在 `checks.fonts`。
 
 ## 异常处理
 
 | 情况 | 处理 |
 |---|---|
-| 缺 task/case/材料 | `status=input_error`，写清缺什么，不编造图 |
-| 起始图不可解析 | 不重画冒充编辑；`partial` + `starting_figure_unreadable` |
-| 实体/关系表为空 | `input_error`；先补台账再出图 |
-| 未知实体/未知端点 | 不猜；修表或删除该边，缺口写 `omitted`/`uncertainty` |
-| 只有“相关”表述 | 用 `association` 无箭头，不画因果 |
-| 需要 PDF/PNG 但无渲染器 | SVG + HTML 预览；`partial` + `export_unavailable` |
-| 文字溢出/箭头压字 | 调整布局/换行/缩短标签，不缩字号到 7 pt 以下 |
-| 复杂反馈环/交叉线 | 用分区、旁路或分层；仍不可读则拆图并说明 |
-
-## 质量闸门
-
-| # | 检查 | 通过标准 |
-|---|---|---|
-| M1 | 主交付物 | SVG 存在、可解析、有 `viewBox` |
-| M2 | 可编辑 | 文字为 `<text>`；实体/关系各有 `<g id>`；无转曲 |
-| M3 | 来源 | `content_map` 覆盖全部实体/关系；每条 reported 边有 locator |
-| M4 | 语义 | 激活/抑制/转运/结合/推断线型与端点正确；图例覆盖实际线型 |
-| M5 | 图面 | 无文字溢出、无箭头压字、无未说明的推断；字号 ≥7 pt |
-| M6 | 导出诚实 | PDF/PNG 文件头有效；没有就 `partial` + `export_unavailable` |
-| M7 | 契约 | `case_id`、任务字段、6 个 media 别名齐全；`compliance_checks` 是 object |
-| M8 | 视觉复核 | 真正打开预览并记录检查项；不能只跑 XML 检查 |
-
-## 自检
-
-- [ ] 读到了 task/case，写下了图面契约与 mode
-- [ ] 每个实体/关系有来源或明确的 `inferred`
-- [ ] SVG 可单独打开；文字可编辑；每个实体/关系有 id
-- [ ] PDF/PNG 真实存在且文件头正确；否则诚实 `partial`
-- [ ] 图例、单位、数值与源材料一致
-- [ ] 缩略图测试通过；无文字溢出/箭头压字
-- [ ] result.json 的路径都真实存在，`content_map` 覆盖完整
-- [ ] 没有把示例、模板或推断写成来源事实
+| 材料缺失/读不了 | `status: "input_error"` 或 `partial`；`exceptions` 写 `missing_material`，不臆造实体 |
+| 起始图不可解析 | 重建同结构图，`status: "partial"`，记录丢失的原属性 |
+| 工单目标不存在 | 记 `missing_target`；不新建同名元素冒充 |
+| 实体表为空/畸形 | 脚本返回结构化错误（exit 2）；手工补表或直接手写 SVG，不阻塞 |
+| 脚本失败/路径不存在 | 在 `exceptions` 记 `audit_unavailable`，继续手工核对并交付 |
+| 导出工具不可用 | 交付 SVG + 自包含 HTML 预览；`status: "partial"`；`export_artifact: null`；不伪造 PNG/PDF |
+| 时间不足 | 先保证第 2 步 SVG 与第 3 步核心字段；高级检查写进 `uncertainty` |
+| 关系方向不明 | 无箭头连线 + `direction: "undetermined"` + 免责说明 |
 
 ## 最小示例（示例，不是正式答案）
 
-输入：方法 §2.1–2.3 与结果图注，要求 4 个实体、3 条关系、1 条推断边。
-输出：`figures/fig1.svg`（4 个 `<g id="E*">`、3 个 `<g id="R*">`、1 条灰色虚线）；
-`svg_export.py` 产出 `figures/fig1.pdf` 与 `preview/fig1.png`；
-`result.json` 的 `content_map` 覆盖 7 个元素，`visual_claim_ledger` 覆盖 3 个断言；
-视觉复核记录 `text_fit=true, arrow_clearance=true, visual_reviewed=true`。
-示例不是正式案例结果。
+输入：方法段给出 "Catalyst A converts Reactant to Product" 与一张起始 SVG；
+工单要求把 `E2` 的标签从 `Catalyst` 改为 `Catalyst A`。
+
+输出（示例）：
+
+- `figures/fig1.svg`：4 节点 / 3 边 / 1 分区；`E1..E4`、`R1..R3` 各有 `<g id>`；
+- `edit.mode: "edit"`，`diff` 1 条 modified，`preserved` 包含 `E1/E3/E4/R1`；
+- `export_schematic.py` 无可用渲染器 → `preview/fig1.html` + `status: "partial"`；
+- `result.json` 同时含任务字段与 6 个 media 别名。
 
 ## 版本与限制
 
-- 版本：0.8.0（实体—关系—证据台账 + 真实导出 + 强制视觉复核）。
-- 不依赖 python-pptx；不调用网络；可选渲染器失败时诚实降级。
-- 复杂拓扑仍建议手工指定 `rank/order` 或拆分多面板。
-- 平台可能把技能装到题目专属目录，必须先解析 `$SKILL_DIR`。
+- 版本：`0.5.0`（交付物优先流程；脚本为可选加速器）。
+- 脚本 stdlib-only（Python 3.12+）；`cairosvg`/`rsvg-convert`/`inkscape` 只做可选探测。
+- `compare_svg.py` 只比较 `<g id>` 与组内文本，**不检测纯坐标移动**；
+  坐标级改动必须写进 `edit.diff` 并人工复核。
+- 自动布局只保证基本不重叠；复杂拓扑仍建议手工指定 `rank/order` 或坐标。
+- 无渲染器环境下 PDF/PNG 不可得，只能交付 SVG + HTML 预览（诚实降级）。
+- 维护：改脚本后同步更新本文件、`README.md` 与 `references/schematic-editing-playbook.md`；
+  不写无法验证的分数、运行记录或截图。

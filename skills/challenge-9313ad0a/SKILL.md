@@ -1,211 +1,182 @@
 ---
 name: mindmap-builder
-description: 思维导图构建：从论文、提案、实验记录或笔记中抽取概念、证据与关系，生成层级清晰、节点带类型与来源、关系有依据的可编辑 SVG/JSON 思维导图，并输出官方 deliverable/preserved_facts/evidence_map/change_log 四字段。Convert research material into an evidence-traced, editable mind map with typed nodes, sourced cross-links, SVG + JSON outline and a contract-compliant result.json. Use for 思维导图、概念图、知识结构图、大纲可视化、论文梳理、研究规划。
+description: 思维导图构建：把论文、提案或笔记转成层级清晰的思维导图，节点带类型与来源定位，支持交叉链接，输出可编辑 SVG 与 JSON 大纲。Convert source material into a hierarchical mind map with typed nodes, cross-links and per-node sources, producing editable SVG and JSON outline. Use for 思维导图、概念图、知识结构图、大纲可视化。
 ---
 
 # 思维导图（Mind Map Builder）
 
-## 1. 用途与触发
+## 用途与触发
 
-当任务要求“画思维导图 / 知识结构图 / 概念图 / 梳理逻辑框架 / 把论文或笔记整理成图”时使用。
-核心是**结构 + 来源 + 可编辑**：每个节点能回到原文，每条关系有依据，交付物能继续改。
+task.md 要求"画思维导图""知识结构图""概念图""梳理逻辑框架"时使用。
 
-适用：论文梳理、综述结构、实验方案、项目路线、会议决策、概念体系。
-不适用：无材料的自由联想、只需要不可编辑位图的场景。
+关键点：思维导图的价值在**结构与来源**，不在好看。每个节点都要能指回原文，
+否则就是"看起来很有条理的自由发挥"。
 
-## 2. 输入与输出
+## 输入
 
-输入（评测时）：
+- `/input/task.md`：中心主题、层级深度、节点数量、导出格式、语言
+- `/input/case.json`：`case_id`、`source_documents[]`、`output_contract`
+- 材料：论文/笔记/大纲/术语表
+- 可选：既有导图（要求在其基础上改）
 
-- `/input/task.md`：中心主题、分支数、节点上限、层级、语言、导出格式；
-- `/input/case.json`：`case_id`、`title`、`source_documents[]`、`output_contract`；
-- `/input/materials/` 或 case.json 声明的路径：`.md/.txt/.tex/.json/.csv/.tsv/.yaml/.html/.xml`；
-  `.pdf` 用标准库做尽力文本抽取，失败标 `ocr_needed`，不伪造内容。
+## 执行步骤
 
-输出（写到 `/app/output`）：
+1. **定中心与主干**：从 task.md 与材料标题确定 1 个根节点 + 3–7 个一级分支。
+   一级分支应是**并列的逻辑维度**（如 背景/问题/方法/结果/局限），不是章节标题照搬。
+2. **建节点**：每个节点
+   ```json
+   {"node_id": "n12", "parent": "n3", "label": "表面氧空位提高选择性",
+    "type": "claim|concept|method|result|evidence|question",
+    "detail": "…", "source": {"path": "materials/paper.pdf", "locator": "p.4 §3.2"},
+    "kind": "reported|inferred", "importance": "core|supporting|detail"}
+   ```
+   规则：
+   - 一个节点一个意思，标签 ≤ 20 字；
+   - `result` 节点必须带数值或方向；
+   - `inferred` 节点用虚线样式并在标签中体现推测语气；
+   - 没有来源的节点只能来自 task.md 的组织性要求，标 `source: "task"`。
+3. **交叉链接**：记 `cross_links[]`（`from`、`to`、`relation`、`source`），
+   用于表达跨分支的因果/对比关系。
+4. **控制规模**：一级 3–7，总量按 task.md；默认 ≤ 40 节点。
+   超限时合并细节节点，不删核心 claim。
+5. **生成 SVG**：径向或左右树状布局，要求
+   - 文本用 `<text>`，不转曲；
+   - 每个节点一个 `<g id="nXX">`，带 `data-type`；
+   - 层级用颜色/线宽区分，`inferred` 用虚线；
+   - 连线用 `<path>`，不穿过节点；
+   - 画布 `viewBox` 明确，字号 ≥ 10。
+6. **校验**：`python3 /skills/weekly-skill/scripts/svg_lint.py /app/output/mindmap.svg --json`
+   必须通过；节点数与 `mindmap.json` 一致。
+7. **落盘**：`mindmap.json`、`mindmap.svg`、`preview/mindmap.png`（若可渲染）、`result.json`。
 
-| 文件 | 作用 |
-|---|---|
-| `result.json` | 官方结果：`deliverable/preserved_facts/evidence_map/change_log` + 结构视图 |
-| `mindmap.svg` | 首选可编辑交付物：真实 `<text>`，节点/边带来源，无脚本与外链 |
-| `mindmap.json` | 结构源文件：单根、parent 链、cross_links、coverage |
-| `mindmap-spec.json` | 渲染规格：坐标/尺寸/样式/边路径，便于二次编辑 |
-
-工作文件写 `/app/work`：`material.json`、`mindmap.json`、`mindmap-spec.json`、
-`check-report.json`、`check-report-final.json`。
-
-## 3. 单入口调用
-
-```bash
-export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md 2>/dev/null | head -n 1)")"
-[ -f "$SKILL_DIR/SKILL.md" ] || export SKILL_DIR="/skills/weekly-skill"
-mkdir -p /app/work /app/output
-
-python3 "$SKILL_DIR/scripts/main.py" run \
-  --input /input --work /app/work --output /app/output \
-  --layout tree --max-nodes 40 --json
-```
-
-`scripts/main.py` 是唯一入口；其余脚本由它调用，也可在调试时单独运行：
-
-```bash
-python3 "$SKILL_DIR/scripts/main.py" extract --input /input --work /app/work --json
-python3 "$SKILL_DIR/scripts/main.py" build --input /app/work/material.json \
-  --out-outline /app/work/mindmap.json --out-spec /app/work/mindmap-spec.json \
-  --out-svg /app/output/mindmap.svg --json
-python3 "$SKILL_DIR/scripts/main.py" check --material /app/work/material.json \
-  --outline /app/work/mindmap.json --spec /app/work/mindmap-spec.json \
-  --svg /app/output/mindmap.svg --result /app/output/result.json \
-  --root /app/output --json
-python3 "$SKILL_DIR/scripts/main.py" result --input /input --work /app/work \
-  --output /app/output --json
-```
-
-退出码：`0` 已写出 `result.json`（`completed` 或 `partial`，输入错误也算）；
-`2` 仅当 work/output 目录都无法创建、进程完全无法启动。中途任何一步失败都会
-降级继续，并把问题写进 `uncertainty` 与 `change_log`，不静默丢结果。
-
-## 4. 支持文件（相对 `$SKILL_DIR`）
-
-| 路径 | 作用 |
-|---|---|
-| `scripts/main.py` | 唯一入口：extract → build → check → result → final check |
-| `scripts/mindmap_kit.py` | 任务专用标准库：文本切分、来源归一、标签压缩、约束解析、路径发现 |
-| `scripts/extract_material.py` | 读 task/case/材料，抽节点、关系、数字事实、证据映射 |
-| `scripts/build_mindmap.py` | 校验单根/父链/无环，布局并渲染 SVG + JSON + spec |
-| `scripts/check_mindmap.py` | 结构、节点、关系、SVG、官方字段与真实路径检查 |
-| `scripts/make_result.py` | 投影官方四字段，磁盘校验 artifact，失败降级 partial |
-| `resources/mindmap.schema.json` | 大纲/节点/关系字段约束；产出前对照 |
-| `resources/evidence_map.schema.json` | `claim_id/claim/source{path,locator,quote}` 约束 |
-| `resources/node_types.md` | 节点类型、kind 语义、关系词表 |
-| `resources/checklist.md` | 交付检查单，与 checker 规则一致 |
-
-所有脚本只用 Python 3.9+ 标准库，不联网、不读作者个人路径。
-
-## 5. 流水线与职责
-
-1. **extract**：解析任务约束（分支 3–7、节点上限、深度、语言）；按标题与语义线索
-   归类句子；标签取原句短子串（不改写）；数字句进 `preserved_facts`，claim/evidence
-   进 `evidence_map`；来源写相对 `/input` 的真实路径与 `§章节 L行号`。
-2. **build**：保证单根、父链存在、无环；无来源的节点标 `inferred`；生成
-   `mindmap.json`、`mindmap-spec.json` 与 `mindmap.svg`；默认左右树，`--layout radial` 可切径向。
-3. **check**：检查结构（单根/环/深度/分支/同级重复）、节点（类型/kind/来源/推断比例）、
-   关系（端点/关系词/来源）、SVG（viewBox/`<text>`/覆盖/外链）与官方字段、真实路径。
-4. **result**：投影四字段并保留结构视图；SVG 缺失时降级交付 `mindmap.json` 并标 `partial`；
-   `change_log` 记录读入 → 抽取 → 渲染 → 校验 → 落盘 → 人工确认项。
-
-需要模型润色标签时，可在 `extract` 之后直接编辑 `/app/work/mindmap.json` 的
-`label/detail/type/cross_links`，再用 `main.py build --outline ...` 重渲染；不得添加
-材料中不存在的概念或关系。
-
-## 6. 节点、关系与来源模型
-
-节点最小字段（完整约束见 `resources/mindmap.schema.json`）：
+## 输出契约
 
 ```json
 {
-  "node_id": "n8",
-  "parent": "b4",
-  "label": "表面氧空位浓度增加提升选择性",
-  "type": "result",
-  "detail": "对原句的压缩说明；必要时保留原句",
-  "source": {"path": "materials/results.md",
-             "locator": "§结果 L3", "quote": "逐字原句"},
-  "kind": "reported",
-  "importance": "core"
+  "case_id": "…",
+  "task_family": "mindmap",
+  "status": "completed|partial",
+  "mindmap": {
+    "root": {"node_id": "n0", "label": "…"},
+    "nodes": 0,
+    "depth": 3,
+    "branches": ["背景", "问题", "方法", "结果", "局限"]
+  },
+  "artifacts": [
+    {"role": "editable", "path": "mindmap.svg", "format": "svg"},
+    {"role": "structure", "path": "mindmap.json", "format": "json"},
+    {"role": "preview", "path": "preview/mindmap.png", "format": "png"}
+  ],
+  "nodes": [
+    {"node_id": "n12", "parent": "n3", "label": "…", "type": "claim",
+     "detail": "…", "source": {"path": "materials/paper.pdf", "locator": "p.4"},
+     "kind": "reported", "importance": "core"}
+  ],
+  "cross_links": [
+    {"from": "n12", "to": "n21", "relation": "explains", "source": "p.5"}
+  ],
+  "coverage": {"sections_covered": ["Intro", "Results"], "not_covered": ["Methods details"]},
+  "uncertainty": [{"item": "…", "reason": "…", "impact": "…"}],
+  "change_log": []
 }
 ```
 
-- `type`：`topic/concept/question/method/evidence/result/claim/risk/gap/task`，
-  语义见 `resources/node_types.md`。
-- `kind`：`reported`（材料原文，必须有 path+locator）、`task`（task.md 的组织性要求）、
-  `inferred`（推断，必须在 detail 写依据，总量 ≤20%）。
-- 概念与关系只来自材料；证据不足时删除节点或标 `inferred`，不得编造。
-- 跨分支关系写 `cross_links[]`：`from/to/relation/source`；关系词限定为
-  `supports/contrasts/depends/explains/causes/precedes/part_of/conflicts/cites/link`。
-- 关系只在“证据句可归属某节点 + 与另一节点共享 ≥4 字术语 + 有明确关系词”时生成；
-  标签未逐字出现在证据句时标 `kind=inferred`，宁缺毋滥。
+## 布局与可读性规范
 
-## 7. 官方四字段（result.json）
+- 径向布局：根在中心，一级分支均匀分布，避免交叉；
+- 左右树状：一级分支左右分列，深度方向留白；
+- 同级节点垂直间距 ≥ 1.6 倍字号，兄弟节点不重叠；
+- 颜色按分支区分，不超过 6 种；保证灰度可辨；
+- 核心节点加粗/加边框，细节节点弱化；
+- 长标签换行，不压线、不出画布。
 
-```json
-{
-  "case_id": "原样保留",
-  "deliverable": {"path": "mindmap.svg", "format": "svg", "role": "editable",
-                  "nodes": 16, "edges": 17, "editable": true},
-  "preserved_facts": [{"fact_id": "f-num-1", "text": "在 350 °C 下选择性达到 91%…",
-    "value": "91%", "source": {"path": "materials/results.md",
-    "locator": "§结果 L3", "quote": "…逐字原句…"}}],
-  "evidence_map": [{"claim_id": "n8", "claim": "表面氧空位浓度增加提升选择性",
-    "node_type": "result", "kind": "reported",
-    "source": {"path": "materials/results.md", "locator": "§结果 L3", "quote": "…"}}],
-  "change_log": [
-    {"step": 1, "action": "读取输入与材料", "evidence": "input/case.json, input/task.md"},
-    {"step": 2, "action": "抽取概念与关系", "evidence": "work/material.json"},
-    {"step": 3, "action": "生成可编辑导图", "evidence": "mindmap.svg"},
-    {"step": 4, "action": "结构、来源与官方字段校验", "evidence": "work/check-report.json"},
-    {"step": 5, "action": "写入 result.json 并保留 case_id", "evidence": "output/result.json"}
-  ]
-}
-```
+## 规则
 
-要求：`case_id` 与输入完全一致；`deliverable.path` 必须是磁盘上真实存在、优先 SVG 的
-可编辑文件；`preserved_facts` 覆盖数字、条件、术语与核心节点；`evidence_map` 覆盖
-claim/evidence/result 等关键节点；`change_log` 不得为空且步骤真实。
-可选字段：`status`、`mindmap`、`nodes`、`edges`、`cross_links`、`coverage`、
-`artifacts`、`uncertainty`、`warnings`、`output_contract`（从 case.json 原样保留）。
+1. 导图是**结构的压缩**，不是原文摘抄；每个节点是提炼后的短语。
+2. 不制造原文没有的分支；组织性节点（如"研究问题"）可来自 task.md，标 `source: "task"`。
+3. 同一层级的节点粒度要一致（不要一个节点是一句话、另一个是整章）。
+4. 跨分支关系必须用 cross-link 表达，不靠空间位置暗示。
+5. `inferred` 节点不超过总量的 20%，且必须带依据。
+6. 导出 SVG 必须可编辑、文本可选。
 
-## 8. 可编辑 SVG 规范
-
-- 文本必须是 `<text>/<tspan>`，不转曲；每个节点一个 `<g data-node-id data-type
-  data-kind data-source>`，每条边一个 `<path data-edge-id data-kind data-source>`。
-- 实线=层级，虚线=交叉关系/推断；颜色按分支区分且灰度可辨；核心节点加粗。
-- 无 `<script>`、`<image>`、外部 `href`、`url(http…)`、`@import`；不嵌入外部字体。
-- 画布有数值 `viewBox`；字号 ≥10；长标签换行，不压线、不出画布。
-- `mindmap.json` 与 SVG 节点一一对应，可用 `build_mindmap.py --outline` 重新渲染。
-- 不伪造 PNG/PDF 预览；SVG 可直接在浏览器或矢量编辑器中打开。
-
-## 9. 异常与降级
+## 异常处理
 
 | 情况 | 处理 |
 |---|---|
-| 材料缺失/为空 | 写 root-only 可编辑 SVG/JSON，`status=partial`，`uncertainty` 说明 |
-| 输入目录不存在 | 仍写 root-only 交付物与 `result.json`，退出 0，标 `input` 不确定项 |
-| 扫描 PDF/无文本层 | 标 `ocr_needed`，不猜正文；提示先 OCR |
-| 不支持的后缀 | 在 `sources[].status=unsupported` 与 `uncertainty` 中列出 |
-| 数值冲突 | 保留双方数值，写入 `uncertainty`，不擅自选一个 |
-| 节点超预算 | 按分数与分支配额截断，优先核心/数字节点，不删证据行 |
-| 分支少于 3 | 保留真实结构并警告，不编造分支凑数 |
-| SVG 生成失败 | 降级为 `mindmap.json` 交付，`status=partial`，不假装 SVG 存在 |
-| 检查失败 | 仍写 `result.json`，`status=partial`，problems 写入不确定性与 change_log |
+| 材料是扫描件 | OCR 后建图，标注识别风险 |
+| 节点数超限 | 合并 detail 级节点，保留 core |
+| 无法渲染 PNG | 交付 SVG + 说明，`status=partial` |
+| 要求沿用旧导图 | 以旧图为骨架，标注新增/删除节点 |
+| 材料观点冲突 | 建"争议"分支，双方并列并给来源 |
 
-## 10. 最小接口示例（synthetic，非正式案例）
+## 自检
 
-输入 `/input/case.json` 只需保留原标识与契约，材料放 `/input/materials/`：
+- [ ] 每个节点有来源或 `source: "task"`
+- [ ] 一级分支 3–7 个，粒度一致
+- [ ] `inferred` 节点 ≤ 20% 且带依据
+- [ ] SVG 通过 `svg_lint.py`
+- [ ] 节点数与 JSON 一致
+- [ ] 预览真实渲染
 
-```json
-{
-  "case_id": "EXAMPLE-NOT-A-TEST-CASE",
-  "title": "合成接口示例",
-  "source_documents": ["materials/notes.md"],
-  "output_contract": {
-    "case_id": "原样保留",
-    "deliverable": "可编辑的思维导图",
-    "preserved_facts": "数字、条件、术语和来源不可凭空改变",
-    "evidence_map": "关键论断到来源定位的映射",
-    "change_log": "修改动作、原因、人工确认项和未解决问题"
-  }
-}
-```
+## 快速路径（预算内）
 
-调用 `main.py run --input /input --work /app/work --output /app/output` 后，
-`/app/output` 得到 `mindmap.svg`、`mindmap.json`、`mindmap-spec.json`、`result.json`。
-示例输出仅示意接口，不是任何正式案例的答案。
+1. **0–2 分钟**：读材料，确定中心主题与 3–7 个一级分支。
+2. **2–7 分钟**：先出 JSON 大纲（节点+层级），落盘骨架。
+3. **7–12 分钟**：生成 SVG，补交叉链接与来源映射。
+4. **最后 2 分钟**：跑 SVG 结构检查（XML/文本溢出/节点重叠）。
 
-## 11. 依赖、版本与限制
+## 方法增强（融合参考实践）
 
-- 版本 1.1.0；Python 3.9+ 标准库；无网络、无第三方包、无字体嵌入。
-- PDF 仅做尽力文本抽取，不做 OCR；语义抽取是规则启发式，长文/多文档需人工复核
-  `coverage.not_covered` 与 `uncertainty`。
-- 默认 ≤40 节点、深度 ≤4；task.md 有明确数量/分支/深度时以 task.md 为准。
-- 交付前逐项核对 `resources/checklist.md`。
+- **层级规则**：中心节点唯一；每个节点只表达一个观点；建议深度 ≤ 4 层；叶子节点必须可回溯来源。
+- **节点类型**：`topic`（主题）/ `claim`（论断）/ `evidence`（证据）/ `method`（方法）/ `question`（待解问题），类型决定配色与图标。
+- **横向优先**：一级分支用名词短语并列，避免把时间顺序混进结构层级。
+- **交叉链接**：只连真实存在的跨分支关系，用虚线并标注关系词（支持/对比/依赖）；禁止为好看滥连。
+- **节点来源映射**：每个 `claim/evidence` 节点记 `source{path, locator}`；无来源节点标 `author_note`。
+- **布局**：放射或左右分布，同级节点等距；文字宽度按字符数估算，超宽换行而非缩字号。
+- **SVG 结构检查**：XML 可解析、每个 `<text>` 有坐标、节点框包含文字、无明显重叠、无悬空连线。
+
+### 定向方法增强
+
+- **来自 ProcessOn 思维导图**：先按 MECE 拆解（相互独立、完全穷尽）；原文有目录/标题时优先忠实保留骨架，只对最末级正文做“一句话观点”压缩，不把标题层改写成自己的话。
+- **来自 ProcessOn 思维导图**：先选结构再画图——中心放射 `mind_free`、向右逻辑 `mind_right`、组织架构 `mind_org`、鱼骨归因 `mind_ishikawa`、时间轴 `mind_timeline`、树形 WBS `mind_tree`、表格式对比 `mind_tree_table`；结构不确定时默认中心放射。
+- **来自 ProcessOn 思维导图**：标题最多到六级，超过六级改用无序列表；禁止 HTML；一个节点只放一个信息点；节点用短句/短语/名词，不粘贴整段。
+- **来自 Mindmap Generator Plus**：布局按“中心 → 终端/分支 → 模块 → 功能项”四层数据组织；连接线用 L 形折线，节点用圆角框并留等距，避免连线穿过文字。
+- **两篇合取后的改造**：`outline.json` 增加 `structure_type` 与 `leaf_compression` 字段；渲染前先检查层级跳级、节点超长、孤立节点与连线穿字。
+
+## 质量闸门
+
+| # | 检查 | 通过标准 | 不通过时 |
+|---|---|---|---|
+| G1 | 结构 | 单中心、层级 ≤ 4、每节点一观点 | 拆节点或提升层级 |
+| G2 | 覆盖 | 材料核心论点均出现在图中 | 补节点或标 `omitted` |
+| G3 | 来源 | claim/evidence 节点有来源定位 | 补定位或改标 author_note |
+| G4 | 交叉链接 | 每条都有关系词且两端存在 | 删除或补关系说明 |
+| G5 | 渲染 | SVG 可解析、文字不溢出、无重叠 | 调整布局/换行 |
+| G6 | 一致 | JSON 大纲与 SVG 节点一一对应 | 以 JSON 为准重新渲染 |
+
+## 常见失败模式
+
+| 失败模式 | 识别信号 | 修复 |
+|---|---|---|
+| 节点写成整句 | 单节点超过 20 字 | 提炼关键词，细节下沉子节点 |
+| 层级过深 | 出现 5 层以上 | 合并同级或拆成两张图 |
+| 孤立节点 | 无父无链接 | 挂接正确父节点或删除 |
+| 交叉链接泛滥 | 虚线多于实线 | 只保留真实跨分支关系 |
+| 文字溢出节点框 | SVG 中文字超出矩形 | 换行或加宽节点 |
+| 图与大纲不一致 | SVG 多/少节点 | 以 JSON 重新生成 SVG |
+
+## 交付清单
+
+- [ ] `/app/output/result.json` 含 `case_id`、`nodes[]`、`edges[]`、`artifacts`
+- [ ] `mindmap.svg` 可解析且能编辑
+- [ ] `outline.json` 与 SVG 节点一致
+- [ ] 中心唯一、层级 ≤ 4、每节点一观点
+- [ ] claim/evidence 节点有来源定位
+- [ ] 交叉链接均带关系词
+- [ ] 无文字溢出与明显重叠
+
+## 最小示例（示例）
+
+输入：1 篇论文（IMRaD）+ 要求"5 个一级分支、≤30 节点"。
+输出：`mindmap.json` 28 节点、5 分支、4 条 cross-link；
+`mindmap.svg` 通过 lint（`text_elements: 28`）；`preview/mindmap.png` 由 SVG 渲染。

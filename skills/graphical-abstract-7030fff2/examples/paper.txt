@@ -1,5 +1,0 @@
-SYNTHETIC EXAMPLE - NOT A REAL STUDY, NOT A FORMAL ANSWER.
-
-This text exists only to exercise the Graphical Abstract pipeline.
-
-A central challenge is that porous carbon electrodes lose capacitance when cycling at high current density. We design a nitrogen-doped porous carbon with a template-assisted route that keeps mesopores open during cycling. The optimized electrode retains 88% of its initial capacitance after 5000 cycles at 10 A g-1. These results suggest that pore connectivity, rather than surface area alone, controls fast-charging stability.

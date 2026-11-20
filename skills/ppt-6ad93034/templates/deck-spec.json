@@ -1,0 +1,96 @@
+{
+  "_note": "结构模板：下列标题、数值与 locator 均为示例，使用时必须替换为源材料中的真实内容。生成命令见 SKILL.md「支持文件（必须使用）」表。",
+  "title": "高温催化选择性：从现象到机制",
+  "size": "16:9",
+  "language": "zh",
+  "audience": "领域同行（15 分钟组会）",
+  "duration_min": 15,
+  "target_slides": 6,
+  "throughline": "催化剂 A 在高温下保持选择性的原因是表面氧空位抑制了过度氧化",
+  "slides": [
+    {
+      "kind": "title",
+      "title": "高温催化选择性：从现象到机制",
+      "subtitle": "组会报告 · 2026-11-12 · 汇报人：张三",
+      "notes": "开场 20 秒：说明本次报告回答一个问题——为什么 A 在 350 °C 仍能保持高选择性。"
+    },
+    {
+      "kind": "section",
+      "title": "背景：选择性随温度升高而下降",
+      "notes": "用 30 秒交代领域共识与未解问题，不要展开文献综述。"
+    },
+    {
+      "kind": "content",
+      "title": "A 在 350 °C 仍保持 92% 选择性",
+      "bullets": [
+        "对比催化剂 B：同条件选择性降至 61%",
+        "选择性优势在 300–400 °C 区间稳定存在",
+        "空速提高一倍后差距仍然显著"
+      ],
+      "image": "materials/fig-selectivity.png",
+      "caption": "Fig. 2a：选择性随温度变化（源：materials/paper.pdf, Fig. 2a）",
+      "footer": "Author et al., Journal 2025, Fig. 2a",
+      "notes": "先指图再读数：350 °C 处 A 为 92%，B 为 61%。强调这是三次独立实验的中位数。",
+      "evidence": [
+        {
+          "claim": "A 在 350 °C 的选择性为 92%",
+          "source": {"path": "materials/paper.pdf", "locator": "Fig. 2a"},
+          "quote": "selectivity of 92% at 350 °C"
+        }
+      ]
+    },
+    {
+      "kind": "content",
+      "title": "氧空位密度与选择性同向变化",
+      "bullets": [
+        "原位 XPS 显示 A 的表面氧空位浓度更高",
+        "选择性随氧空位密度单调增加",
+        "B 经还原预处理后差距缩小"
+      ],
+      "image": "materials/fig-xps.png",
+      "caption": "Fig. 3c：O 1s 原位 XPS（源：materials/paper.pdf, Fig. 3c）",
+      "notes": "把谱图与上一页性能图对应起来：峰面积变化和选择性变化同向。",
+      "evidence": [
+        {
+          "claim": "氧空位密度与选择性同向变化",
+          "source": {"path": "materials/paper.pdf", "locator": "Fig. 3c"},
+          "quote": "oxygen vacancy density tracks selectivity"
+        }
+      ]
+    },
+    {
+      "kind": "content",
+      "title": "方法：稳态动力学排除传质干扰",
+      "bullets": [
+        "固定床反应器，空速 60,000 h⁻¹",
+        "转化率控制在 15% 以下，排除热效应",
+        "每个温度点稳定 30 分钟后取样"
+      ],
+      "notes": "只讲方法如何支撑结论，不复述实验步骤；说明空白实验与误差范围。",
+      "evidence": [
+        {
+          "claim": "动力学数据在低转化率区间采集",
+          "source": {"path": "materials/paper.pdf", "locator": "Methods, p. 8"},
+          "quote": "conversion kept below 15%"
+        }
+      ]
+    },
+    {
+      "kind": "content",
+      "title": "结论与局限",
+      "bullets": [
+        "结论：氧空位抑制过度氧化，解释高温选择性",
+        "局限：仅验证 A/B 两种催化剂，未做原位 XAFS",
+        "下一步：扩展至 Fe–Ni 体系并补表征"
+      ],
+      "notes": "收束到一个可检验的机制假设；明确局限，避免过度外推。最后留 10 秒过渡到提问。",
+      "evidence": [
+        {
+          "claim": "机制假设适用于 A/B 两种催化剂",
+          "source": {"path": "materials/paper.pdf", "locator": "Discussion, p. 12"},
+          "quote": "we hypothesize that oxygen vacancies suppress over-oxidation"
+        }
+      ]
+    }
+  ]
+}

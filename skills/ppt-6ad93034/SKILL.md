@@ -1,184 +1,273 @@
 ---
-name: academic-deck-editor
-description: 学术 PPT 生成、模板适配与最小编辑。读取真实 task/case/material/workorder，从论文、数据表和真实图片规划页序，生成可编辑 PPTX、真实 PDF/PNG 预览、逐页证据映射与检查记录；保留母版、版式、主题与未点名页面。Use for 学术汇报、PPT 生成、做 slides、PPT 改稿、模板套用、幻灯片修订、deck generation/adaptation/editing.
+name: deck-editor
+description: 学术 PPT 生成与编辑：从论文/材料生成可编辑 PPTX（结论式标题、每页备注、页级证据），或在给定起始稿上按工单做最小干预编辑并输出逐页 before/after diff；生成或修改后校验版式/占位符/备注/图片/溢出并给出真实预览。Generate an editable academic deck from source material, or edit an existing deck without touching unrequested content, then verify structure, notes and visuals. Use for PPT 生成、做 slides、PPT 改稿、幻灯片修订。
 ---
 
-# 学术 PPT：生成、模板适配与最小编辑
+# 学术 PPT 生成与编辑（Deck Build & Edit）
 
-把真实论文/材料变成可讲、可编辑、可回查的学术幻灯片。一个入口完成发现、
-规划、装配、预览、检查与结果契约；正文与页面取舍由模型或源材料证据决定，
-脚本只做装配与校验。
+## 用途与触发
 
-## 快速开始
+两种工作流，先判定再动手：
 
-```bash
-export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md 2>/dev/null | head -n 1)")"
-[ -f "$SKILL_DIR/SKILL.md" ] || export SKILL_DIR="/skills/weekly-skill"
-mkdir -p /app/work /app/output/preview
-
-# 1) 先跑一次：发现输入并写 /app/work/evidence-pack.json
-python3 "$SKILL_DIR/scripts/main.py" --input /input --output /app/output --work /app/work
-
-# 2) 推荐：模型读取 evidence-pack，写 /app/work/deck-spec.json（见下方 schema）
-#    然后再跑一次，用模型写的正文装配最终稿
-python3 "$SKILL_DIR/scripts/main.py" --input /input --output /app/output --work /app/work
-
-# 3) 可选：显式指定
-python3 "$SKILL_DIR/scripts/main.py" --input /input --output /app/output --work /app/work \
-  --spec /app/work/deck-spec.json --template /input/materials/target-template.pptx
-```
-
-`scripts/main.py` 是唯一入口。它在同一进程内调用 `scripts/discover.py`
-（输入与证据）、`scripts/build.py`（spec 校验/规划）、`scripts/deckkit.py`
-（OOXML 装配/编辑/预览）、`scripts/checks.py`（结构/证据检查）和
-`scripts/gold.py`（页级金标准与 diff）。不要分步手工调用这些模块。
-
-## 输入与模式
-
-优先读实际文件，不按文件名猜内容：
-
-- `/input/task.md`：受众、时长、页数、语言、比例、必须覆盖内容。
-- `/input/case.json` 与 `/input/material.json`：`case_id`、模板/起始稿路径、
-  `output_contract`；**原有根字段原样保留到 result.json**。
-- `/input/artifacts/slide-workorder.json`：正式逐页/逐条工单，优先于文件名。
-- `/input/materials/**`：PDF/TXT/MD/DOCX/PPTX/CSV/XLSX、真实图片、模板、起始稿。
-
-| 信号 | `workflow_mode` | 行为 |
+| 输入信号 | `workflow_mode` | 说明 |
 |---|---|---|
-| workorder 有 edits | `edit` | 起始稿只读，只改点名项 |
-| 起始稿 + 目标模板 | `adapt` | 内容保留，真实母版/版式/主题 |
-| 只有目标模板 | `adapt` | 在模板上生成 |
-| 无起始稿/模板 | `generate` | 从材料规划新稿 |
+| task.md 要求“做一份 PPT / 把材料变成 slides / 按大纲生成” | `generate` | 从 `deck-spec` 生成可编辑 PPTX |
+| task.md 给出**起始稿**并要求“修改/补充/调整” | `edit` | 基线只读，只改工单点名项 |
+| 给模板/母版并要求在模板上出稿 | `adapt` | 用 `pptx_edit.py apply-template` 继承真实母版/版式 |
+| 只要求盘点/提取文字 | `inspect` | 用 `inspect` + `list`，不要冒充交付 |
 
-“可编辑 PPTX”是格式要求，不等于 edit 模式。模板/起始稿缺失时退回 generate，
-并在 `uncertainty` 记录，不静默假装适配成功。
+组织方口径（硬约束）：`actual starting deck where edit/adapt requires one`；
+“保留来源的编辑”——未点名的页面、母版、版式、主题、图片、备注都必须原样保留。
+技术性文件检查通过不等于演示的科学内容正确；页级证据映射必须单独做。
 
-## 页面规划（详见 `references/slide-planning.md`）
+## 输入
 
-1. 抽研究问题、方法、结果、讨论、局限、结论；每条保留文件 + 定位。
-2. 默认 10–14 页，按 task/workorder 页数为准；结果页 ≥20%，方法页 ≤35%。
-3. 一页一个结论；标题是 action title；每页 3–5 条要点，每条只含一个 claim。
-4. 每页至少一个视觉元素：真实图、统计卡、步骤卡、对照卡或要点。
-5. 图只能来自真实图片，或从真实数据表重绘；缺图写 `unavailable`，禁止占位图。
-6. 每个内容页写 `notes`（2–4 句讲稿）和 `claims`/`source_ref`（path + locator）。
-7. 数字、单位、图号、条件与源文逐字一致；无法回查的数字删除或标 `unavailable`。
-8. 语言跟随 task；翻译时保留数字、单位、专有名词，`claims.source` 指向原文。
+- `/input/task.md`：受众、时长、固定页数/上限、语言、必须覆盖内容、比例、讲稿要求
+- `/input/case.json`：`case_id`、`starting_deck`、`template_id`、`workorder`、`source_materials[]`
+- 起始稿（编辑模式）：`.pptx`，可能含母版/版式/图表/图片/备注
+- 源材料：论文全文/图表、数据表、已有 deck；只读实际文件
+- 可选：`organizer-edit-workorder.json`（逐条编号的修改要求）
 
-## deck-spec.json（模型写正文的接口）
+## 支持文件（必须使用）
 
-写到 `/app/work/deck-spec.json`；重新运行入口即生效。
+所有命令在评测环境以 `{SKILL_DIR}` = `/skills/weekly-skill` 运行；本地为当前 skill 目录。
+
+| 文件 | 触发条件 | 准确命令 / 用法 |
+|---|---|---|
+| `references/ppt-generation-playbook.md` | 任何生成/编辑任务开始前 | 先读：工作流判定、叙事、版式、QA、失败模式；按其表格执行 |
+| `templates/deck-spec.json` | `generate` 模式 | `cp {SKILL_DIR}/templates/deck-spec.json /app/work/deck-spec.json` 后替换全部示例值 |
+| `scripts/make_pptx.py` | 从 spec 生成可编辑 PPTX | `python3 {SKILL_DIR}/scripts/make_pptx.py --spec /app/work/deck-spec.json --out /app/output/deck.pptx` |
+| `scripts/check_deck.py` | 生成后 / 编辑后 / 交付前**必跑** | `python3 {SKILL_DIR}/scripts/check_deck.py /app/output/deck.pptx --spec /app/work/deck-spec.json --expect-slides 6 --expect-aspect 16:9 --require-notes --require-evidence --result /app/output/result.json --json --out /app/work/check-deck.json` |
+| `scripts/pptx_preview.py` | `office-renderer` 不可用，需要真实浏览器预览 | `python3 {SKILL_DIR}/scripts/pptx_preview.py /app/output/deck.pptx --out /app/work/preview/deck.html --width 1200 --json`，再用 Chrome 截图 |
+| `scripts/pptx_edit.py` | `edit` / `adapt` 模式：盘点、改 run、改备注、换图、套模板、校验 | `inspect` / `list` / `set-text` / `replace` / `set-notes` / `set-image` / `apply-template` / `verify`，见第 5 节 |
+| `scripts/validate_result.py` | 写 `result.json` 后 | `python3 {SKILL_DIR}/scripts/validate_result.py /app/output/result.json` |
+| `scripts/validate_artifacts.py` | 交付前最后一道门 | `python3 {SKILL_DIR}/scripts/validate_artifacts.py --result /app/output/result.json` |
+
+`check_deck.py` 是结构/内容/备注/图片/溢出/spec/result 的统一校验入口；
+`--strict` 让 warning 也导致非零退出。**不要只运行 `make_pptx.py --check` 就交付。**
+
+## 执行步骤 A：生成（generate）
+
+1. **盘点输入**：按 playbook 第 2 节；确认受众、时长、页数、比例、语言、必须覆盖内容。
+2. **先写叙事再写 spec**：一页一个结论；确定 `throughline` 与每页 `role/kind`。
+   - 结果页 ≥ 1/3，方法页 ≤ 1/4；固定页数先保结果与局限。
+   - 标题写结论句；数值/单位/条件与源材料逐字一致。
+3. **写 `/app/work/deck-spec.json`**：从 `templates/deck-spec.json` 复制，替换所有示例值；
+   每个内容页写 `notes` 与 `evidence`（`source.path` + `source.locator`）。
+4. **生成**：在 `/app/work` 下运行（或 spec 中写图片绝对路径），否则相对图片路径会被静默跳过：
+   `make_pptx.py --spec ... --out /app/output/deck.pptx`。
+5. **回读校验**：`check_deck.py --spec ... --require-notes --require-evidence`。
+   - 有 spec 不一致 → 改 spec 或改内容后重新生成；不要手工改 pptx 绕过。
+   - 图片被静默跳过 → 检查 `image` 路径存在且为 PNG/JPEG。
+6. **真实预览**：优先 `office-renderer` + `pdf-render-tool`；不可用时
+   `pptx_preview.py` 生成 HTML，再用 Chrome headless 截图。
+   `render.engine` 如实写 `office-renderer` 或 `html-from-pptx`；都没有写
+   `preview.unavailable=true` 且 `status: "partial"`。
+7. **写 `result.json`**：见输出契约；`page_evidence` 覆盖每一页。
+
+## 执行步骤 B：编辑（edit）
+
+1. **备份基线**：复制到 `/app/work/baseline/<原名>.pptx`，**全程只读**；所有写操作输出新文件。
+2. **盘点**：`/app/work/deck-inventory.json`
+   ```bash
+   python3 {SKILL_DIR}/scripts/pptx_edit.py inspect /app/work/baseline/deck.pptx --json
+   python3 {SKILL_DIR}/scripts/pptx_edit.py list    /app/work/baseline/deck.pptx --json
+   ```
+   记录：页数、每页文本 run（index + 文本）、备注、图片、版式、主题字体/配色。
+3. **解析工单**：`/app/work/edit-plan.json`
+   ```json
+   {"edits": [
+     {"edit_id": "E01", "slide": 6, "target": "text#3",
+      "action": "replace", "from": "结果", "to": "A 在 350 °C 保持 92% 选择性",
+      "source": {"path": "materials/paper.pdf", "locator": "Fig.2a"},
+      "reason": "标题改为结论句"},
+     {"edit_id": "E02", "slide": 9, "target": "notes",
+      "action": "set_notes", "to": "…", "reason": "补讲稿"}]}
+   ```
+   工单有编号就沿用；没有则自建并写清依据。
+4. **逐条执行**：
+   ```bash
+   # 精确替换第 N 页第 K 个文本 run
+   python3 {SKILL_DIR}/scripts/pptx_edit.py set-text deck.pptx \
+     --slide 6 --index 3 --text "A 在 350 °C 保持 92% 选择性" --out deck_v2.pptx --json
+   # 单页字符串替换
+   python3 {SKILL_DIR}/scripts/pptx_edit.py replace deck.pptx \
+     --from "结果" --to "A 在 350 °C 保持 92% 选择性" --slide 6 --out deck_v2.pptx --json
+   # 改写讲稿
+   python3 {SKILL_DIR}/scripts/pptx_edit.py set-notes deck_v2.pptx \
+     --slide 6 --text "…" --out deck_v2.pptx --json
+   # 替换图片（保持原关系与位置）
+   python3 {SKILL_DIR}/scripts/pptx_edit.py set-image deck_v2.pptx \
+     --part ppt/media/image3.png --src materials/fig2a.png --out deck_v2.pptx --json
+   ```
+   规则：
+   - 一次只改工单指定项；不确定 target 先 `list` 核实，不猜 index；
+   - 文本长度变化大时先压缩文字，不缩字号；溢出检查见第 6 步；
+   - 不得删除未点名的页面、不得重排顺序；
+   - 工单允许新增页时用 `make_pptx.py` 生成补充页并说明合并方式，否则记 `unresolved`。
+5. **校验**：
+   ```bash
+   python3 {SKILL_DIR}/scripts/pptx_edit.py verify /app/output/deck.pptx --json
+   python3 {SKILL_DIR}/scripts/check_deck.py /app/output/deck.pptx \
+     --expect-slides 12 --require-notes --json --out /app/work/check-deck.json
+   ```
+   要求 `verify.ok=true`、`slide_count` 与起始稿一致（除非工单允许增减）、无悬空关系。
+6. **渲染核对**：用 `office-renderer` 出 PDF，再 `pdf-render-tool` 出改动页 PNG；
+   逐页对比修改前后，确认未误伤未点名内容。无 office-renderer 时用
+   `pptx_preview.py` + Chrome，并如实标注 `render.engine`。
+7. **写变更记录**：`/app/work/edit-report.json`，每条含
+   `edit_id / slide / before / after / action / verified`。
+8. **落盘**：`deck.pptx`、`edit-report.json`、`deck-inventory.json`、
+   `preview/`（改动页至少）、`result.json`。
+
+## 输出契约
 
 ```json
 {
-  "title": "汇报题目",
-  "size": "16:9",
-  "theme": {"name": "scholar"},
-  "slides": [
-    {"kind": "title", "role": "title", "title": "题目", "subtitle": "组会 · 10 分钟",
-     "source": "paper.pdf", "notes": "开场说明问题与主线。",
-     "source_ref": {"path": "materials/paper.pdf", "locator": "p.1"}},
-    {"kind": "content", "role": "background", "title": "研究缺口",
-     "bullets": ["源文句子 1", "源文句子 2"],
-     "notes": "讲稿：……。依据：paper.pdf p.2。",
-     "source": "paper.pdf · p.2",
-     "source_ref": {"path": "materials/paper.pdf", "locator": "p.2"},
-     "claims": [{"claim": "…", "source": {"path": "materials/paper.pdf", "locator": "p.2"}}]},
-    {"kind": "steps", "role": "method", "title": "方法路线",
-     "steps": [{"title": "步骤", "text": "做法与条件"}], "notes": "…"},
-    {"kind": "stat", "role": "result", "title": "关键结果",
-     "stats": [{"value": "92%", "label": "转化率"}],
-     "image": "materials/fig2a.png", "caption": "Fig. 2a · p.5（原图）",
-     "notes": "…", "source_ref": {"path": "materials/paper.pdf", "locator": "p.5"},
-     "figure_source": {"path": "materials/paper.pdf", "locator": "p.5"}},
-    {"kind": "closing", "role": "conclusion", "title": "结论",
-     "bullets": ["结论 1", "结论 2"], "notes": "…"}
-  ]
+  "case_id": "…",
+  "task_family": "deck-generate|deck-edit|deck-adapt",
+  "workflow_mode": "generate|edit",
+  "status": "completed|partial",
+  "deck": {"path": "deck.pptx", "slide_count": 12, "aspect_ratio": "16:9",
+           "starting_deck": "materials/start.pptx",
+           "slides_added": 0, "slides_removed": 0, "slides_reordered": false},
+  "artifacts": [
+    {"role": "editable", "path": "deck.pptx", "format": "pptx"},
+    {"role": "report", "path": "edit-report.json", "format": "json"},
+    {"role": "render", "path": "preview/deck.pdf", "format": "pdf"},
+    {"role": "preview", "path": "preview/slide-06.png", "format": "png"}
+  ],
+  "page_evidence": [
+    {"slide": 1, "kind": "title", "title": "…", "claims": []},
+    {"slide": 6, "kind": "result", "title": "A 在 350 °C 保持 92% 选择性",
+     "claims": [
+       {"claim": "A 在 350 °C 的选择性为 92%",
+        "source": {"path": "materials/paper.pdf", "locator": "Fig.2a"}}
+     ]}
+  ],
+  "edits": [
+    {"edit_id": "E01", "slide": 6, "action": "replace", "target": "text#3",
+     "before": "结果", "after": "A 在 350 °C 保持 92% 选择性",
+     "source": {"path": "materials/paper.pdf", "locator": "Fig.2a"},
+     "verified": true}
+  ],
+  "preserved": {"master": true, "layouts": 4, "theme_fonts": ["Liberation Sans"],
+                "images": 7, "untouched_slides": [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12]},
+  "checks": {"zip_valid": true, "relationships_resolved": true,
+             "slide_count_match": true, "notes_complete": true,
+             "images_resolved": true, "text_overflow_risk": [],
+             "placeholder_junk": [], "spec_conformance": true},
+  "render": {"engine": "office-renderer|html-from-pptx|none", "pdf": "preview/deck.pdf",
+             "png": ["preview/slide-06.png"], "unavailable": false},
+  "unresolved": [],
+  "uncertainty": [],
+  "change_log": []
 }
 ```
 
-可用 `kind`：title / section / content / steps / stat / comparison / cards /
-image-left / quote / statement / closing。布局槽位与上限见
-`references/deck-parts.json`；`scripts/build.py` 会按该文件校验并自动拆分过长
-bullet、补 grounded notes、解析相对图片路径。
+- 生成模式下 `edits` 可为空、`preserved` 省略；`page_evidence` 不可省。
+- 编辑模式下 `starting_deck`、`untouched_slides`、逐条 `before/after` 必须有。
+- `render.engine` 写实际使用的渲染器；HTML 预览写 `html-from-pptx`。
+- 没有渲染时 `render.unavailable = true`、`status = "partial"`，不得伪造 PNG/PDF。
 
-没有模型 spec 时，`scripts/build.py` 会生成 source-grounded 大纲，并在
-`exceptions` 标 `auto_plan_origin`；优先用模型写的 spec。
+## 编辑纪律
 
-## 模板与编辑纪律
+1. 基线只读；每次写出新文件，最后再定名。
+2. 只改文本 run 的内容，不改 run 的格式属性（字号、颜色、加粗）。
+3. 替换图片必须同格式；换格式要新增关系并更新引用，属高风险操作，优先转成同格式。
+4. 备注与正文分开改；不要把讲稿塞进正文。
+5. 不在母版/版式里做单页特殊处理。
+6. 任何“顺手优化”（换配色、调字号、重排）都禁止——超出工单即失败。
 
-- 有模板：`scripts/deckkit.py` 复制真实 `slideMasters/slideLayouts/theme`，
-  按 layout 名称映射角色；不覆盖字体/配色，不新造同名版式。fallback 写入
-  `template.layouts_used` 与 `template.fallback_reason`。
-- edit：先复制起始稿，只改 workorder 点名的 text run / notes / image；
-  未点名幻灯片字节不变，写入 `preserved.untouched_slides`。
-- 文本替换优先按 `from` 精确匹配，其次 `target` 序号；找不到就写
-  `unresolved_edits`，不新建元素冒充。
-- 不支持的重排/删页/加页/跨格式换图不静默执行，如实记录。
-- 一次只改点名项；正文变长先压缩或拆页，不缩到不可读。
+## 版式、占位符与备注规则
 
-## 输出与官方字段
+- 先盘点再定位：占位符 `idx` 不可跨模板移植，按 shape id/name 与文本锚点定位，不单靠 `idx`。
+- 视觉问题若改幻灯片无效，去查母版/版式覆盖；单页特殊处理不进母版。
+- 幻灯片文本可以是文本框（生成器默认）或占位符（模板继承）；两种都可编辑，但不混用定位假设。
+- 16:9 / 4:3 必须与 task.md 一致；比例错会导致所有坐标假设偏移。
+- 每页都要有 notes；生成模式用 `--require-notes` 强制检查。
+- 模板残留扫描：`Click to edit`、`Lorem ipsum`、`TODO/TBD`、`[insert`、`待补充`。
 
-`/app/output` 下至少包含：
-
-- `presentation.pptx`：真实可编辑演示文件，含每页 notes 与图片。
-- `preview/presentation.pdf` + `preview/slide-NN.png`：真实预览。优先
-  LibreOffice/office-renderer 原生转换；无渲染器时用同一 spec 绘制内容预览，
-  `render.native=false` 并写 `limitations`，不伪造原生导出。
-- `result.json`：官方字段 `status`、`editable_source`、`export_artifact`、
-  `content_map`、`compliance_checks`、`exceptions` 全部由入口生成；输入 case.json
-  的原有字段保留。
-- 记录：`plan.json`、`claim_source.json`、`time.json`、`change_log.json`、
-  `render_report.json`、`checks.json`、`gold.json`、`page-diff.json`、
-  `deck-spec.json`。
-
-字段语义与完整 schema 见 `references/result-and-checks.md`。
-
-## 检查、状态与失败处理
-
-`references/golden-and-checks.md` 定义页级金标准、数字回查、溢出估算和状态映射。
-交付前必须满足：zip/XML 可解析、关系无悬空、页数一致、每页 notes 非空、
-无占位垃圾、数字可回查、图片可解析、PDF/PNG 有效。
+## 异常处理
 
 | 情况 | 处理 |
 |---|---|
-| 无 case/task/材料/编辑指令 | `status=input_error`，写完整 result，exit 0 |
-| 渲染器缺失 | 输出同源预览，`native=false` + limitation，status 可 answered/partial |
-| 页数不足/超出 | 合并方法/讨论；保留 title/background/method/result/conclusion |
-| 图缺失 | 文字/统计卡替代，`figure_status=unavailable`，不编图 |
-| 编辑 target 不存在 | 记 `unresolved_edits`，不新建元素 |
-| 模板损坏 | 退回独立版式，`template_fidelity=none` + fallback reason |
-| 扫描 PDF 无文本 | 记 uncertainty；OCR 不可用时 partial |
-| 未捕获异常 | 兜底写 `partial` + `internal_error`，exit 0 |
-| 输出目录不可写 | 唯一 exit 2 的情况 |
+| 起始稿损坏 | 记录问题，按工单重建最小 deck，`status=partial` |
+| 工单 target 不存在 | 记 `unresolved`，不新建元素冒充 |
+| 文本替换命中多页 | 用 `--slide` 限定，并在 report 说明 |
+| 备注页不存在 | `set-notes` 会报错；改为重建该页或记 `unresolved` |
+| 图片格式不同 | 先转成同格式，保留原尺寸与位置 |
+| spec 图片缺失 | 生成器会跳过图片；补真实图或用文字要点并写 `uncertainty` |
+| 页数超限 | 合并 method 细节页，保留结果与局限，记录合并映射 |
+| office-renderer 不可用 | 用 `pptx_preview.py` + Chrome，标 `html-from-pptx`；都没有则标 `preview.unavailable` |
+| 渲染不可用 | 交付 pptx + `check_deck.py`/`verify` 报告，不伪造预览 |
 
-## 支持文件
+## 自检
 
-| 文件 | 用途 |
-|---|---|
-| `scripts/main.py` | 唯一入口：discover → plan → build/edit/adapt → preview → checks → gold → result |
-| `scripts/discover.py` | 输入归一化、PDF/DOCX/PPTX/CSV 抽取、证据索引、图/表发现 |
-| `scripts/build.py` | spec 校验、source-grounded 规划、真实数据表重绘、deck-parts 规则 |
-| `scripts/deckkit.py` | 标准库 OOXML 生成/编辑、模板继承、PPTX 检查、PDF/PNG 预览 |
-| `scripts/checks.py` | 结构/关系/页数/备注/图片/占位/数字/证据/溢出检查 |
-| `scripts/gold.py` | 页级金标准 `gold.json` 与逐页 diff |
-| `references/deck-parts.json` | 页面角色、槽位、上限与必需角色（代码实际读取） |
-| `references/slide-planning.md` | 内容取舍、页序、图表与受众规则 |
-| `references/golden-and-checks.md` | 金标准、检查阈值、状态映射、人工复核 |
-| `references/result-and-checks.md` | result.json 完整契约、记录文件、失败策略 |
+- [ ] 每条工单/每个 spec 页面都有对应记录
+- [ ] `before/after` 真实来自文件，不是凭记忆
+- [ ] 未点名页面逐页比对未变化
+- [ ] 母版/版式/主题/图片未被破坏
+- [ ] `pptx_edit.py verify` 通过，无悬空关系（编辑模式）
+- [ ] `check_deck.py` 0 error；warning 已处理或说明
+- [ ] 每页有标题与 notes；内容页有 `page_evidence` claims
+- [ ] 改动页/关键页有真实渲染核对
+- [ ] `render.engine` 与实际一致；`unresolved` 为空或已说明
 
-## 限制
+## 质量闸门
 
-- 不替代论文精读、统计推断或科学审稿；技术检查通过不等于科学结论正确。
-- 无 LibreOffice 时 PDF/PNG 是内容预览，可能与 PowerPoint 原生渲染有差异。
-- 扫描 PDF 无文本层时，需平台 OCR；不可用则如实 partial。
-- 位图图表不能反推数值；只能引用原图，不能编造数据。
-- 模板 layout 名称差异大时使用最接近版式，并记录 fallback。
-- 不处理超出 PPTX 范围的宏、嵌对象动画与受保护母版。
+| # | 检查 | 通过标准 | 不通过时 |
+|---|---|---|---|
+| G1 | 盘点 | 每页与文本 run 有 id | 补盘点再改 |
+| G2 | 范围 | 仅工单点名项发生变化 | 回滚越界修改 |
+| G3 | 保留 | 母版/版式/主题/图片未变 | 从基线恢复 |
+| G4 | diff | 每页有 before/after 或 unchanged | 补 diff |
+| G5 | 包 | zip 可解、XML 可解析、页数正确 | 修复包结构 |
+| G6 | 内容 | 标题是结论句、notes 非空、证据可定位 | 改写并重跑 check_deck |
+| G7 | 视觉 | 关键页不溢出/不重叠、图片不变形 | 压缩文字或拆页后重渲染 |
 
-## 最小示例（接口示例，不是正式答案）
+## 常见失败模式
 
-输入：`task.md` 要求 8 页、16:9；`materials/paper.md` 与一张真实图。
-执行：`scripts/main.py --input /input --output /app/output --work /app/work`。
-输出：`presentation.pptx` 8 页、8 页 notes、真实图 1 张；`preview/` 下 8 页 PDF/PNG；
-`content_map` 每页有 path+locator；`status=answered` 或按检查结果 `partial`。
-示例只说明接口，不是任何正式案例的答案。
+| 失败模式 | 识别信号 | 修复 |
+|---|---|---|
+| 重建代替编辑 | 主题/母版被重置 | 从基线包重做 |
+| 整段重设字体 | run 级格式丢失 | 只改目标 run |
+| 越界改版式 | 未点名页布局变化 | 回滚该页 |
+| 页数变化 | 增删了未要求的页 | 恢复原页序 |
+| diff 缺失 | 只有“已修改” | 补逐页 diff |
+| 备注为空 | `--require-notes` 报错 | 每页补讲稿 |
+| 图片被静默跳过 | spec 有图、deck 无图 | 检查路径/格式，补真实图 |
+| 文字溢出 | `check_deck` overflow warning | 压缩文字或拆页，先不改字号 |
+| 包损坏 | PowerPoint 打不开 | 校验 XML 与关系文件 |
+| 伪造预览 | 声称已渲染但无文件 | 标 `preview.unavailable` |
+
+## 快速路径（预算内）
+
+1. **0–2 分钟**：读 task.md/case.json；生成模式写 spec 骨架；编辑模式解包 pptx 建 inventory。
+2. **2–7 分钟**：生成模式出第一版 deck 并 `check_deck --spec`；编辑模式执行第一批工单。
+3. **7–12 分钟**：补齐 notes/证据/图片；逐页 diff；修复溢出与占位残留。
+4. **最后 2 分钟**：回读 pptx，跑 `check_deck` + `validate_artifacts`，确认预览真实。
+
+## 交付清单
+
+- [ ] `/app/output/result.json` 含 `case_id`、`status`、`workflow_mode`、`artifacts`、`page_evidence`
+- [ ] `deck.pptx` 可打开且页数正确
+- [ ] 生成模式：spec 与 deck 一致，每页 notes，内容页有证据
+- [ ] 编辑模式：仅工单点名项被修改，未点名页 unchanged
+- [ ] 母版/版式/主题/图片保留（编辑模式）
+- [ ] `check_deck.py` 0 error；`validate_result.py` 与 `validate_artifacts.py` 通过
+- [ ] 真实预览存在；无渲染时 `preview.unavailable=true` 且 `status=partial`
+
+## 最小示例
+
+输入：6 页 spec + `materials/fig-selectivity.png` + `materials/paper.pdf`。
+执行：
+```bash
+python3 {SKILL_DIR}/scripts/make_pptx.py --spec /app/work/deck-spec.json --out /app/output/deck.pptx
+python3 {SKILL_DIR}/scripts/check_deck.py /app/output/deck.pptx --spec /app/work/deck-spec.json \
+  --expect-slides 6 --expect-aspect 16:9 --require-notes --require-evidence \
+  --result /app/output/result.json --json
+python3 {SKILL_DIR}/scripts/pptx_preview.py /app/output/deck.pptx --out /app/work/preview/deck.html --json
+```
+输出：`deck.pptx` 6 页、6 页 notes、2 张图；`check_deck` 0 error；
+`result.json` 的 `page_evidence` 6 条；`preview/slide-01.png`、`slide-03.png` 为真实截图。

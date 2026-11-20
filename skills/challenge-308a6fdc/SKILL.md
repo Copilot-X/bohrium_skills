@@ -1,193 +1,174 @@
 ---
 name: academic-manuscript-writer
-description: 学术论文写作：读取 /input 的真实材料，先由模型写出可编辑 manuscript.md，再由唯一入口 scripts/main.py 生成官方四字段 deliverable/preserved_facts/evidence_map/change_log。每个数字绑定 source path+locator，引用编号与条目双向核对，材料缺口写入 uncertainty。Use for 论文写作、摘要/章节起草、全文改稿、Results/Discussion 写作、manuscript drafting with traceable evidence.
+description: 学术论文写作：基于实验记录、图表与参考文献起草完整论文或章节，每个数值与论断都绑定来源，输出 manuscript.md/docx、source-map.json 与 change-log.json。Draft a complete academic manuscript with every number and claim bound to a source location into /app/output. Use for 论文写作、摘要/章节起草、全文改稿、Results/Discussion 之外的正文写作。
 ---
 
 # 学术论文写作（Academic Manuscript Writer）
 
-## 触发
+## 用途与触发
 
-输入含实验记录、数据表、图注、参考文献、已有草稿或写作要求，且 task.md 要求产出
-论文/章节/摘要/改稿时使用。典型触发词：写论文、起草正文、写摘要/引言/方法/结果/
-讨论、把材料整理成稿件、按期刊结构改写、补全章节、每条论断要有出处。
+输入含实验记录、图表、参考文献、已有草稿或写作要求，且 task.md 要求产出论文/章节/摘要/改稿时使用。
+不适用于只做格式转换（见 `96263d10`）或只做语言润色（见 `bb17a294`）。
 
-不适用于：只做格式转换、只做语言润色/翻译、只做证据综述、材料缺失但仍要求编造数据。
+## 输入
 
-核心原则：**正文由模型写，入口只做来源、契约、装配与检查。** 先落盘完整
-`manuscript.md`，再运行 `main.py` 生成官方字段；骨架稿只能以 `partial` 交付。
+- `/input/task.md`：体裁、受众、语言、篇幅、章节清单、引用格式、必须声明项（**最权威**）
+- `/input/case.json`：`case_id`、`paper_id`、`material_version`、`output_contract`
+- 材料：`materials/**`（实验记录、数据表、图、图注、参考文献、已有草稿）
+- `environment/resources.yaml`：可用工具
 
-## 输入与输出
+## 执行步骤
 
-输入（以实际读到的文件为准）：
+1. **契约提取**：先读 task.md 与 case.json，把所有硬约束写成 `/app/work/contract.json`
+   （章节、字数、格式、语言、必含字段）。若存在 `output-contract*.json`，字段名照抄。
+2. **材料索引**：扫描 `/input`，生成 `/app/work/material-index.json`
+   （路径、类型、对应章节、缺失项、冲突项）。
+3. **证据台账**：逐条记录可用事实到 `/app/work/evidence-ledger.json`，
+   `kind ∈ {reported, derived, inferred}`，数值带单位与条件。
+4. **大纲**：写 `/app/work/outline.json`，每个 section 绑定 claim id；
+   材料不足的章节进 `unsupported_sections`，不硬写。
+5. **分节起草**：一次一节，写完立刻更新 `/app/work/sentence-map.json`
+   （句子 → fact_id）。先写 Methods/Results（有据可依），再写 Intro/Discussion。
+6. **引用与声明**：每条引用绑定到具体论断；声明字段缺材料时写
+   `not_provided_in_materials`，不虚构基金号、伦理批号、作者贡献。
+7. **一致性检查**：摘要、正文、图表、结论四处数值互校；冲突写入 `conflicts[]`，
+   不擅自裁决。生成 `/app/output/change-log.json`。
+8. **落盘**：`/app/output/manuscript.md`；需要 Word 时用
+   `scripts/make_docx.py --spec doc.json --out /app/output/manuscript.docx`，
+   再用 `--check` 回读。最后写 `result.json`。
 
-- `/input/task.md`：体裁、受众、语言、篇幅、章节、引用格式、必含声明（最权威）；
-- `/input/case.json`：`case_id`、`task_instruction`、`constraints`、`output_contract`；
-- `/input/materials/**`：实验记录、CSV/TSV、图注、草稿、`.bib`/参考文献；
-- `environment/resources.yaml`：可用工具；PDF 使用运行时 `pdftotext`/`pdf-text-tool`。
+## 输出契约
 
-输出到 `/app/output`：
-
-- `manuscript.md`：完整、可编辑、章节层级保留的主稿（主产物，由模型写）；
-- `result.json`：官方四字段 + `case_id`/`status`/`contract`/`source_map`/
-  `sentence_map`/`citations`/`conflicts`/`uncertainty`/`change_log`；
-- `source-map.json`、`change-log.json`、`manuscript-plan.json`、
-  `manuscript-audit.json`：证据、留痕、计划与检查结果。
-
-中间产物在 `/app/work`：`inventory.json`、`contract.json`、`sources.json`、
-`references.json`、`evidence-ledger.json`、`outline.json`、`writing-brief.md`。
-
-## 支持文件（实际使用）
-
-| 文件 | 何时用 | 用法 |
-|---|---|---|
-| `references/manuscript-contract.md` | 写作前/判定章节与边界 | 体裁、结构、证据等级、引用、结论边界规则 |
-| `references/limits.md` | 材料缺失/异常/降级 | 限制矩阵与重跑方式；交付前读 |
-| `scripts/main.py` | **唯一执行入口** | `prepare` / `assemble` / `run`；不要直接调用其他脚本 |
-| `scripts/writing_lib.py` | 引擎实现（被入口导入） | inventory/contract/sources/facts/plan/bind/result |
-| `scripts/task_specific.py` | 论文体裁检查（被入口导入） | 章节/摘要/引用/数字/结论边界/声明字段检查 |
-| `examples/example_input.json` | 想看接口示例 | synthetic case.json 形状；不是正式案例或答案 |
-
-`{SKILL_DIR}` 通常为 `/skills/weekly-skill`。示例全部标注 synthetic，不得当作
-官方测试输出提交。脚本为 stdlib、无网络依赖。
-
-## 路径解析（先做）
-
-```bash
-export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md 2>/dev/null | head -n 1)")"
-[ -f "$SKILL_DIR/SKILL.md" ] || export SKILL_DIR="/skills/weekly-skill"
-mkdir -p /app/work /app/output
+```json
+{
+  "case_id": "…",
+  "task_family": "manuscript",
+  "status": "completed|partial|insufficient_input",
+  "manuscript": {
+    "path": "manuscript.md",
+    "genre": "research-article|review|letter|abstract",
+    "language": "en|zh",
+    "word_count": 0,
+    "sections": [{"id": "results-1", "title": "3.1 …", "words": 0,
+                  "claims": ["F001"], "status": "written|partial|not_supported"}]
+  },
+  "artifacts": [
+    {"role": "editable", "path": "manuscript.md", "format": "markdown"},
+    {"role": "export", "path": "manuscript.docx", "format": "docx"},
+    {"role": "evidence", "path": "source-map.json", "format": "json"},
+    {"role": "log", "path": "change-log.json", "format": "json"}
+  ],
+  "source_map": [
+    {"fact_id": "F001", "statement": "…", "value": "18.2", "unit": "pp",
+     "condition": "350 °C, n=3", "kind": "reported",
+     "source": {"path": "materials/results.csv", "locator": "row 4-6"},
+     "used_in": ["results-1", "abstract"]}
+  ],
+  "conflicts": [{"topic": "样本量", "a": "正文 n=24", "b": "表1 n=26", "handling": "正文采用 n=24 并标注"}],
+  "missing_materials": ["作者单位", "基金编号"],
+  "uncertainty": [{"item": "…", "reason": "…", "impact": "…"}],
+  "change_log": [{"step": 1, "action": "…", "evidence": "…"}]
+}
 ```
 
-后续命令一律使用 `"$SKILL_DIR/scripts/main.py"`。
+若 `output_contract` 规定了别的字段名，**顶层按契约输出**，本契约内容放入
+`extended` 字段，两者都不丢。
 
-## 工作流（正文优先）
+## 写作规则
 
-### 第 1 步：prepare（约 15% 预算）
+1. 摘要只从 `source_map` 取数，不得出现正文没有的数字。
+2. 结果段按「现象 → 数值 → 条件 → 对照」写；不写"显著"除非材料给了检验。
+3. 相关性不写成因果；未验证机制写 `inferred` 并在讨论中限定。
+4. 方法段必须能复现：试剂/仪器/参数/统计方法，缺项写 `not_reported`。
+5. 讨论段每条主张要么指回结果，要么标为推测并给依据链。
+6. 术语表 `/app/work/terms.json` 先建后用，缩写首次出现给全称。
+7. 数字格式统一（`.` 小数、`–` 范围、数值与单位间空格）。
 
-```bash
-python3 "$SKILL_DIR/scripts/main.py" prepare \
-  --input /input --work /app/work --output /app/output
-```
+## 引用与声明
 
-`main.py` 依次调用 `writing_lib.py`：
-
-1. **inventory**：扫描 `/input`，记录路径、sha256、类型、可读文本；Markdown/TXT/
-   JSON/CSV/TeX/BIB 用 stdlib，DOCX 读 `word/document.xml`，PDF 尝试
-   `pdftotext`/`pdf-text-tool`，失败标 `readable=false` 并进 `uncertainty`。
-2. **contract**：从 task.md/case.json 归一化 `genre/language/sections/
-   word_budget/citation_style/required_declarations/output_contract`。
-3. **sources**：按段落/CSV 行/BIB entry 切块，带 `path + locator`；参考文献编号。
-4. **evidence ledger**：抽出数值句与条件，生成 `F001...` fact；近似值标
-   `estimated`，其余 `verified`；每条带 `source.path/locator/quote`。
-5. **outline + brief**：每个章节绑定 fact_ids 与 citation_numbers；无材料章节标
-   `not_supported`，并写 `work/writing-brief.md` 给模型。
-
-若 `manuscript.md` 尚不存在，入口写一个明确标注 `PARTIAL SCAFFOLD` 的骨架；
-骨架永远以 `partial` 交付，不能冒充完成稿。
-
-### 第 2 步：写完整正文（约 55% 预算，最重要）
-
-按 `work/writing-brief.md` 与 `work/evidence-ledger.json`，用真实学术文风写出
-`/app/output/manuscript.md`（或写到 `/app/work/draft.md`）：
-
-- 覆盖 task.md 的每个章节/问题，满足体裁、语言、篇幅、受众；
-- 每个数字、单位、条件、样本量、比较对象都来自 `evidence-ledger.json`；
-  材料没有的数字不写，材料不足写“现有材料未报告……”；
-- 引用 `[n]` 放在支撑该句的位置；文末条目只写材料给出的字段；
-- 相关不写因果，单材料结果不写成领域共识，摘要不出现正文没有的数字；
-- 声明字段缺材料写 `not_provided_in_materials`；
-- 材料冲突并列保留，不取平均、不选边；
-- **不要保留 `PARTIAL SCAFFOLD` 标记，不要提交骨架。**
-
-### 第 3 步：assemble（约 25% 预算）
-
-```bash
-python3 "$SKILL_DIR/scripts/main.py" assemble \
-  --input /input --work /app/work --output /app/output \
-  --draft /app/work/draft.md
-```
-
-若正文已直接写在 `/app/output/manuscript.md`，可省略 `--draft`。入口读取主稿，
-重建 `sentence_map`（句子 → fact_ids/citation_numbers），计算章节字数与状态、
-摘要数字子集、引用编号/条目、未溯源数字、结论边界、声明字段，运行
-`task_specific.py`，最后重写 `source-map.json`、`change-log.json`、
-`manuscript-plan.json`、`manuscript-audit.json` 与 `result.json`。
-
-### 第 4 步：run（时间紧或 smoke test）
-
-```bash
-python3 "$SKILL_DIR/scripts/main.py" run \
-  --input /input --work /app/work --output /app/output
-```
-
-`run = prepare + assemble`。存在模型稿时保留模型稿；否则输出 `PARTIAL SCAFFOLD`，
-`status` 如实标 `partial`/`insufficient_input`。任何时候 partial/input_error 都
-会写 `result.json` 并 **exit 0**；只有完全无法启动才 exit 2。
-
-## 官方输出契约
-
-官方 `output_contract` 要求四个顶层字段，由 `main.py` 生成，**不手工拼**：
-
-| 字段 | 内容 | 路径要求 |
-|---|---|---|
-| `deliverable` | 可编辑主稿 | `path=manuscript.md`，文件真实存在 |
-| `preserved_facts` | 数字/条件/术语/来源 | 每条 `source.path + locator` |
-| `evidence_map` | 关键句 → fact → 来源 | 句级 `fact_ids` + `quote` |
-| `change_log` | 动作/原因/证据/未决项 | 由入口按实际步骤写入 |
-
-`result.json` 同时保留 `case_id`、`task_family`、`status`、`contract`、
-`manuscript`、`artifacts`、`source_map`、`sentence_map`、`citations`、
-`conflicts`、`missing_materials`、`coverage`、`uncertainty`。`status` 取值：
-
-- `completed`：模型稿、结构齐全、检查无 problem、主稿可编辑；
-- `partial`：主稿存在但有缺章/缺材料/检查问题，或仍是骨架；
-- `insufficient_input`：无可读材料；
-- `input_error`：连 `case.json`/`task.md` 都没有，不生成正文。
-
-若 `output_contract` 使用别的字段名，原字段原名保留，四字段别名同时存在。
-**不要编造 DOI、基金号、伦理批号、作者贡献或样本量。**
-
-## 写作规则（摘要）
-
-完整规则见 `references/manuscript-contract.md`：
-
-1. 摘要只从正文/`source_map` 取数；摘要数字必须是正文子集。
-2. 结果段按「现象 → 数值 → 条件 → 对照」写；无检验不写“显著”。
-3. 相关性不写因果；未验证机制用 may/suggest/提示/可能，并在讨论给限制。
-4. 方法段可复现：样品、仪器、参数、统计；缺项写 `not_reported`。
-5. 讨论每条主张回到结果或标为推测；结论只回答任务问题。
-6. 引用编号连续、条目双向对应、每条支撑所在句。
-7. 估计值（图读数/约/approx）不进摘要与结论的确定表述。
-8. 术语/缩写首次出现给全称；数值与单位格式统一。
+- 作者、年份、期刊、卷期、DOI 必须与材料逐字一致；查不到 DOI 写 `doi: "not_available"`。
+- 不允许"装饰性引用"：每条引用必须支撑它所在的那句话。
+- 数据可得性、利益冲突、作者贡献、伦理审批、基金：材料给什么写什么。
 
 ## 异常处理
 
 | 情况 | 处理 |
 |---|---|
-| 只有图没有原始数据 | 只写图面可见内容并标 `estimated`，不反推数据表 |
-| 图注与正文数值冲突 | 两值进 `conflicts[]`，正文并列/脚注，不静默裁决 |
-| 指定章节无材料 | 该节 `status=not_supported`，正文写“材料未提供”，保留标题 |
-| 参考文献信息不全 | 只写可得字段，缺 DOI 写 `not_available`，不编造 |
-| 无任何参考文献 | 参考文献节明确为空，正文不生成 `[n]` |
-| PDF 解析失败 | 该文件标 `readable=false`，其余材料继续，写入 `uncertainty` |
-| 篇幅超限 | 先压 Intro/Discussion，保 Results/Limitations；不截断主稿 |
-| 时间/预算不足 | 先写完整可编辑稿再 `assemble`；无法完成时 `run` 落盘骨架并标 `partial` |
-| 检查器报错 | 主稿保留，异常写 `manuscript-audit.json` 与 `uncertainty` |
+| 材料只有图没有原始数据 | 读数并标 `estimated`，不伪造数据表 |
+| 图注与正文数值冲突 | 两值都记入 `conflicts`，正文用正文值并脚注 |
+| 指定章节无材料 | `status: "not_supported"`，写"材料未提供"，不编 |
+| 参考文献信息不全 | 保留可得字段，缺项标 `not_available` |
+| 篇幅超限 | 先压缩 Intro/Discussion，保 Results 与 Limitations |
+| 运行时间不足 | 先落盘已完成章节，`status=partial`，写清缺口 |
 
-更多降级行为见 `references/limits.md`。
+## 自检
 
-## 最小示例（synthetic，非正式答案）
+- [ ] `case_id` 与输入一致，契约字段齐全
+- [ ] 每条数值能在 `source_map` 中找到来源
+- [ ] 摘要/正文/图表数值一致
+- [ ] 引用与材料逐字一致，无编造 DOI
+- [ ] 缺失材料与冲突已显式标注
+- [ ] 产物真实存在，`.docx` 通过 `--check`
 
-`examples/example_input.json` 展示输入 `case.json` 的接口形状（`case_id`、
-`task_instruction`、`constraints`、`output_contract`），不是测试答案。把同样的
-字段与一份 `task.md`、若干 `materials/` 放进同一目录即可按上述命令运行。
+## 快速路径（预算内）
+
+1. **0–2 分钟**：读 task.md/case.json，把章节、字数、语言、引用格式写成 `contract.json`。
+2. **2–7 分钟**：先建 `evidence-ledger` 与 `outline`，优先写 Methods/Results 中材料最全的一节，落盘骨架。
+3. **7–13 分钟**：逐节起草并更新 `sentence-map`，最后写 Intro/Discussion 与摘要。
+4. **最后 2 分钟**：跑数值/引用/契约三项闸门，不再开新章节。
+
+## 方法增强（融合参考实践）
+
+- **契约先行**：task.md 的章节、字数、格式、必含声明优先于任何写作习惯；存在 `output-contract*.json` 时字段名照抄。
+- **证据台账**：每条可用事实记 `fact_id / value / unit / condition / source / kind`，写作时只从台账取数。
+- **大纲绑定 claim**：每个 section 先绑定 claim id，再写句子；材料不足的章节标 `not_supported`，不硬写。
+- **句子级来源映射**：写完一节立刻更新 `sentence-map`（句子 → fact_id），保证每个数字可回查。
+- **反向大纲复核**：写完通读每段首句，检查“段落在全文中的功能”是否与大纲一致；偏题的段落移动或删除。
+- **四处数值互校**：摘要、正文、图表、结论中的同一数值逐字一致；冲突进 `conflicts[]`，不静默裁决。
+- **引用支撑句**：每条引用必须支撑它所在的那句话，禁止装饰性引用；查不到 DOI 写 `not_available`。
+
+### 定向方法增强
+
+- **来自 Academic Paper Writing Assistant**：先做数据核实触发器——材料中出现“（估）/ ~ / 约 / 需核实 / 我记得 / * 标注”时，先核实再写作；数据来源按“用户材料 > 官方公开数据 > 用户明确授权的模拟数据”降级，模拟数据必须标注。
+- **来自 Academic Paper Writing Assistant**：写作前加载历史教训/项目约定，先判断论文类型（实证/问卷/案例/综述），再决定统计预检与章节重点。
+- **来自 academic-writing**：引用只取同行评议论文、会议论文、学术专著、官方报告与学位论文；编号从 [1] 起连续；文末条目格式统一；图表数据必须有真实来源。
+- **来自 academic-writing**：终稿四查——引用是否合法、编号是否连续、条目格式是否统一、语言是否一致。
+- **两篇合取后的改造**：在证据台账增加 `verification_status ∈ {verified, estimated, unverified}`；`estimated/unverified` 的数值不得进入摘要与结论，只能出现在方法或限制中。
+
+## 质量闸门
+
+| # | 检查 | 通过标准 | 不通过时 |
+|---|---|---|---|
+| G1 | 契约 | 章节、字数、语言、声明字段齐全 | 补字段；无法满足写 `unmet` |
+| G2 | 数值 | 每个数值能在 `source_map` 找到来源 | 删除或补来源，不猜 |
+| G3 | 一致 | 摘要/正文/图表/结论数值一致 | 列 `conflicts[]` 并注明采用值 |
+| G4 | 引用 | 每条引用与材料逐字一致，无编造 DOI | 修正或标 `not_available` |
+| G5 | 边界 | 相关不写因果；未验证机制标 `inferred` | 降级措辞并补限定 |
+| G6 | 产物 | `manuscript.md` 非空；docx 通过 `--check` | 修文件或 `status=partial` |
+
+## 常见失败模式
+
+| 失败模式 | 识别信号 | 修复 |
+|---|---|---|
+| 摘要出现正文没有的数 | 摘要数值在 source_map 中无对应 | 删除或补正文与来源 |
+| 相关性写成因果 | “导致/证明”无实验或机制证据 | 改为“相关/提示”，标 `inferred` |
+| 章节无材料硬写 | section 的 claims 为空 | 标 `not_supported`，写材料缺口 |
+| 装饰性引用 | 引用与所在句论断无关 | 删除引用或改挂正确论断 |
+| 数值漂移 | 正文 92.1%、摘要 92% | 统一精度并逐处核对 |
+| 篇幅超限 | 字数超出契约 | 先压 Intro/Discussion，保 Results/Limitations |
 
 ## 交付清单
 
-- [ ] `manuscript.md` 非空、可编辑、无 `PARTIAL SCAFFOLD`，章节与 task.md 一致；
-- [ ] `result.json` 含官方四字段与 `case_id`，所有声明路径真实；
-- [ ] 每个数值有 `source.path + locator`；摘要数字是正文子集；
-- [ ] 引用编号连续、条目存在、每条支撑所在句；
-- [ ] 估计值未进摘要/结论；因果措辞有证据或限定；
-- [ ] 缺材料章节 `not_supported`，声明字段不虚构；
-- [ ] `uncertainty` 与 `change_log` 反映实际缺口和动作。
+- [ ] `/app/output/result.json` 含 `case_id`、`manuscript`、`artifacts`、`source_map`、`change_log`
+- [ ] `manuscript.md` 真实存在，章节与契约一致
+- [ ] 每个数值有 `source_map` 定位
+- [ ] 摘要/正文/图表数值一致
+- [ ] 引用与材料逐字一致，无编造 DOI
+- [ ] 缺失材料与冲突已显式标注
+- [ ] `.docx`（如生成）通过回读校验
+
+## 最小示例（示例，非正式答案）
+
+输入：`materials/results.csv`（3 组、每组 n=3）、`Fig.1`、`task.md` 要求写 Results 一节。
+输出：`manuscript.md` 的 `3.1` 节 180 词，含 3 个数值句；`source_map` 三条分别指向
+`results.csv` 行号与 `Fig.1`；`status: "completed"`。

@@ -313,7 +313,7 @@ def normalize(data):
         "free_units": str(data.get("free_units") or "px"),
         "layout_cols": layout_cols,
         "font_family": str(data.get("font_family") or DEFAULT_FONT),
-        "font_pt": font_pt, "margin_px": margin_px,
+        "font_pt": font_pt, "margin_px": float(data.get("margin_px", 0) or 0),
         "entities": clean_entities, "relations": clean_relations,
         "groups": [g for g in groups if isinstance(g, dict)],
         "legend": [g for g in legend if isinstance(g, (dict, str))],
@@ -554,15 +554,8 @@ class Diagram:
                 points = [(x1, y1), (x1, mid), (x2, mid), (x2, y2)]
             return ("M" + " L".join("%.2f,%.2f" % p for p in points),
                     ((x1 + x2) / 2, (y1 + y2) / 2))
-        lx, ly = (x1 + x2) / 2, (y1 + y2) / 2
-        dx, dy = x2 - x1, y2 - y1
-        length = math.hypot(dx, dy) or 1.0
-        nx, ny = -dy / length, dx / length
-        if ny > 0:
-            nx, ny = -nx, -ny
-        lx += nx * self.fs * 1.05
-        ly += ny * self.fs * 1.05
-        return ("M%.2f,%.2f L%.2f,%.2f" % (x1, y1, x2, y2), (lx, ly))
+        return ("M%.2f,%.2f L%.2f,%.2f" % (x1, y1, x2, y2),
+                ((x1 + x2) / 2, (y1 + y2) / 2))
 
     def draw_edge(self, rel):
         semantic = rel["semantic"]
@@ -581,7 +574,7 @@ class Diagram:
         d, (lx, ly) = self.edge_path(rel)
         self.emit('<g id=%s data-kind=%s data-source=%s>'
                   % (quoteattr(rel["id"]), quoteattr(kind),
-                     quoteattr(_source_attr(rel.get("source")))))
+                     quoteattr(str(rel.get("source", "")))))
         self.emit('<path d="%s" fill="none" stroke="%s" stroke-width="%.2f" '
                   'stroke-linejoin="round"%s%s/>'
                   % (d, style["color"], style["width"], dash, marker_attr))
@@ -604,7 +597,7 @@ class Diagram:
         dash = ' stroke-dasharray="5 3"' if (node.get("dashed") or node.get("kind") == "inferred") else ""
         self.emit('<g id=%s data-shape=%s data-source=%s>'
                   % (quoteattr(node["id"]), quoteattr(node["shape"]),
-                     quoteattr(_source_attr(node.get("source")))))
+                     quoteattr(str(node.get("source", "")))))
         shape = node["shape"]
         if shape == "ellipse":
             self.emit('<ellipse cx="%.2f" cy="%.2f" rx="%.2f" ry="%.2f" fill="%s" '
