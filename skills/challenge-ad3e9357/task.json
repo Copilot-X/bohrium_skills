@@ -17,6 +17,10 @@
   "required_fields": [
     "patents",
     "families",
+    "legal_status",
+    "classification",
+    "queries",
+    "candidates",
     "evidence"
   ],
   "focus": "专利/技术文献检索、同族合并、法律状态与技术分类",
@@ -175,5 +179,20 @@
   "mode_metrics": [
     "专利号/申请号可回溯、同族合并准确率、法律状态与日期完整率、技术分类匹配。",
     "同族合并写 basis；法律状态不能靠标题猜测，必须有来源。"
+  ],
+  "domain_script": "scripts/domain_work.py",
+  "runner_script": "scripts/run_skill.py",
+  "exit_contract": {
+    "0": "result.json written and parseable",
+    "2": "installation unusable only"
+  },
+  "domain_required_fields": [
+    "patents",
+    "families",
+    "legal_status",
+    "classification",
+    "queries",
+    "candidates",
+    "evidence"
   ]
 }

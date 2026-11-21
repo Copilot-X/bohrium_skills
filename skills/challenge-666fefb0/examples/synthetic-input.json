@@ -1,15 +1,13 @@
 {
   "case_id": "SYNTH-LIBRARY",
   "mode": "classification",
-  "summary": "Synthetic example only.",
+  "summary": "Synthetic example only; one normal item and one review-queue item.",
   "items": [
     {
       "id": "I001",
       "path": "synthetic.md",
       "category": "synthetic category",
-      "tags": [
-        "synthetic"
-      ],
+      "tags": ["synthetic"],
       "confidence": 0.9,
       "new_name": "synthetic.md",
       "hash": "sha256:synthetic",
@@ -20,15 +18,34 @@
         "locator": "P1",
         "quote": "synthetic source sentence"
       }
+    },
+    {
+      "id": "I002",
+      "path": "synthetic-ambiguous.md",
+      "category": "synthetic category",
+      "tags": ["synthetic", "boundary"],
+      "confidence": 0.4,
+      "new_name": "synthetic-ambiguous.md",
+      "hash": "sha256:synthetic-ambiguous",
+      "review": true,
+      "rationale": "synthetic boundary case; belongs to no category with confidence",
+      "evidence": {
+        "path": "synthetic-ambiguous.md",
+        "locator": "P1",
+        "quote": "synthetic ambiguous sentence"
+      }
     }
   ],
   "operations": [
     {
       "id": "O1",
       "status": "ok",
-      "from": "synthetic.md",
-      "to": "synthetic category/synthetic.md",
-      "rollback": "move back to synthetic.md"
+      "action": "classify_copy",
+      "from": "input/synthetic.md",
+      "to": "library/synthetic_category/synthetic.md",
+      "sha_before": "synthetic",
+      "sha_after": "synthetic",
+      "rollback": "delete library/synthetic_category/synthetic.md"
     }
   ],
   "findings": [
@@ -53,14 +70,20 @@
   ],
   "uncertainties": [],
   "taxonomy": {
-    "categories": [
-      "synthetic category"
-    ],
+    "categories": ["synthetic category"],
     "criteria": {
-      "synthetic category": "synthetic criterion"
-    }
+      "synthetic category": "synthetic criterion based on the synthetic source sentence"
+    },
+    "threshold": 0.7
   },
-  "review_queue": [],
+  "review_queue": [
+    {
+      "item_id": "I002",
+      "reason": "confidence 0.4 < threshold 0.7; synthetic boundary case",
+      "action": "keep in place and ask a human reviewer"
+    }
+  ],
   "duplicate_groups": [],
-  "version_groups": []
+  "version_groups": [],
+  "no_result": false
 }

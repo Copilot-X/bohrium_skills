@@ -1,4 +1,4 @@
-# editable-schematic-builder 0.5.0
+# editable-schematic-builder 0.6.0
 
 科研示意图生成与编辑 skill 的简明说明。完整流程与输出契约以 `SKILL.md` 为准。
 
@@ -36,11 +36,17 @@ echo "$SKILL_DIR"
 python3 "$SKILL_DIR/scripts/build_schematic.py" --entities /app/work/entities.json \
   --out /app/output/figures/fig1.svg --json
 
-# 2) 探测渲染器并导出 PDF/PNG（失败则生成 HTML 预览）
+# 2) 探测渲染器并导出 PDF/PNG（cairosvg -> rsvg -> inkscape -> matplotlib）
 python3 "$SKILL_DIR/scripts/export_schematic.py" --svg /app/output/figures/fig1.svg \
-  --outdir /app/output --dpi 300 --json
+  --outdir /app/output --dpi 300 --json > /app/work/export.json
 
-# 3) 交付前自查（0=通过，1=有问题，2=输入不可读；非 0 不阻塞交付）
+# 3) 组装契约完整的 result.json（缺导出时自动 null + partial，不伪造）
+python3 "$SKILL_DIR/scripts/assemble_result.py" --entities /app/work/entities.json \
+  --svg /app/output/figures/fig1.svg --root /app/output \
+  --export /app/work/export.json --out /app/output/result.json \
+  --case-id case-001 --json
+
+# 4) 交付前自查（0=通过，1=有问题，2=输入不可读；非 0 不阻塞交付）
 python3 "$SKILL_DIR/scripts/check_schematic_result.py" --result /app/output/result.json \
   --entities /app/work/entities.json --svg /app/output/figures/fig1.svg \
   --root /app/output --json
@@ -51,13 +57,15 @@ python3 "$SKILL_DIR/scripts/check_schematic_result.py" --result /app/output/resu
 ## 最小示例（示例，不是正式答案）
 
 实体表含 `E1 Catalyst A -> E3 Product`；运行命令 1 得到 2 节点 1 边的 SVG。
-若本机无 `cairosvg`/`rsvg-convert`/`inkscape`，命令 2 输出
-`{"status":"partial", "html_preview": {...}, "exceptions":[{"code":"export_unavailable"}]}`，
-不生成 PNG/PDF；`result.json` 应同步写 `status: "partial"` 和 `export_artifact: null`。
+若本机有 matplotlib（`scientific-python` 通常预装），命令 2 会产出真实
+PDF/PNG（`exported_by: "matplotlib"`），命令 3 写 `status: "answered"`。
+若四种渲染器都不可用，命令 2 输出 `status: "partial"` + `export_unavailable`
+和 HTML 预览；命令 3 同步写 `export_artifact: null`，绝不伪造 PNG/PDF。
 
 ## 已知限制
 
-- 导出只探测 `cairosvg`、`rsvg-convert`、`inkscape`，不依赖其他平台工具；
+- 导出探测 `cairosvg`、`rsvg-convert`、`inkscape`、`matplotlib`；
+  matplotlib 回退只覆盖本 skill 生成的 SVG 子集（矩形/圆/椭圆/多边形/路径/文本/箭头）；
 - `compare_svg.py` 只比较 `<g id>` 与组内文本，纯坐标移动不会自动检出；
 - 自动布局只保证基本避让，复杂拓扑需手工指定 `rank/order` 或坐标；
 - 无渲染器时无法产出 PDF/PNG，只能交付 SVG + HTML 预览。
@@ -70,7 +78,7 @@ python3 "$SKILL_DIR/scripts/check_schematic_result.py" --result /app/output/resu
 
 ## 维护说明
 
-- 版本 0.5.0；脚本 stdlib-only（Python 3.12+）。
+- 版本 0.6.0；核心脚本 stdlib-only（Python 3.12+），matplotlib 仅作导出回退。
 - 修改脚本、流程或契约时，同步更新 `SKILL.md`、本文件与
   `references/schematic-editing-playbook.md`。
 - 不写入无法验证的分数、运行记录或截图；示例必须标注“示例”。

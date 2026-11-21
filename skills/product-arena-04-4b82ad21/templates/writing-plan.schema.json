@@ -1,22 +1,27 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Introduction and related-work plan",
-  "description": "工作文件 /app/work/writing-plan.json。字段名与 fam_intro.py 的 finalize 读取逻辑一致。",
+  "description": "工作文件 /app/work/writing-plan.json。字段名与 fam_intro.py 的 finalize 读取逻辑一致；claim_evidence 与 citation_verification 由 writing_gate.py 校验。",
   "type": "object",
   "required": ["case_id", "related_work_groups", "gap", "contributions"],
   "properties": {
     "case_id": {"type": "string", "description": "与 /input/case.json 一致"},
     "background": {
       "type": "object",
+      "required": ["claims", "sources"],
       "properties": {
-        "claims": {"type": "array", "items": {"type": "string"}},
-        "sources": {"type": "array", "items": {"type": "string"},
-                    "description": "manuscript.md Pxxx 形式的 locator"}
+        "claims": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "sources": {
+          "type": "array", "minItems": 1,
+          "items": {"type": "string"},
+          "description": "稿件 locator，例如 manuscript.md P004"
+        }
       }
     },
     "related_work_groups": {
       "type": "array",
       "minItems": 2,
+      "maxItems": 4,
       "items": {
         "type": "object",
         "required": ["group", "dimension", "works", "synthesis"],
@@ -31,12 +36,15 @@
               "required": ["citation_key", "summary", "limitation"],
               "properties": {
                 "citation_key": {"type": "string"},
-                "summary": {"type": "string", "minLength": 8},
-                "limitation": {"type": "string", "minLength": 8}
+                "summary": {"type": "string", "minLength": 8,
+                            "description": "该工作做了什么、结论是什么、在什么条件下成立"},
+                "limitation": {"type": "string", "minLength": 8,
+                               "description": "同一比较维度上的适用边界或局限"}
               }
             }
           },
-          "synthesis": {"type": "string", "minLength": 10}
+          "synthesis": {"type": "string", "minLength": 10,
+                        "description": "同组工作的取舍与共同缺口，不能逐篇罗列"}
         }
       }
     },
@@ -49,7 +57,10 @@
           "type": "array", "minItems": 2, "items": {"type": "string"},
           "description": "每项必须是正文中已用 [@key] 或 \\cite{key} 引用的真实键"
         },
-        "evidence": {"type": "array", "items": {"type": "string"}}
+        "evidence": {
+          "type": "array", "items": {"type": "string"},
+          "description": "稿件 locator 或具体文献局限"
+        }
       }
     },
     "contributions": {
@@ -61,9 +72,13 @@
         "required": ["id", "statement", "linked_sections", "evidence"],
         "properties": {
           "id": {"type": "string", "pattern": "^C[0-9]+$"},
-          "statement": {"type": "string", "minLength": 10},
+          "statement": {"type": "string", "minLength": 10,
+                        "description": "做了什么 + 在什么条件 + 得到什么可核对结果"},
           "linked_sections": {"type": "array", "items": {"type": "string"}},
-          "evidence": {"type": "array", "items": {"type": "string"}}
+          "evidence": {
+            "type": "array", "items": {"type": "string"},
+            "description": "优先逐字稿件引文：path Pxxx: quote"
+          }
         },
         "anyOf": [
           {"properties": {"linked_sections": {"minItems": 1}}},
@@ -79,13 +94,69 @@
         "properties": {
           "key": {"type": "string"},
           "used_in": {"enum": ["Introduction", "Related Work"]},
-          "claim": {"type": "string", "minLength": 5}
+          "claim": {"type": "string", "minLength": 5,
+                    "description": "该引用具体支撑哪条论断"},
+          "claim_id": {"type": "string", "description": "对应 claim_evidence 行"}
+        }
+      }
+    },
+    "claim_evidence": {
+      "type": "array",
+      "description": "句子级论断-证据；每条非平凡正文论断一行",
+      "items": {
+        "type": "object",
+        "required": ["claim_id", "claim", "section", "claim_locator", "evidence"],
+        "properties": {
+          "claim_id": {"type": "string"},
+          "claim": {"type": "string", "minLength": 5},
+          "section": {"enum": ["Introduction", "Related Work"]},
+          "claim_locator": {"type": "string"},
+          "citation_keys": {"type": "array", "items": {"type": "string"}},
+          "claim_type": {
+            "enum": ["background", "method", "result", "limitation", "gap", "contribution"]
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["path", "locator", "quote"],
+              "properties": {
+                "path": {"type": "string"},
+                "locator": {"type": "string"},
+                "quote": {"type": "string", "minLength": 8}
+              }
+            }
+          }
+        }
+      }
+    },
+    "citation_verification": {
+      "type": "array",
+      "description": "每个使用键的元数据核验；只依据文献库记录，不补造",
+      "items": {
+        "type": "object",
+        "required": ["key", "used_in", "metadata_status", "support_status"],
+        "properties": {
+          "key": {"type": "string"},
+          "used_in": {"enum": ["Introduction", "Related Work"]},
+          "title": {"type": "string"},
+          "authors": {"type": "string"},
+          "year": {"type": "string"},
+          "venue": {"type": "string"},
+          "doi": {"type": "string"},
+          "source_path": {"type": "string"},
+          "source_locator": {"type": "string"},
+          "source_quote": {"type": "string"},
+          "metadata_status": {"enum": ["verified", "incomplete", "missing"]},
+          "support_status": {"enum": ["full", "partial", "none", "unverifiable"]},
+          "note": {"type": "string"}
         }
       }
     },
     "unresolved": {
       "type": "array",
-      "description": "可选：无法在文献库中找到但材料要求引用的条目；会随 plan 进入 evidence-map.json",
+      "description": "可选：材料要求引用但文献库缺失的条目；不写进正文引用",
       "items": {"type": "object"}
     }
   }

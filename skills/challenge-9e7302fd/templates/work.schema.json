@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "研究方法与统计审查 work file",
+  "title": "研究方法与统计审查 work file (work/review-findings.json)",
+  "description": "Model-authored review work file. The executable gate scripts/review_quality_gate.py enforces five-facet coverage, verbatim quotes, decision rules and the reporting checklist.",
   "type": "object",
   "required": [
     "case_id",
@@ -9,70 +10,206 @@
     "facets_checked",
     "decision_rules",
     "reporting_checklist",
-    "evidence"
+    "evidence",
+    "checks",
+    "verdict"
   ],
   "properties": {
-    "case_id": {
+    "case_id": {"type": "string"},
+    "mode": {"type": "string", "enum": ["methods-stats-review"]},
+    "summary": {"type": "string"},
+    "verdict": {
       "type": "string",
-      "description": "task-specific field"
-    },
-    "mode": {
-      "type": "string",
-      "description": "task-specific field"
-    },
-    "summary": {
-      "type": "string",
-      "description": "task-specific field"
+      "enum": ["accept", "minor_revision", "major_revision", "reject",
+               "insufficient_material"]
     },
     "findings": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "facet", "locator", "original_quote", "severity",
+                     "type", "status", "fix", "evidence"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z][0-9]{3,}$"},
+          "facet": {
+            "type": "string",
+            "enum": ["design", "variables", "statistics", "sample_size",
+                     "reporting"]
+          },
+          "locator": {
+            "type": "object",
+            "required": ["path", "locator"],
+            "properties": {
+              "path": {"type": "string"},
+              "locator": {"type": "string", "description": "Paragraph, line, table or section id."}
+            }
+          },
+          "original_quote": {"type": "string", "minLength": 5},
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "major", "moderate", "minor", "info"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["error", "insufficient_evidence", "reporting_gap",
+                     "suggestion", "compliance", "statistical", "design",
+                     "variable", "sample_size"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["open", "resolved", "needs_recheck", "not_applicable"]
+          },
+          "fix": {"type": "string", "minLength": 5},
+          "assumption_checked": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Required for statistics/sample_size findings, e.g. normality, independence, equal variance."
+          },
+          "decision_rule": {"type": "string"},
+          "evidence": {
+            "type": "object",
+            "required": ["path", "locator", "quote"],
+            "properties": {
+              "path": {"type": "string"},
+              "locator": {"type": "string"},
+              "quote": {"type": "string", "minLength": 5}
+            }
+          }
+        }
       }
     },
     "checks": {
       "type": "array",
-      "description": "检查项与 pass/fail/not_checked",
+      "minItems": 5,
       "items": {
-        "type": "object"
-      }
-    },
-    "verdict": {
-      "type": "string",
-      "description": "总体判断及边界"
-    },
-    "evidence": {
-      "type": "array",
-      "description": "path+locator+quote 的逐字证据",
-      "items": {
-        "type": "object"
-      }
-    },
-    "uncertainties": {
-      "type": "array",
-      "description": "无法判断、材料不足、待复核",
-      "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["item", "status", "detail"],
+        "properties": {
+          "item": {"type": "string"},
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "not_checked", "not_applicable",
+                     "insufficient_material"]
+          },
+          "detail": {"type": "string"},
+          "facet": {
+            "type": "string",
+            "enum": ["design", "variables", "statistics", "sample_size",
+                     "reporting"]
+          },
+          "evidence": {"type": "object"}
+        }
       }
     },
     "facets_checked": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "minItems": 5,
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["facet", "status", "items"],
+        "properties": {
+          "facet": {
+            "type": "string",
+            "enum": ["design", "variables", "statistics", "sample_size",
+                     "reporting"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["checked", "not_checked", "insufficient_material",
+                     "not_applicable"]
+          },
+          "items": {"type": "array", "items": {"type": "string"}},
+          "notes": {"type": "string"}
+        }
       }
     },
     "decision_rules": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "minItems": 4,
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["rule", "condition", "decision"],
+        "properties": {
+          "rule": {"type": "string"},
+          "condition": {"type": "string"},
+          "decision": {"type": "string"},
+          "source": {"type": "string"},
+          "evidence": {"type": "object"}
+        }
       }
     },
     "reporting_checklist": {
       "type": "object",
-      "description": "task-specific field required by this sub-challenge"
+      "required": ["n", "effect", "ci", "exact_p", "df", "missing_data",
+                   "multiplicity"],
+      "properties": {
+        "n": {"$ref": "#/$defs/status_value"},
+        "effect": {"$ref": "#/$defs/status_value"},
+        "ci": {"$ref": "#/$defs/status_value"},
+        "exact_p": {"$ref": "#/$defs/status_value"},
+        "df": {"$ref": "#/$defs/status_value"},
+        "missing_data": {"$ref": "#/$defs/status_value"},
+        "multiplicity": {"$ref": "#/$defs/status_value"},
+        "randomization": {"$ref": "#/$defs/status_value"},
+        "blinding": {"$ref": "#/$defs/status_value"},
+        "software": {"$ref": "#/$defs/status_value"},
+        "itt": {"$ref": "#/$defs/status_value"}
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "locator", "quote"],
+        "properties": {
+          "path": {"type": "string"},
+          "locator": {"type": "string"},
+          "quote": {"type": "string", "minLength": 5}
+        }
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {
+            "type": "object",
+            "properties": {
+              "item": {"type": "string"},
+              "reason": {"type": "string"},
+              "impact": {"type": "string"},
+              "action": {"type": "string"}
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "status_value": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["reported", "missing", "not_applicable", "inconsistent",
+                   "not_checked"]
+        },
+        {
+          "type": "object",
+          "required": ["status"],
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["reported", "missing", "not_applicable",
+                       "inconsistent", "not_checked"]
+            },
+            "value": {"type": ["string", "number", "null"]},
+            "locator": {"type": "string"},
+            "note": {"type": "string"}
+          }
+        }
+      ]
     }
   }
 }

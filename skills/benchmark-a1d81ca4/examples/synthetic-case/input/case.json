@@ -1,0 +1,11 @@
+{
+  "case_id": "SYNTH-BENCH-EXAMPLE",
+  "output_contract": {
+    "benchmark_report": "summary of the benchmark run",
+    "protocol": "items, metrics, scoring tool, baselines",
+    "metrics": "metric values from score_benchmark.py",
+    "per_item_scores": "0/1/2 scores and failure types",
+    "failure_analysis": "failure counts, examples, recommendations",
+    "version": "dataset snapshot and comparability"
+  }
+}

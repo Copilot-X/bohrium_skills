@@ -66,7 +66,7 @@ export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md | head -n
 2. `result.json`：写 `case_id`、`task_family`、`mode`、`status`、`direction`、`artifacts`、`register`、`segments[]`、`glossary[]`、`preservation`、`back_translation_check`、`untranslated`、`uncertainty`、`change_log`、`translation_check`。
    不想把全文再输出一遍时，可先写好 `bilingual.md`，用 `assemble_result.py` 生成 `result.json` 骨架（自动抄入 targets、锁定术语与 artifacts），再手工补 `preservation`、`back_translation_check`、`preserved_facts`、`evidence_map`。该脚本把 `preservation` 保守地设为 `false`，核对后再改 `true`。
    - `segments[]` 的 `segment_id`/`source` 必须与切分结果同编号、同顺序、同文本；`target` 非空（除非列入 `untranslated`）。
-   - `preservation` 只在**逐项核对后**写 `true`；没核对或存疑写 `false` 并在 `uncertainty` 说明，不伪造。
+   - `assemble_result.py` 会从 source/target 段自动计算 `preservation`，并生成 `preserved_facts` 与 `evidence_map`；仍要读 `uncertainty` 中的 `preservation_mismatch` 并逐项复核，存疑的布尔值改回 `false`，不伪造。
    - `back_translation_check` 可选：做 2–3 段抽检就填，没做写 `[]`。
    - `artifacts` 只列真实存在且非空的文件。
 3. 官方 writing 别名字段必须追加：`deliverable`、`preserved_facts`、`evidence_map`、`change_log`（不是替换任务字段）。`preserved_facts` 至少列出关键数字、单位、条件与引用编号；没有的写空数组。`change_log` 记录实际改动；没有改动也要有一条“核对未改动”的记录。可运行：

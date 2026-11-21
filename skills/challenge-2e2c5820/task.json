@@ -16,7 +16,9 @@
   ],
   "required_fields": [
     "feasibility",
+    "conditions",
     "risks",
+    "confirmation_items",
     "evidence"
   ],
   "focus": "设备/材料/时间/预算/安全/伦理可行性与风险",
@@ -44,7 +46,8 @@
     "variables": {},
     "risks": [],
     "confirmation_items": [],
-    "feasibility": {}
+    "feasibility": {},
+    "conditions": []
   },
   "example": {
     "case_id": "SYNTH-EXPERIMENT",
@@ -127,5 +130,19 @@
   },
   "mode_metrics": [
     "每项可行性有条件；风险有处置；未确认不写成可执行。"
+  ],
+  "domain_script": "scripts/domain_work.py",
+  "runner_script": "scripts/run_skill.py",
+  "exit_contract": {
+    "0": "result.json written and parseable",
+    "2": "installation unusable only"
+  },
+  "domain_required_fields": [
+    "feasibility",
+    "conditions",
+    "risks",
+    "confirmation_items",
+    "evidence",
+    "uncertainties"
   ]
 }

@@ -1,51 +1,150 @@
 {
   "case_id": "SYNTH-REVIEW",
   "mode": "quality-review",
-  "summary": "Synthetic example only.",
+  "summary": "Synthetic example only: 1 finding and full six-facet coverage status; not a real review.",
+  "question": "Synthetic only: review a fabricated manuscript against six quality facets.",
   "findings": [
     {
-      "id": "R001",
-      "facet": "methods",
+      "id": "Q01",
+      "facet": "citation_support",
       "locator": {
         "path": "synthetic.md",
-        "locator": "P1"
+        "locator": "P1 / P2"
       },
-      "original_quote": "synthetic source sentence",
+      "original_quote": "Prior work suggests the intervention improves the outcome [1].",
       "severity": "major",
       "type": "error",
-      "status": "open",
-      "fix": "synthetic fix",
-      "false_positive_check": "author assumption checked",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
+      "status": "confirmed",
+      "impact": "Synthetic impact: the cited record has no intervention arm, so it cannot support the causal claim.",
+      "fix": "Rewrite P1 as an association or cite an intervention study; keep [1] only for the observational claim.",
+      "false_positive_check": "Checked against synthetic discipline convention: an observational record cannot support an interventional claim.",
+      "evidence": [
+        {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "Prior work suggests the intervention improves the outcome [1]."
+        },
+        {
+          "path": "synthetic.md",
+          "locator": "P2",
+          "quote": "Synthetic reference [1]: a cross-sectional survey; no intervention was tested."
+        }
+      ]
     }
   ],
   "checks": [
     {
-      "item": "synthetic check",
+      "item": "six-facet coverage",
+      "facet": "fact_consistency",
       "status": "pass",
-      "detail": "synthetic only"
+      "detail": "Synthetic only: no conflicting numbers were introduced."
+    },
+    {
+      "item": "citation design match",
+      "facet": "citation_support",
+      "status": "fail",
+      "detail": "Synthetic only: reference [1] is observational."
     }
   ],
+  "claim_source_matrix": [
+    {
+      "claim_id": "CS01",
+      "claim": "The intervention improves the outcome.",
+      "claim_locator": "synthetic.md P1",
+      "cited_source": "[1] / reference P2",
+      "source_statement": "Synthetic reference [1]: a cross-sectional survey; no intervention was tested.",
+      "source_locator": "synthetic.md P2",
+      "verdict": "none",
+      "note": "Synthetic only: design mismatch.",
+      "source": "[1] / reference P2"
+    }
+  ],
+  "facets_checked": [
+    {
+      "facet": "fact_consistency",
+      "status": "checked",
+      "items": [
+        "abstract vs results"
+      ],
+      "evidence": [
+        "P1"
+      ]
+    },
+    {
+      "facet": "citation_support",
+      "status": "checked",
+      "items": [
+        "claim-source match"
+      ],
+      "evidence": [
+        "P1",
+        "P2"
+      ]
+    },
+    {
+      "facet": "method_design",
+      "status": "checked",
+      "items": [
+        "allocation",
+        "control"
+      ],
+      "evidence": [
+        "P3"
+      ]
+    },
+    {
+      "facet": "statistical_reporting",
+      "status": "checked",
+      "items": [
+        "effect size",
+        "CI"
+      ],
+      "evidence": [
+        "P4"
+      ]
+    },
+    {
+      "facet": "argument_chain",
+      "status": "checked",
+      "items": [
+        "causal language"
+      ],
+      "evidence": [
+        "P5"
+      ]
+    },
+    {
+      "facet": "academic_compliance",
+      "status": "not_applicable",
+      "reason": "Synthetic example only; no ethics declaration is present in the fabricated input."
+    }
+  ],
+  "coverage_summary": {
+    "facets_total": 6,
+    "facets_checked": 5,
+    "facets_not_applicable": 1,
+    "findings": 1,
+    "evidence": 2
+  },
   "verdict": "major_revision",
   "evidence": [
     {
       "path": "synthetic.md",
       "locator": "P1",
-      "quote": "synthetic source sentence"
+      "quote": "Prior work suggests the intervention improves the outcome [1]."
+    },
+    {
+      "path": "synthetic.md",
+      "locator": "P2",
+      "quote": "Synthetic reference [1]: a cross-sectional survey; no intervention was tested."
     }
   ],
-  "uncertainties": [],
-  "facets_checked": [
+  "uncertainties": [
     {
-      "facet": "methods",
-      "status": "checked",
-      "items": [
-        "synthetic check"
-      ]
+      "item": "synthetic figure",
+      "reason": "No figure is included in the synthetic input.",
+      "impact": "Figure consistency is not checked.",
+      "action": "Supply the figure in a real case."
     }
   ],
   "review_status": "issues",

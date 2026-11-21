@@ -4,7 +4,10 @@
 
 - 目标：增量水位、时间窗、去重、版本更新与提醒抑制。
 - 主产物：`output/search-results.json`。
-- 必填字段：`subscription`, `window`, `increments`, `evidence`。
+- 必填字段：`subscription`, `window`, `watermark`, `snapshot_before`,
+  `snapshot_after`, `increments`, `alert_log`, `suppressed`, `replay_key`,
+  `evidence`（其中容器字段由 domain checks 校验存在性与内容，空窗口允许
+  `increments=[]`）。
 
 ## 2. 证据
 
@@ -17,6 +20,41 @@
 ## 3. 专项检查
 
 只报告相对上次快照的新增；窗口/时区固定；重跑幂等；版本记录可回放。
+
+### 3.1 窗口与水位
+
+- `window.start/end/timezone` 必须显式；边界规则为 **含起点、不含终点**。
+- 日期统一归一化为 UTC `YYYY-MM-DD`；只有年/月的记录保留
+  `date_precision` 并在 `uncertainties` 提示边界误差。
+- 窗口必须从上一窗口的 `end` 连续推进；`watermark` 记录已覆盖到的时间点。
+- 不得用“当前时间”隐式决定窗口；空窗口也是合法结果。
+
+### 3.2 去重与版本链
+
+- 分组键优先级：`doi:<lower>` → `arxiv:<id-without-version>` → `title:<normalized>|<year>`。
+- 只有记录没有 DOI/arXiv 时才使用标题键；不同 DOI 的相同标题**不得**
+  合并（除非某条记录同时携带两个标识符）。
+- 同一 work 的预印本/正式版/修订版合并为一组，保留 `versions[]` 与
+  `merged_from`；主记录优先 `published > corrected > preprint > unknown > retracted`。
+- 组内分类按**窗口内成员**判定：撤稿 > 更正 > 已有基线（version_update）> new。
+
+### 3.3 提醒与抑制
+
+- Skill 只准备提醒，不发送：`delivery=not_sent_by_skill`。
+- `alert_log[].status ∈ {queued_for_digest, already_prepared,
+  suppressed_digest_limit, delivered}`。
+- 单窗口最多 10 条排队提醒，其余必须进入 `suppressed` 并写
+  `reason=digest_limit`；越窗条目写 `reason=outside_window`；同 replay_key
+  重跑写 `reason=already_prepared_idempotent`。
+- `replay_key` 由订阅、窗口、时区、去重规则版本与来源集合哈希得到；
+  `work/tracking-state.json` 保存已准备 alert_id，保证不二次入队。
+
+### 3.4 指标
+
+- 只报告可从输入复算的计数（记录数、唯一 work 数、窗口内记录数、
+  新增/版本更新/撤稿/更正、提醒与抑制数）。
+- 没有标注参考集时，`precision_at_k/recall_at_k` 写 `not_computable_without_labels`，
+  不得编造数值。
 
 ## 4. 产物
 

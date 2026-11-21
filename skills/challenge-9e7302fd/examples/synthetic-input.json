@@ -1,69 +1,289 @@
 {
   "case_id": "SYNTH-REVIEW",
   "mode": "methods-stats-review",
-  "summary": "Synthetic example only.",
+  "summary": "Synthetic example only. Five facets are covered, every finding has a verbatim quote from synthetic-source.md, and the reporting checklist separates missing from incorrect reporting.",
+  "question": "Synthetic methods and statistics review.",
+  "verdict": "major_revision",
   "findings": [
     {
       "id": "S001",
+      "facet": "design",
+      "locator": {
+        "path": "synthetic-source.md",
+        "locator": "P004"
+      },
+      "original_quote": "Participants were allocated to two groups without randomization or blinding.",
+      "severity": "major",
+      "type": "design",
+      "status": "open",
+      "fix": "Report the allocation method and any blinding; if neither was used, state the resulting bias risk and add a sensitivity analysis.",
+      "assumption_checked": [
+        "randomization",
+        "blinding",
+        "group independence"
+      ],
+      "decision_rule": "design_vs_question",
+      "evidence": {
+        "path": "synthetic-source.md",
+        "locator": "P004",
+        "quote": "Participants were allocated to two groups without randomization or blinding."
+      }
+    },
+    {
+      "id": "S002",
+      "facet": "variables",
+      "locator": {
+        "path": "synthetic-source.md",
+        "locator": "P004"
+      },
+      "original_quote": "The outcome was recorded as a binary variable, but analyzed as continuous.",
+      "severity": "major",
+      "type": "variable",
+      "status": "open",
+      "fix": "Align the analysis with the binary outcome (e.g. logistic regression or a proportion test), or justify why a continuous analysis is valid.",
+      "assumption_checked": [
+        "outcome type",
+        "model_variable_match"
+      ],
+      "decision_rule": "variable_type_vs_model",
+      "evidence": {
+        "path": "synthetic-source.md",
+        "locator": "P004",
+        "quote": "The outcome was recorded as a binary variable, but analyzed as continuous."
+      }
+    },
+    {
+      "id": "S003",
       "facet": "statistics",
       "locator": {
-        "path": "synthetic.md",
-        "locator": "P1"
+        "path": "synthetic-source.md",
+        "locator": "P004"
       },
-      "original_quote": "synthetic source sentence",
+      "original_quote": "Independent-samples t tests were used for repeated measurements from the same sample.",
       "severity": "major",
-      "type": "insufficient_evidence",
+      "type": "statistical",
       "status": "open",
-      "fix": "synthetic fix",
+      "fix": "Use a paired or mixed-effects analysis for repeated measurements, and state the independence assumption explicitly.",
       "assumption_checked": [
+        "independence",
+        "paired_structure",
         "normality"
       ],
+      "decision_rule": "paired vs unpaired",
       "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
+        "path": "synthetic-source.md",
+        "locator": "P004",
+        "quote": "Independent-samples t tests were used for repeated measurements from the same sample."
+      }
+    },
+    {
+      "id": "S004",
+      "facet": "sample_size",
+      "locator": {
+        "path": "synthetic-source.md",
+        "locator": "P004"
+      },
+      "original_quote": "No sample size or power calculation was reported.",
+      "severity": "moderate",
+      "type": "insufficient_evidence",
+      "status": "open",
+      "fix": "Report the pre-specified effect size, alpha, power and attrition assumptions, or label any post hoc power calculation as post hoc.",
+      "assumption_checked": [
+        "power_basis",
+        "effect_size_source",
+        "attrition"
+      ],
+      "decision_rule": "sample_size_basis",
+      "evidence": {
+        "path": "synthetic-source.md",
+        "locator": "P004",
+        "quote": "No sample size or power calculation was reported."
+      }
+    },
+    {
+      "id": "S005",
+      "facet": "reporting",
+      "locator": {
+        "path": "synthetic-source.md",
+        "locator": "P004"
+      },
+      "original_quote": "The 95% confidence interval and exact p value were not reported.",
+      "severity": "moderate",
+      "type": "reporting_gap",
+      "status": "open",
+      "fix": "Add the effect size, 95% confidence interval, exact p value, test statistic and degrees of freedom, and reconcile the n values between Methods and the table.",
+      "assumption_checked": [
+        "reporting_completeness",
+        "n_consistency"
+      ],
+      "decision_rule": "reporting_completeness",
+      "evidence": {
+        "path": "synthetic-source.md",
+        "locator": "P004",
+        "quote": "The 95% confidence interval and exact p value were not reported."
       }
     }
   ],
   "checks": [
     {
-      "item": "synthetic check",
-      "status": "pass",
-      "detail": "synthetic only"
-    }
-  ],
-  "verdict": "major_revision",
-  "evidence": [
+      "item": "design_vs_question and randomization",
+      "status": "fail",
+      "detail": "Allocation without randomization or blinding is reported.",
+      "facet": "design"
+    },
     {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
+      "item": "variable_definition and coding",
+      "status": "fail",
+      "detail": "Binary outcome analyzed as continuous.",
+      "facet": "variables"
+    },
+    {
+      "item": "normality and independence assumption",
+      "status": "fail",
+      "detail": "Independent-samples test used for repeated measurements.",
+      "facet": "statistics"
+    },
+    {
+      "item": "power_basis and sample size",
+      "status": "fail",
+      "detail": "No sample size or power calculation.",
+      "facet": "sample_size"
+    },
+    {
+      "item": "exact_p, ci, df and n_consistency",
+      "status": "fail",
+      "detail": "CI and exact p are missing; n values differ between sections.",
+      "facet": "reporting"
     }
   ],
-  "uncertainties": [],
   "facets_checked": [
+    {
+      "facet": "design",
+      "status": "checked",
+      "items": [
+        "design_vs_question",
+        "randomization",
+        "blinding",
+        "control_group"
+      ]
+    },
+    {
+      "facet": "variables",
+      "status": "checked",
+      "items": [
+        "outcome_type",
+        "coding",
+        "model_variable_match"
+      ]
+    },
     {
       "facet": "statistics",
       "status": "checked",
       "items": [
+        "paired_vs_unpaired",
+        "independence",
         "normality",
         "multiplicity"
+      ]
+    },
+    {
+      "facet": "sample_size",
+      "status": "checked",
+      "items": [
+        "power_basis",
+        "effect_size_source",
+        "attrition"
+      ]
+    },
+    {
+      "facet": "reporting",
+      "status": "checked",
+      "items": [
+        "effect_and_ci",
+        "exact_p",
+        "df",
+        "n_consistency"
       ]
     }
   ],
   "decision_rules": [
     {
       "rule": "paired vs unpaired",
-      "condition": "independent samples",
-      "decision": "synthetic only"
+      "condition": "repeated measurements from the same sample",
+      "decision": "use a paired or mixed-effects analysis, not an independent-samples test"
+    },
+    {
+      "rule": "variable type vs model",
+      "condition": "binary outcome",
+      "decision": "use logistic/proportion analysis or justify a continuous approximation"
+    },
+    {
+      "rule": "sample size basis",
+      "condition": "no power calculation reported",
+      "decision": "mark as insufficient evidence; do not invent a power value"
+    },
+    {
+      "rule": "reporting completeness",
+      "condition": "effect estimate reported without CI or exact p",
+      "decision": "record a reporting_gap and request effect size, CI, exact p and df"
+    },
+    {
+      "rule": "n consistency",
+      "condition": "n differs between Methods, Results and tables",
+      "decision": "record an inconsistency and ask which denominator is correct"
     }
   ],
   "reporting_checklist": {
-    "n": "reported",
+    "n": {
+      "status": "inconsistent",
+      "value": "Methods 40 total; table 20 per group",
+      "locator": "synthetic-source.md P004/Table 1",
+      "note": "reconcile the denominator"
+    },
     "effect": "missing",
     "ci": "missing",
-    "exact_p": "reported",
+    "exact_p": "missing",
     "df": "missing",
+    "missing_data": "missing",
+    "multiplicity": "not_applicable",
+    "randomization": "missing",
+    "blinding": "missing",
+    "software": "not_applicable",
     "itt": "not_applicable"
-  }
+  },
+  "evidence": [
+    {
+      "path": "synthetic-source.md",
+      "locator": "P004",
+      "quote": "Participants were allocated to two groups without randomization or blinding."
+    },
+    {
+      "path": "synthetic-source.md",
+      "locator": "P004",
+      "quote": "The outcome was recorded as a binary variable, but analyzed as continuous."
+    },
+    {
+      "path": "synthetic-source.md",
+      "locator": "P004",
+      "quote": "Independent-samples t tests were used for repeated measurements from the same sample."
+    },
+    {
+      "path": "synthetic-source.md",
+      "locator": "P004",
+      "quote": "No sample size or power calculation was reported."
+    },
+    {
+      "path": "synthetic-source.md",
+      "locator": "P004",
+      "quote": "The 95% confidence interval and exact p value were not reported."
+    }
+  ],
+  "uncertainties": [
+    {
+      "item": "missing raw data",
+      "reason": "The synthetic example has no raw dataset.",
+      "impact": "Statistical claims cannot be recomputed from data.",
+      "action": "Request the raw data or analysis code from the authors."
+    }
+  ]
 }

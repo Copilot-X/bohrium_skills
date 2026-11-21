@@ -41,7 +41,8 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本 IO、inventory、静态审计、result.json 信封 |
 | `scripts/parsers.py` | `.tex/.bib/.md/.txt` 等材料提取 |
-| `scripts/fam_latex.py` | 工程复制、主文件识别、静态检查、编译、编辑应用与 diff |
+| `scripts/fam_latex.py` | 工程复制、主文件识别、引擎推断、静态资源检查、带预算编译、编辑应用与 diff |
+| `work/latex-compile-plan.json` | 引擎偏好、原因、可用引擎、命令形态与 180 秒总预算 |
 | `task.json` | family=latex-writing、module=fam_latex、profile=writing |
 | `templates/latex-edits.schema.json` | `work/latex-edits.json` 字段说明 |
 | `templates/compile-report.schema.json` | `output/compile-report.json` 字段说明 |
@@ -61,29 +62,51 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 
 入口会：
 
-1. 盘点 `/input`，把文本类工程文件（`.tex/.latex/.bib/.cls/.sty/.bst/
-   .cfg/.def`、可抽取的 `.pdf` 与 `.md/.txt`）复制到 `work/project/`；
-   **图片（`.png/.jpg/.jpeg/.eps/.svg`）等二进制资源不会被复制**，
-   需要时手工从 `/input` 补到原相对路径。同时保留一份
-   `work/project-baseline/` 作为 diff 基线；
-2. 选主文件：第一个含 `\documentclass` 的 `.tex`（按路径排序），
-   写入 `work/latex-project.json` 的 `main`；
-3. 写 `work/latex-project.json`：`case_id/main/files/static/engine/pdf`；
+1. 盘点 `/input`，把工程文件（`.tex/.latex/.bib/.cls/.sty/.bst/
+   .cfg/.def`、`.pdf/.png/.jpg/.jpeg/.eps/.svg` 与 `.md/.txt`）复制到
+   `work/project/`；`output/`、`work/`、`.ocr/`、`build/` 等运行目录会被跳过。
+   其他二进制格式（如 `.webp/.tif`）需手工从 `/input` 补到原相对路径。
+   同时保留一份 `work/project-baseline/` 作为 diff 基线；
+2. 选主文件：在所有含 `\documentclass` 的 `.tex` 中优先
+   `main.tex/paper.tex/manuscript.tex/article.tex/root.tex`，否则取路径最浅者；
+   候选清单写入 `work/latex-project.json` 的 `main_candidates`；
+3. 如果输入自带与主文件同名的 `.pdf`，把它移到 `work/reference.pdf`：
+   它是参考产物，**不是本次构建结果**，不能进入 `output/main.pdf`；
+4. 写 `work/latex-project.json`：`case_id/main/main_candidates/files/static/
+   engine/engine_preferred/pdf/reference_pdf`；
    `static` 含 `documentclass/begin_document/end_document/balanced_braces/
-   citations/labels/refs/bib_keys/missing_refs/missing_citations/ok`；
-4. 真实尝试编译一次，写 `work/compile-baseline.json`（`available/ok/
-   engine/error/passes/pdf/errors/warnings`）与 `work/error-list.json`；
-5. 写 `work/latex-edits-template.json`（编辑计划骨架）；
-6. 写一份 `status=partial` 的 provisional `result.json`。
+   citations/labels/refs/bib_keys/missing_refs/missing_citations/inputs/
+   missing_inputs/graphics/missing_graphics/bib_files/missing_bib/
+   packages/missing_packages/class_available/class_source/ok/references_ok/
+   assets_ok`；
+5. 推断引擎并真实尝试编译一次，写 `work/latex-compile-plan.json`
+   （`preferred_engine/reason/engine_order/commands/total_budget_s`）、
+   `work/compile-baseline.json` 与 `work/error-list.json`；
+6. 写 `work/latex-edits-template.json`（编辑计划骨架）；
+7. 写一份 `status=partial` 的 provisional `result.json`。
 
-运行时若存在 `latexmk`，执行
-`latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error`；
-否则依次使用可用的 `pdflatex` / `xelatex` / `lualatex` 连跑 2 遍。
-日志按行解析：`!` 开头或 `Undefined control sequence` 计为错误；
+引擎选择顺序（`fam_latex._engine_hint`）：
+
+1. `case.json` 的 `engine` / `tex_engine` / `latex_engine` / `compiler` 显式指定；
+2. 工程含 `ctexart/ctexbook/ctexrep`、`ctex`、`xeCJK`、`fontspec`、
+   `unicode-math`、`polyglossia` → XeLaTeX；
+3. 含 `luatexja`、`luacode`、`\directlua` → LuaLaTeX；
+4. 正文含中文且不是 `CJKutf8` 工程 → XeLaTeX（避免 pdfLaTeX 编码失败）；
+5. 其余 → pdfLaTeX。
+
+有 `latexmk` 时优先
+`latexmk -pdf|-xelatex|-lualatex -interaction=nonstopmode -halt-on-error
+-file-line-error -no-shell-escape -maxrepeat=4`；否则用对应引擎连跑 2 遍。
+总编译预算 180 秒、单趟上限 75 秒；超时或引擎缺失都会如实记录，不会挂住评测。
+编译前会删除 `work/project/` 中同名旧 PDF 与 `.aux/.log/.out/.toc/.bbl/
+.blg/.fls/.fdb_latexmk` 等中间产物，只有「退出码 0 且文件头为 `%PDF-`」
+才会复制为 `output/main.pdf`。
+日志按行解析：`!` 开头、`file.tex:行号:`、`Undefined control sequence`、
+`Emergency stop`、`Fatal error` 计为错误；
 `LaTeX Warning:`、`Package ... Warning:`、`Overfull/Underfull \hbox`、
 `undefined` 计为警告。
-若 `available=false`，说明环境没有 TeX 引擎：保留源码与静态分析，
-在 result 中写 `compile_unavailable`，不要生成占位 PDF。
+若 `available=false`，说明环境没有 TeX 引擎：保留源码、静态分析与
+`compile_unavailable` 证据，`status=partial`，不要生成占位 PDF。
 
 如果主文件选错（工程有多个 `\documentclass`），把
 `work/latex-project.json` 的 `main` 改成正确相对路径再编辑；该文件是
@@ -154,17 +177,21 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 入口会：
 
 1. 读取 `work/latex-edits.json`，按 `edits[]` 顺序应用
-   `before → after`，记录 `line`；无法应用的写入 `blocked` 并给出原因；
+   `before → after`，记录 `line` 与修改前后 sha256；无法应用的写入
+   `blocked` 并给出原因。文件不存在、JSON 非法、`edits` 不是数组、
+   单条不是对象都会显式记为 blocked，不会被静默忽略；
 2. 对 `work/project/` 与 `work/project-baseline/` 逐文件比较
    （文本给 unified diff，二进制给 sha256）；
-3. 重跑静态检查（`missing_refs` / `missing_citations` / 括号配平等）；
-4. 真实重新编译，解析错误与警告；仅当产物以 `%PDF-` 开头才复制为
-   `output/main.pdf`；
+3. 重跑静态检查（`missing_refs`、`missing_citations`、`missing_inputs`、
+   `missing_graphics`、`missing_bib`、`missing_packages`、类文件可用性、
+   括号配平等）；
+4. 按 prepare 记录的引擎偏好真实重新编译，解析错误与警告；只有
+   「退出码 0 且 `%PDF-` 文件头有效」才复制为 `output/main.pdf`；
 5. 复制完整源码树到 `output/project/`，删除 `.aux/.log/.out/.toc/
    .bbl/.blg/.fls/.fdb_latexmk` 等中间文件；
 6. 写 `output/compile-report.json`、`output/change-record.json`、
    `output/error-analysis.md`，最后写 `output/result.json`（writing
-   官方四字段由入口生成）。
+   官方四字段与 media 风格字段由入口生成）。
 
 `status` 取 `completed|partial|input_error`：只有静态检查通过、
 无日志错误、无 blocked、无缺失引用/文献、编译 `ok` 且产出 PDF 时才是
@@ -178,7 +205,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   main.pdf              # 仅当真实编译产出合法 PDF 时存在
   compile-report.json   # 编译、静态检查、改动汇总
   change-record.json    # 应用的编辑、blocked、逐文件 diff/sha
-  error-analysis.md     # 引擎、轮次、错误、警告、缺失引用
+  error-analysis.md     # 引擎、轮次、错误、警告、缺失资源
   result.json           # 官方结果信封
 ```
 
@@ -188,15 +215,47 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 {
   "case_id": "...", "main": "main.tex",
   "available": true, "ok": false, "engine": "pdflatex",
+  "engine_preferred": "pdflatex", "tool": "pdflatex",
   "error": "exit 1", "passes": 1,
-  "errors": ["! Undefined control sequence."],
+  "errors": ["main.tex:12: ! Undefined control sequence."],
   "warnings": ["LaTeX Warning: Reference `tab:x' on page 1 undefined"],
-  "static": {"missing_refs": ["tab:x"], "missing_citations": [], "ok": true},
+  "static": {"missing_refs": ["tab:x"], "missing_citations": [],
+             "missing_inputs": [], "missing_graphics": [],
+             "missing_bib": [], "missing_packages": [],
+             "class_available": null, "ok": true},
   "edits_applied": 1, "edits_blocked": 0,
   "file_changes": [{"file": "main.tex", "changed": true, "diff": "..."}],
-  "pdf": null
+  "pdf": null, "pdf_sha256": null, "pdf_bytes": 0,
+  "command": ["pdflatex", "-interaction=nonstopmode", "..."],
+  "elapsed_s": 1.23, "compile_budget_s": 180.0,
+  "reference_pdf": "reference.pdf",
+  "exceptions": [{"code": "compile_failed", "detail": "exit 1",
+                  "impact": "no PDF", "fallback": "fix the first error"}]
 }
 ```
+
+`result.json` 除 writing 官方字段外，还提供 media 风格字段：
+
+```json
+{
+  "editable_source": {"path": "project", "format": "directory",
+                      "main": "main.tex", "paths": ["main.tex", "refs.bib"]},
+  "export_artifact": {"path": "main.pdf", "format": "pdf",
+                      "valid_header": true, "bytes": 12345,
+                      "sha256": "...", "png": null},
+  "content_map": [{"id": "main.tex", "kind": "source_change",
+                   "label": "main.tex",
+                   "source": {"path": "main.tex", "locator": "diff"},
+                   "rendered": true, "media": "tex"}],
+  "compliance_checks": [{"id": "G4", "check": "compile result is real",
+                         "ok": true, "evidence": {}}],
+  "exceptions": [{"code": "compile_unavailable", "detail": "...",
+                  "impact": "...", "fallback": "..."}]
+}
+```
+
+无引擎时 `export_artifact.path=null`、`valid_header=false`、不生成
+`main.pdf`；`exceptions` 必须包含 `compile_unavailable`。
 
 `change-record.json`：`{case_id, applied[], blocked[], file_changes[]}`，
 `applied[]` 含 `edit/file/line`，`blocked[]` 含 `edit/reason`。
@@ -221,12 +280,13 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 工程完整 | `output/project/` 存在；主文件与子文件/`.bib` 可继续编辑；无 aux/log 中间产物 |
-| G2 | 改动可控 | 每条 applied 都有唯一 `before`、真实 `line` 与 diff；blocked 逐条给出原因 |
-| G3 | 静态一致 | `documentclass/begin/end` 齐全、花括号配平、`missing_refs=[]`、`missing_citations=[]` |
-| G4 | 编译真实 | `available/ok/engine/passes` 来自真实进程；`main.pdf` 有 `%PDF-` 头；无引擎时不得有 PDF |
+| G2 | 改动可控 | 每条 applied 都有唯一 `before`、真实 `line` 与 diff；blocked 逐条给出原因；非法 `latex-edits.json` 不得静默忽略 |
+| G3 | 静态一致 | `documentclass/begin/end` 齐全、花括号配平、`missing_refs=[]`、`missing_citations=[]`、`missing_inputs=[]`、`missing_graphics=[]`、`missing_bib=[]`，且类文件不是已知缺失 |
+| G4 | 编译真实 | `available/ok/engine/passes` 来自真实进程；`main.pdf` 有 `%PDF-` 头；无引擎时不得有 PDF；失败时不得沿用输入里的旧 PDF |
 | G5 | 错误可定位 | 有引擎时错误带文件名/行号（`-file-line-error`）；级联错误以第一条根因为准 |
-| G6 | 可重复 | 报告记录引擎、轮次、命令形态；源码改动有基线 sha256，他人可复跑 |
+| G6 | 可重复 | 报告记录引擎偏好、实际引擎、轮次、命令与总预算；源码改动有基线 sha256，他人可复跑 |
 | G7 | 契约 | `result.json` 可解析；artifact 路径存在；无 PDF 时不得标 `completed` |
+| G8 | 资源可执行 | `\input/\include` 目标、图片、`.bib`、`.cls`、`.sty` 逐项检查；缺失时写入 `exceptions`，不联网补造 |
 
 ## 异常处理
 
@@ -235,13 +295,15 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | 没有 TeX 引擎 | 保留源码、静态分析与错误分析；`status=partial` + `compile_unavailable`；不伪造 PDF |
 | 输入无 `.tex` | prepare 直接 `input_error`；不生成空工程 |
 | 编译失败 | 先修第一条错误；`error-analysis.md` 记录错误/警告；`status=partial` |
-| 缺 `.cls/.sty` | 优先使用 `/input` 提供的文件；没有则记录 `compile_failed`，不联网下载 |
-| 缺图片/二进制资源 | 从 `/input` 复制到 `work/project/` 的原相对路径，再 finalize |
+| 输入自带同名 PDF | prepare 移到 `work/reference.pdf`；不进入 `output/main.pdf` |
+| 缺 `.cls/.sty` | 优先使用 `/input` 提供的文件；没有则记录 `missing_class`/`missing_packages`，不联网下载 |
+| 缺 `\input`/图片/`.bib` | finalize 记录 `missing_inputs`/`missing_graphics`/`missing_bib`；从 `/input` 复制到原相对路径后重跑 |
 | `before` 出现 0 次或多次 | 该条 blocked，原文不变；重取唯一锚点（带上下文）后重跑 |
+| `latex-edits.json` 非法 | 记为 blocked（`invalid edits JSON`），源码不改；修复 JSON 后重跑 finalize |
 | 未解析引用/文献 | 补 `\label` 或 `.bib` 条目；没有可信来源就保留并在 uncertainty 标注，不编造 |
 | Overfull hbox | 调列宽/换行/`longtable`；不用 `\resizebox` 掩盖溢出 |
-| 主文件在子目录 | 复制到工程根并把 `work/latex-project.json` 的 `main` 指向副本 |
-| 编译超时/死循环 | 记录 timeout；检查递归 `\input`、死循环宏包；保留部分结果 |
+| 主文件在子目录 | 可直接保留相对路径编译；若引擎不识别，复制到工程根并同步修改相对路径，再把 `main` 指向副本 |
+| 编译超时/死循环 | 记录 timeout 与已用预算；检查递归 `\input`、死循环宏包；保留部分结果 |
 | 时间不足 | 先保证源码与 `result.json` 落盘，`status=partial`，说明未修项 |
 
 ## 最小示例（synthetic，不是正式答案）
@@ -271,14 +333,24 @@ The sample reached 90\% selectivity (Table~\ref{tab:demo}).
 
 ## 版本与限制
 
-- 版本 `1.0.0`：单入口 + 共享引擎 + `fam_latex` 模块；prepare 写
-  provisional result，finalize 生成真实编译报告与改动记录。
+- 版本 `1.1.0`：单入口 + 共享引擎 + `fam_latex` 模块；新增引擎推断、
+  180 秒编译预算、旧 PDF 隔离、`\input`/图片/`.bib`/类文件/宏包静态检查、
+  非法 `latex-edits.json` 显式 blocked，以及 media 风格 `result.json` 字段。
 - 编译依赖运行时是否安装 TeX Live/`latexmk`；本地无引擎时只能做
-  静态检查与源码交付，`status` 必然为 `partial`。
-- 静态检查是正则/计数启发式：`balanced_braces` 只看主文件原始括号，
-  `missing_refs` 只覆盖 `\ref/\autoref/\eqref/\pageref`，
-  `missing_citations` 只覆盖 `\cite*`；`\include`/`\input` 的路径存在性
-  与宏包可用性需人工或真实编译确认。
+  静态检查与源码交付，`status` 必然为 `partial`。降级路径可独立验证：
+
+  ```bash
+  python3 "$SKILL_DIR/scripts/run_case.py" prepare ...
+  python3 "$SKILL_DIR/scripts/run_case.py" finalize ...
+  # 预期：compile-report.json 中 available=false、pdf=null；
+  #       result.json 中 export_artifact.path=null、main.pdf 不存在。
+  ```
+
+- 静态检查是正则/计数启发式：`balanced_braces` 只看主文件原始括号；
+  `missing_refs` 覆盖 `\ref/\autoref/\eqref/\pageref`；`missing_citations`
+  覆盖 `\cite*`；`missing_inputs` 覆盖 `\input/\include/\subfile`；
+  `missing_packages`/`class_available` 依赖 `kpsewhich`，没有该工具时
+  写 `package_check=unavailable` 而不是猜测。
 - `file_changes` 只遍历仍存在的文件：删除的文件不会出现在 diff 中，
   需要删除时在 `reason`/`uncertainty` 里明确说明。
 - 只支持离线文本工程；不联网安装宏包、不调用外部编译服务。

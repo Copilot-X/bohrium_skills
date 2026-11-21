@@ -1,0 +1,54 @@
+{
+  "case_id": "SYNTH-BENCH-EXAMPLE",
+  "source_conditioned": true,
+  "items": [
+    {
+      "item_id": "i01",
+      "question": "What methanol selectivity is reported at 350 C?",
+      "gold_points": ["91%"],
+      "gold_evidence": [
+        {"paragraph_id": "p1", "quote": "At 350 C the methanol selectivity reached 91%"}
+      ],
+      "type": "fact",
+      "difficulty": "easy",
+      "capability": "extract",
+      "source": "materials/paper.md"
+    },
+    {
+      "item_id": "i02",
+      "question": "What CO2 conversion is reported at 350 C?",
+      "gold_points": ["42%"],
+      "gold_evidence": [
+        {"paragraph_id": "p2", "quote": "The same catalyst converted 42% of CO2 at 350 C"}
+      ],
+      "type": "fact",
+      "difficulty": "medium",
+      "capability": "locate",
+      "source": "materials/paper.md"
+    },
+    {
+      "item_id": "i03",
+      "question": "Which catalyst shows the higher methanol selectivity?",
+      "gold_points": ["Cu/ZnO"],
+      "gold_evidence": [
+        {"paragraph_id": "p3", "quote": "The Cu/ZnO catalyst showed a higher methanol selectivity than the Pd/SiO2 catalyst"}
+      ],
+      "type": "compare",
+      "difficulty": "hard",
+      "capability": "compare",
+      "source": "materials/paper.md"
+    },
+    {
+      "item_id": "i04",
+      "question": "Can the stability improvement be called significant?",
+      "gold_points": [],
+      "gold_evidence": [
+        {"paragraph_id": "p5", "quote": "No error bars are reported for the stability test"}
+      ],
+      "type": "abstain",
+      "difficulty": "medium",
+      "capability": "abstain",
+      "source": "materials/paper.md"
+    }
+  ]
+}

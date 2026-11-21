@@ -7,80 +7,159 @@
     "summary",
     "taxonomy",
     "items",
-    "evidence"
+    "evidence",
+    "review_queue"
   ],
   "properties": {
     "case_id": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "与输入 case.json 一致"
     },
     "mode": {
       "type": "string",
-      "description": "task-specific field"
+      "const": "classification"
     },
     "summary": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "分类批次、覆盖范围与复核情况摘要"
+    },
+    "taxonomy": {
+      "type": "object",
+      "required": ["categories", "criteria", "threshold"],
+      "properties": {
+        "categories": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "criteria": {
+          "type": "object",
+          "description": "每个类别一条可执行判据"
+        },
+        "threshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.7
+        }
+      }
     },
     "items": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "minItems": 1,
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "path", "category", "tags", "confidence",
+                     "new_name", "hash", "review", "rationale", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "path": {"type": "string", "description": "输入文件的相对路径"},
+          "category": {"type": "string"},
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "new_name": {"type": "string"},
+          "hash": {"type": "string"},
+          "review": {"type": "boolean"},
+          "rationale": {"type": "string"},
+          "evidence": {
+            "type": "object",
+            "required": ["path", "locator", "quote"],
+            "properties": {
+              "path": {"type": "string"},
+              "locator": {"type": "string"},
+              "quote": {"type": "string"}
+            }
+          }
+        }
       }
     },
     "operations": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["action", "status"],
+        "properties": {
+          "id": {"type": "string"},
+          "action": {"type": "string"},
+          "status": {"type": "string"},
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "rollback": {"type": "string"}
+        }
       }
     },
     "findings": {
       "type": "array",
-      "description": "检索/问答/批注结论及证据",
-      "items": {
-        "type": "object"
-      }
+      "items": {"type": "object"}
     },
     "evidence": {
       "type": "array",
       "description": "path+locator+quote 的逐字证据",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["path", "locator", "quote"]
       }
     },
     "uncertainties": {
       "type": "array",
-      "description": "权限、损坏、跳过、冲突",
-      "items": {
-        "type": "object"
-      }
-    },
-    "taxonomy": {
-      "type": "object",
-      "description": "task-specific field required by this sub-challenge"
+      "description": "权限、损坏、跳过、冲突、no_result 原因",
+      "items": {"type": "object"}
     },
     "review_queue": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "低置信度/边界/不可读条目；与 items.review 一致",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["item_id", "reason"],
+        "properties": {
+          "item_id": {"type": "string"},
+          "reason": {"type": "string"},
+          "action": {"type": "string"}
+        }
       }
     },
     "duplicate_groups": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["items"],
+        "properties": {
+          "id": {"type": "string"},
+          "items": {"type": "array", "minItems": 2},
+          "reason": {"type": "string"}
+        }
       }
     },
     "version_groups": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["items", "preferred", "reason"],
+        "properties": {
+          "id": {"type": "string"},
+          "items": {"type": "array", "minItems": 2},
+          "versions": {"type": "array"},
+          "preferred": {"type": "string"},
+          "reason": {"type": "string"}
+        }
       }
+    },
+    "filters": {
+      "type": "object",
+      "properties": {
+        "must": {"type": "array"},
+        "must_not": {"type": "array"},
+        "applied_to": {"type": "string"}
+      }
+    },
+    "filter_execution": {
+      "type": "array",
+      "items": {"type": "object"}
+    },
+    "no_result": {
+      "type": "boolean",
+      "description": "输入为空或筛选无命中时为 true，并在 summary/uncertainties 说明"
     }
   }
 }

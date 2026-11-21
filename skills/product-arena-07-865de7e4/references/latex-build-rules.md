@@ -16,8 +16,15 @@
    - `warnings[]` → 区分未解析引用、版面溢出、字体/宏包警告。
 4. 缺失文件处理：`\input{sections/x}`、`\bibliography{refs}`、
    `\includegraphics{fig/plot.png}`、`\documentclass{...}` 依赖的
-   `.cls/.sty` 必须存在。prepare 不会复制图片与二进制资源，需要时
-   从 `/input/<相同相对路径>` 复制到 `work/project/<相同相对路径>`。
+   `.cls/.sty` 必须存在。prepare 会复制 `.tex/.bib/.cls/.sty/.bst/.cfg/.def`
+   以及 `.pdf/.png/.jpg/.jpeg/.eps/.svg`；其他二进制格式需要从
+   `/input/<相同相对路径>` 手工复制到 `work/project/<相同相对路径>`。
+   finalize 的 `static.missing_inputs/missing_graphics/missing_bib/
+   missing_packages/class_available` 是逐项证据，不要用真实编译的级联错误
+   掩盖缺失资源。
+5. 输入自带与主文件同名的 PDF 时，prepare 会把它移到 `work/reference.pdf`。
+   参考 PDF 只能用于人工比对，不能复制成 `output/main.pdf`；编译失败时
+   更不得把它当作构建产物。
 
 ## 2. 模板适配
 
@@ -84,11 +91,15 @@
 
 ## 6. 编译错误定位
 
-1. 使用 `-interaction=nonstopmode -halt-on-error -file-line-error`：
-   日志中的 `file:line: message` 是首选定位点。
-2. **第一条错误优先**：后续错误常是级联；修完第一条就重编译，
+1. 引擎由工程决定，不盲选 PATH 上第一个可执行文件：
+   `case.json` 显式值 > `ctex/xeCJK/fontspec/polyglossia` → XeLaTeX >
+   `luatexja/luacode` → LuaLaTeX > 中文正文 → XeLaTeX > 默认 pdfLaTeX。
+2. 使用 `-interaction=nonstopmode -halt-on-error -file-line-error
+   -no-shell-escape`：日志中的 `file:line: message` 是首选定位点。
+   `latexmk` 额外使用 `-maxrepeat=4`，总预算 180 秒、单趟 75 秒。
+3. **第一条错误优先**：后续错误常是级联；修完第一条就重编译，
    不要在未验证时批量改十几处。
-3. 常见错误与处置：
+4. 常见错误与处置：
 
 | 日志 | 根因 | 处置 |
 |---|---|---|
@@ -101,18 +112,21 @@
 | `Package ... Error` | 宏包选项冲突 | 读该宏包报错行；不要盲目删宏包 |
 | `TeX capacity exceeded` | 递归 `\input` 或宏循环 | 检查包含关系与自定义宏 |
 
-4. **警告分级**：
+5. **警告分级**：
    - `Reference/Citation ... undefined`：必须修；
    - `Overfull \hbox`：影响版面时修，轻微溢出可记录；
    - `Font shape ... not available`：记录字体依赖，不伪造字体；
    - `Underfull \hbox`：通常可接受，除非模板要求严格。
-5. 无引擎时：只能做静态检查，`compile-report.json` 的
+6. 无引擎时：只能做静态检查，`compile-report.json` 的
    `available=false`、`pdf=null`；不得写“编译通过”。
+7. 超时或预算耗尽：记录 `timeout after Ns`/`compile budget exhausted`，
+   保留已落盘的源码与报告，`status=partial`；不要反复重试拖垮评测。
 
 ## 7. 可重复构建记录
 
-1. 报告必须记录：引擎（`latexmk/pdflatex/xelatex/lualatex`）、
-   轮次（`passes`）、命令形态（由入口固定，见 `fam_latex._compile`）。
+1. 报告必须记录：引擎偏好及原因（`engine_preferred/engine_reason`）、
+   实际引擎（`engine/tool`）、轮次（`passes`）、命令（`command`）、
+   总预算（`compile_budget_s`）与耗时（`elapsed_s`）。
 2. 依赖说明：模板类文件、宏包、字体、编码、`bib` 后端
    （bibtex/biber）以及需要的编译轮次。
 3. 不要依赖绝对路径、本机缓存或交互输入；`\write18` 默认关闭。
@@ -131,15 +145,19 @@
 | 删除宏包“消错” | 功能/版面丢失 | 先定位命令所属宏包 |
 | `\resizebox` 掩盖溢出 | 排版不合规 | 调列宽/换行/`longtable` |
 | 无引擎却声称编译通过 | 结果不可信 | `available=false` + `partial` |
+| 把输入自带 PDF 当构建产物 | 伪造编译结果 | prepare 移到 `work/reference.pdf` |
+| `latex-edits.json` 非法被忽略 | 修复缺失但状态看似正常 | 显式 blocked + `exceptions` |
 | 手改 `compile-report.json` | 审计失效 | 一律由 finalize 重新生成 |
 | 同时直接改工程又提交同一条 edit | 二次应用 blocked | 两种方式只选一种改同一处 |
 
 ## 9. finalize 前自检清单
 
-- [ ] `work/latex-edits.json` 每条 `before` 在目标文件中恰好出现一次。
+- [ ] `work/latex-edits.json` 是合法 JSON；每条 `before` 在目标文件中恰好出现一次。
 - [ ] 未改数字、单位、引用 key、公式符号含义。
 - [ ] 新增 `\label` 与 `\ref` 一一对应；新增 `\cite` 有真实 bib 条目。
 - [ ] `work/project/` 中主文件与所有 `\input/\include` 目标存在。
-- [ ] 图片/类文件已复制到工程内的正确相对路径。
+- [ ] 图片、`.bib`、类文件、宏包已逐项检查；缺失项写入 `exceptions`。
+- [ ] 输入自带的同名 PDF 已移到 `work/reference.pdf`，未进入 `output/main.pdf`。
 - [ ] 预期结果：有引擎时 `compile-report.ok=true` 且有 `main.pdf`；
-      无引擎时 `available=false`、`pdf=null`、`status=partial`。
+      无引擎时 `available=false`、`pdf=null`、`export_artifact.path=null`、
+      `status=partial`。

@@ -130,3 +130,73 @@
 3. `artifacts[]` 逐项存在；`sections.docx` 能重新打开；
    `sections-preview.pdf` 存在或已记录 `pdf_preview` uncertainty。
 4. 人工复核每条引用是否真的支持该句；机器只核对键与数字，不判断语义。
+
+## 11. claim-evidence 映射（句子级）
+
+`claim_evidence` 不是可选装饰：它把“正文里的这句话”与“哪份材料的哪句原文”
+绑定起来，供作者和评审逐条复核。每条例引用/贡献/空白/背景断言至少一行。
+
+规则：
+
+1. `claim_id` 唯一；`section` 只能是 `Introduction` 或 `Related Work`；
+2. `claim_locator` 写正文中的位置或准备写入的段落（如 `Introduction P2`）；
+3. `evidence[].quote` 必须逐字来自 `path` 指向的稿件/文献记录；
+   不能只写“见结果部分”；
+4. 引用文献支撑的论断把键放进 `citation_keys`，并与
+   `citation_coverage[].claim_id` 对应；
+5. `claim_type` 区分背景/方法/结果/局限/空白/贡献；不同类别不能
+   互相冒充（例如把作者推断写成 `result`）；
+6. 如果某句只是作者判断或写作过渡，不放进 `claim_evidence`，但要在
+   正文中明确写成判断（如 “we argue”），不要伪装成文献事实。
+
+## 12. 引用元数据核验
+
+`citation_verification` 逐键记录：
+
+| 字段 | 要求 |
+|---|---|
+| `metadata_status` | 标题、年份、作者齐全且与文献库一致 → `verified`；缺项 → `incomplete`；键不存在 → `missing` |
+| `support_status` | 有摘要/全文且能判断 → `full/partial/none`；只有条目 → `unverifiable` |
+| `source_quote` | 文献库条目原文或摘要原句；不得用记忆补全 |
+| `source_path` / `source_locator` | 指向 `.bib/.ris/.json` 或稿件 References 段 |
+
+禁止：
+
+- 从记忆补作者、年份、期刊、DOI；
+- 用文献库中不存在的键；
+- 把“该工作报告了 X”写成具体数值，除非摘要/全文里确有该数值；
+- 用作者—年份替代 `[@key]` 后仍声称 `gap.derived_from` 已被引用。
+
+## 13. 写作质量清单
+
+引言：
+
+- 第 1 段是否给出“对象—瓶颈—为什么现在—约束”，而不是空转背景？
+- 是否有一句话明确本文在什么条件下比较/验证什么？
+- 每处引用是否紧贴它支撑的论断？
+
+相关工作：
+
+- 是否 2–4 个分组，每组至少 2 篇，且同一维度比较？
+- 每篇是否写清结论、适用条件、局限，而不是逐篇摘要？
+- 每组是否有 synthesis 句说明取舍/共同缺口？
+- 是否避免按时间顺序流水账和“大量研究表明”式笼统句？
+
+空白与贡献：
+
+- 空白是否由已引工作的共同局限/冲突/未覆盖场景推出？
+- 每条贡献是否有“做了什么 + 条件 + 可核对结果”？
+- 贡献是否能在正文方法/图表/结果中找到对应证据？
+- 是否避免 `first/novel/unprecedented` 等无证据词？
+
+## 14. 失败模式（补充）
+
+| 失败 | 引擎/自检信号 | 修复 |
+|---|---|---|
+| claim-evidence 缺失或 quote 非逐字 | `writing_gate` problems | 从稿件重摘原句，补 path+locator |
+| 引用元数据凭记忆补全 | `metadata_status=verified` 但文献库无字段 | 改为 incomplete/missing，删除编造字段 |
+| 只有条目却写具体数值 | `support_status=verifiable` 或正文新增数字 | 改为 unverifiable，删除材料外数值 |
+| 相关工作串成一篇摘要 | `group_issues` 或 gate 分组检查 | 按维度重分组，补 synthesis |
+| 贡献与结果对不上 | `weak_contributions` / gate 贡献检查 | 补 linked_sections + 逐字证据 |
+| finalize 崩溃/无 result.json | result 检查失败 | 运行 `scripts/fallback_result.py` 写 partial |
+| 输出契约键未覆盖 | `contract_coverage` 有 false | 写 `output/results/<key>.json` 或映射 canonical 字段 |

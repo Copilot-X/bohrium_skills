@@ -3,7 +3,28 @@
   "family": "introduction-writing",
   "module": "fam_intro",
   "profile": "writing",
+  "status_success": "completed",
   "title": "写作08｜引言与相关工作写作",
-  "description": "introduction and related work",
-  "version": "1.0.0"
+  "description": "introduction and related work with claim-citation binding and contribution-evidence mapping",
+  "version": "1.1.0",
+  "work_file": "work/writing-plan.json",
+  "deliverable": "output/sections.md",
+  "output_files": [
+    "output/sections.md",
+    "output/citation-audit.json",
+    "output/contributions.json",
+    "output/evidence-map.json"
+  ],
+  "optional_outputs": [
+    "output/self-check.json",
+    "output/sections.docx",
+    "output/sections-preview.pdf"
+  ],
+  "required_fields": [
+    "related_work_groups",
+    "gap",
+    "contributions"
+  ],
+  "focus": "引言/相关工作的 claim-evidence 绑定、引用与贡献映射、逐字证据",
+  "checks": "四要素齐全；引用可绑定；空白由已引局限推出；贡献有证据；数字不新增"
 }

@@ -9,7 +9,8 @@
     "comparison_matrix",
     "novelty_claims",
     "feasibility",
-    "evidence"
+    "evidence",
+    "references"
   ],
   "properties": {
     "case_id": {

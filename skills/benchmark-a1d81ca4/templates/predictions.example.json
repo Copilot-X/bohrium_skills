@@ -1,0 +1,20 @@
+[
+  {
+    "item_id": "i01",
+    "answer_points": ["91%"],
+    "evidence": [
+      {"paragraph_id": "p6", "quote": "reached 91% methanol selectivity"}
+    ],
+    "abstain": false,
+    "reason": "synthetic example only"
+  },
+  {
+    "item_id": "i04",
+    "answer_points": [],
+    "evidence": [
+      {"paragraph_id": "p8", "quote": "no error bars are reported"}
+    ],
+    "abstain": true,
+    "reason": "synthetic example: material does not report uncertainty"
+  }
+]

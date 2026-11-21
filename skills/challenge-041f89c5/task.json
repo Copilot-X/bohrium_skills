@@ -18,6 +18,7 @@
     "comparison_matrix",
     "novelty_claims",
     "feasibility",
+    "references",
     "evidence"
   ],
   "focus": "选题评估、创新性/可行性/证据缺口与风险",
@@ -147,5 +148,20 @@
   "mode_metrics": [
     "四项交付齐全：问题定义/比较矩阵/创新审计/可行性。",
     "创新性不得写“首次/尚无人”除非有在线检索证据；可行性每个前提有来源或标 assumption。"
+  ],
+  "domain_script": "scripts/domain_work.py",
+  "runner_script": "scripts/run_skill.py",
+  "exit_contract": {
+    "0": "result.json written and parseable",
+    "2": "installation unusable only"
+  },
+  "domain_required_fields": [
+    "problem_definition",
+    "comparison_matrix",
+    "novelty_claims",
+    "feasibility",
+    "references",
+    "evidence",
+    "uncertainties"
   ]
 }

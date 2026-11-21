@@ -16,8 +16,9 @@ task.md 要求“增量水位、时间窗、去重、版本更新与提醒抑制
 `uncertainty`，不要补造。
 
 核心原则：**有输入、有依据、有产物、有边界**。脚本负责盘点材料、建立
-工作区、校验证据/字段/产物并组装 `result.json`；模型负责判断、筛选、
-分析或写作。脚本不会替你生成候选、结论或审查意见。
+工作区、按固定窗口与去重键计算增量、准备提醒、记录抑制与回放状态，
+并组装 `result.json`；模型负责领域判断、相关性复核与最终改写。脚本不会
+凭空生成文献、DOI、日期或“已发送提醒”；所有新增都必须来自输入记录。
 
 ## 输入
 
@@ -38,7 +39,10 @@ mkdir -p /app/work /app/output
 
 | 文件 | 作用 |
 |---|---|
-| `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
+| `scripts/run_skill.py` | **推荐入口**：prepare → 增量/去重/提醒 → finalize → 契约补全；输入不完整也写合法 `result.json` |
+| `scripts/domain_work.py` | 本模式确定性初稿：固定窗口、水位、快照、去重合并、增量、提醒/抑制、回放键 |
+| `scripts/run_case.py` | 分步入口：prepare / finalize / run / inspect |
+| `scripts/selftest.py` | 正向 + 幂等重跑 + 空输入边界自测 |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
@@ -48,6 +52,25 @@ mkdir -p /app/work /app/output
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
 ## 工作流
+
+### 第 0 步：一条命令拿到可回放的增量（推荐，先保证不空转）
+
+```bash
+python3 "$SKILL_DIR/scripts/run_skill.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+它会依次执行 prepare、`domain_work.py` 增量计算、finalize，并检查：
+
+1. `work/search-plan.json`、4 个声明产物和 `output/result.json` 都存在；
+2. 窗口/时区/水位/回放键/快照/提醒/抑制齐全；
+3. 输入为空/不可读时仍写合法 `result.json`（`status=input_error`）、退出码 0；
+4. 任何声明输出缺失时自动补写并重跑 finalize；
+5. 同一 `replay_key` 重跑时，已入队 alert_id 标为 `already_prepared`，
+   写入 `suppressed.reason=already_prepared_idempotent`，不二次入队。
+
+随后读 `output/tracking-digest.md`、`output/search-results.json` 与
+`work/domain-status.json`，人工复核相关性/版本合并，再运行 finalize。
 
 ### 第 1 步：prepare（约 10% 预算）
 
@@ -67,8 +90,13 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 
 ### 第 2 步：写 `work/search-plan.json`（约 60% 预算）
 
-按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`subscription`, `window`, `increments`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+按 `templates/work.schema.json` 写结构化工作文件。必填字段为
+`subscription`, `window`, `watermark`, `snapshot_before`, `snapshot_after`,
+`increments`, `alert_log`, `suppressed`, `replay_key`, `evidence`。
+窗口必须写 `start/end/timezone`（固定 UTC 日期，含起点不含终点）；每条增量
+必须有 `dedupe_key`、`category`、`evidence`；提醒必须区分
+`queued_for_digest`/`already_prepared`/`suppressed_digest_limit`，并说明
+Skill 不发送消息。
 
 ```json
 {
@@ -214,7 +242,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/search-plan.json`（或 JSON 主产物），检查必填字段 `subscription`, `window`, `increments`, `evidence`；
+1. 读取 `work/search-plan.json`（或 JSON 主产物），检查必填字段与 `search` 专项结构；
 2. 逐条核验 evidence 的 path/locator/quote；
 3. 登记 `output/search-results.json` 与 `output/candidates.csv`, `output/search-log.json`, `output/evidence.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
@@ -222,8 +250,10 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 5. 写 `output/result.json`，含 `status/result/claims/uncertainties`
    与 `deliverable/preserved_facts/evidence_map/change_log`。
 
-`status` 取 `answered|partial|input_error`。有缺字段、证据
-不匹配、主产物缺失或执行失败时用 `partial`。
+`status` 取 `answered|partial|input_error`。`run_skill.py` 读取
+`work/domain-status.json`：无材料时强制 `input_error`；窗口/水位/回放键/
+提醒缺失或增量重复时降级 `partial`。退出码：写出可解析 result.json 即 0；
+只有 `run_case.py` 缺失才返回 2。
 
 ## 输出契约
 
@@ -236,28 +266,32 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 - `preserved_facts[]`：证据中的数字/单位（有则填）；
 - `evidence_map[]`：每条证据的 path/locator/quote；
 - `artifacts[]`：主产物与 `output/candidates.csv`, `output/search-log.json`, `output/evidence.json`；
-- `uncertainties[]`、`change_log[]`、`output_contract`、`contract_coverage`。
+- `uncertainties[]`、`change_log[]`、`output_contract`、`contract_coverage`；
+- `run_skill`：各步骤返回码、fallback、声明产物大小；
+- `domain-audit.json`：记录数、增量数、提醒数、抑制数、回放键。
 
 若 `/input/case.json` 的 `output_contract` 含本题特有键（例如
-`cleaned_table`、`quality_report`、`rule_log`、`original_snapshot`），必须：
+`检索结果`、`证据记录`、`状态说明` 或 `alert_log`），必须：
 
 1. 在 `result.json` 顶层保留原键名；
-2. 优先写同名产物 `output/<field>.json/.csv/.md`，或把对应 canonical
-   字段/artifact 路径填入该键；
-3. finalize 会检查 `contract_coverage`，未覆盖的键会降级 `partial` 并写入
-   `uncertainties`；不要只写 `status/result/claims` 而忽略原契约字段。
+2. 写同名产物 `output/<field>.json`（中文键直接作为文件名），内容必须是
+   真实结构或明确的 partial 指针；
+3. finalize 检查 `contract_coverage`；`run_skill.py` 最后再补一次映射并
+   重算覆盖表。未覆盖的键会降级 `partial` 并写入 `uncertainties`。
 
 ## 质量闸门
 
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/search-results.json` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `subscription`, `window`, `increments`, `evidence` 齐全 |
-| G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
-| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | 只报告相对上次快照的新增；窗口/时区固定；重跑幂等；版本记录可回放 |
-| G6 | 产物 | 声明的每个 artifact 路径真实存在 |
-| G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+| G2 | 必填字段 | `subscription`, `window`, `watermark`, `snapshot_before/after`, `increments`, `alert_log`, `suppressed`, `replay_key`, `evidence` 齐全 |
+| G3 | 证据 | 每条记录/增量有 path/locator/quote；quote 逐字可查 |
+| G4 | 边界 | 空窗口、越窗、重复、撤稿、日期缺失写入 `suppressed`/`uncertainties` |
+| G5 | 专项 | 只报相对上次快照的新增；窗口含起点不含终点；版本合并有依据；重跑幂等；提醒不重复入队 |
+| G6 | 产物 | 声明的每个 artifact 路径真实存在且非空 |
+| G7 | 契约 | result.json 可解析，case_id 与输入一致，contract_coverage 全覆盖 |
+| G8 | 不空转 | 材料不可读时仍写合法 result.json（`input_error`）且退出码 0 |
+| G9 | 可复跑 | `python3 scripts/selftest.py` 正向/幂等/边界均通过 |
 
 ## 评分维度对照
 
@@ -273,8 +307,14 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 | 情况 | 处理 |
 |---|---|
-| 材料为空/不可读 | `input_error`；不生成伪候选/结论/审查意见 |
-| 只有摘要/部分材料 | 只交付可确认部分；正文标“基于摘要”；`status=partial` |
+| 材料为空/不可读 | `input_error`；仍写增量文件/候选表/日志/证据与合法 result.json，但全部为空并说明原因，不生成伪文献/DOI |
+| 只有摘要/部分材料 | 只交付可确认部分；正文标“基于摘要/仅元数据”；`status=partial` |
+| 空窗口 | 明确写“本窗口无新增”，不把空白写成检索失败；`alert_log=[]` 合法 |
+| 日期只有年/月 | 记录 `date_precision`，在 `uncertainties` 提示窗口边界可能偏差 |
+| 记录重复/多源 | 按 DOI→arXiv→标题+年份的优先级合并，保留 `versions[]` 与 `merged_from` |
+| 撤稿/更正 | 类别标 `retraction`/`correction`，提醒优先级单独说明 |
+| 重跑 | 同一 `replay_key` 已入队 alert 标 `already_prepared`，不二次入队 |
+| 提醒发送 | Skill 只入队，不声称已发送；`delivery=not_sent_by_skill` |
 | 证据 quote 找不到 | 回到原文重摘；无法逐字时删除该证据或标 `uncertainty` |
 | 候选/文献重复 | 用 DOI/标题+年份合并；保留合并依据 |
 | 空结果/无命中 | 明确写“未检索到/未命中”，不把空白写成排除 |
@@ -411,6 +451,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
+- 版本 `1.1.0`：新增 `run_skill.py` 一键兜底入口与 `domain_work.py`
+  确定性增量计算；固定窗口/水位/快照/去重键/回放键；同一 replay_key 重跑
+  不二次入队；无材料/缺产物时仍写合法 result.json 与全部声明输出。
 - 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
   证据/字段/产物审计。
 - 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；

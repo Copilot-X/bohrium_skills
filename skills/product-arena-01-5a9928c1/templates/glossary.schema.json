@@ -1,23 +1,55 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Locked translation glossary",
-  "type": "object",
-  "required": ["terms"],
-  "properties": {
-    "terms": {
-      "type": "array",
-      "minItems": 1,
-      "items": {
-        "type": "object",
-        "required": ["source", "target"],
-        "properties": {
-          "source": {"type": "string"},
-          "target": {"type": "string"},
-          "aliases": {"type": "array", "items": {"type": "string"}},
-          "note": {"type": "string"}
-        }
+  "title": "Locked translation glossary (work/glossary.json)",
+  "description": "Preferred form: {\"terms\": [...]}. A flat mapping {\"source term\": \"target term\"} or {\"source term\": {\"term\": \"target term\"}} is also accepted. A glossary without any target is treated as not locked and cannot produce status=answered.",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": ["terms"],
+      "properties": {
+        "terms": {
+          "oneOf": [
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "required": ["source", "target"],
+                "properties": {
+                  "source": {"type": "string"},
+                  "target": {"type": "string"},
+                  "aliases": {"type": "array", "items": {"type": "string"}},
+                  "note": {"type": "string"}
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": {"type": "string"}
+            }
+          ]
+        },
+        "locked": {"type": "boolean"},
+        "source_language": {"type": "string"},
+        "target_language": {"type": "string"},
+        "case_id": {"type": "string"}
       }
     },
-    "locked": {"type": "boolean"}
-  }
+    {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {"type": "string"},
+          {
+            "type": "object",
+            "required": ["term"],
+            "properties": {
+              "term": {"type": "string"},
+              "aliases": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        ]
+      }
+    }
+  ]
 }

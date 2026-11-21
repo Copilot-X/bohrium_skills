@@ -11,77 +11,196 @@
   "properties": {
     "case_id": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "必须与 /input/case.json 的 case_id 一致"
     },
     "mode": {
       "type": "string",
-      "description": "task-specific field"
+      "enum": ["annotation"]
     },
     "summary": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "批注数、笔记数、关联数、索引数、未复核项与主要限制"
     },
     "items": {
       "type": "array",
-      "description": "文件/记录条目：path、kind、metadata、hash、status、evidence",
+      "description": "文件/记录条目：path、kind、metadata、version、hash、status、evidence",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["path", "kind", "status", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "path": {"type": "string"},
+          "kind": {
+            "enum": ["pdf", "docx", "md", "txt", "html", "image",
+                     "annotation-export", "json", "other"]
+          },
+          "metadata": {"type": "object"},
+          "version": {"type": "string"},
+          "hash": {"type": "string"},
+          "hash_status": {"enum": ["available", "unavailable"]},
+          "size": {"type": "integer"},
+          "status": {
+            "enum": ["indexed", "duplicate", "superseded", "unreadable",
+                     "permission_denied"]
+          },
+          "duplicate_of": {"type": "string"},
+          "supersedes": {"type": "string"},
+          "text_layer": {"type": "boolean"},
+          "evidence": {"$ref": "#/definitions/evidence"}
+        }
+      }
+    },
+    "annotations": {
+      "type": "array",
+      "description": "逐条批注：锚点、版本、类型、颜色、原文与证据",
+      "items": {
+        "type": "object",
+        "required": ["id", "doc", "quote", "type", "anchor_status", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "annotation_id": {"type": "string"},
+          "doc": {"type": "string"},
+          "path": {"type": "string"},
+          "version": {"type": "string"},
+          "doc_sha256": {"type": "string"},
+          "hash": {"type": "string"},
+          "page": {"type": ["integer", "string"]},
+          "paragraph": {"type": ["string", "null"]},
+          "char_start": {"type": ["integer", "null"]},
+          "char_end": {"type": ["integer", "null"]},
+          "rect": {"type": "array"},
+          "quote": {"type": "string", "minLength": 2},
+          "type": {
+            "enum": ["highlight", "underline", "margin", "handwriting",
+                     "sticky", "comment", "other"]
+          },
+          "color": {"type": "string"},
+          "anchor_status": {
+            "enum": ["verified", "unverified_low_ocr", "version_mismatch",
+                     "missing_source", "needs_review", "duplicate"]
+          },
+          "ocr_confidence": {"type": "number"},
+          "mapped_to_current": {"type": "boolean"},
+          "current_version": {"type": "string"},
+          "note": {"type": "string"},
+          "evidence": {"$ref": "#/definitions/evidence"}
+        }
+      }
+    },
+    "notes": {
+      "type": "array",
+      "description": "结构化笔记：问题/方法/结论/可复用点/疑点与原文证据",
+      "items": {
+        "type": "object",
+        "required": ["id", "annotation_ids"],
+        "properties": {
+          "id": {"type": "string"},
+          "note_id": {"type": "string"},
+          "title": {"type": "string"},
+          "question": {"type": "string"},
+          "method": {"type": "string"},
+          "conclusion": {"type": "string"},
+          "reusable_points": {"type": "array", "items": {"type": "string"}},
+          "caveats": {"type": "array", "items": {"type": "string"}},
+          "annotation_ids": {"type": "array", "items": {"type": "string"}},
+          "claims": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["text", "evidence"],
+              "properties": {
+                "text": {"type": "string"},
+                "evidence": {"$ref": "#/definitions/evidence"},
+                "evidence_status": {"enum": ["confirmed", "needs_review"]}
+              }
+            }
+          },
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "evidence_status": {"enum": ["confirmed", "needs_review"]}
+        }
+      }
+    },
+    "links": {
+      "type": "array",
+      "description": "批注-笔记-主题关联；basis 必须可解释",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "basis"],
+        "properties": {
+          "from": {"type": "string"},
+          "to": {"type": "string"},
+          "basis": {
+            "enum": ["same_quote", "same_section", "same_entity",
+                     "same_doi_version", "explicit_note"]
+          },
+          "confidence": {"enum": ["high", "medium", "low"]},
+          "needs_review": {"type": "boolean"},
+          "evidence": {"$ref": "#/definitions/evidence"}
+        }
+      }
+    },
+    "search_index": {
+      "type": "array",
+      "description": "按主题/标签/实体/来源/时间检索",
+      "items": {
+        "type": "object",
+        "required": ["term", "annotation_ids"],
+        "properties": {
+          "term": {"type": "string"},
+          "kind": {
+            "enum": ["topic", "tag", "entity", "source", "time", "method"]
+          },
+          "annotation_ids": {"type": "array", "items": {"type": "string"}},
+          "note_ids": {"type": "array", "items": {"type": "string"}},
+          "source_docs": {"type": "array", "items": {"type": "string"}},
+          "confidence": {"enum": ["high", "medium", "low"]},
+          "needs_review": {"type": "boolean"}
+        }
       }
     },
     "operations": {
       "type": "array",
-      "description": "索引/移动/分类/批注等操作及结果",
+      "description": "抽取/锚点/索引/关联/跳过/失败/恢复操作",
       "items": {
-        "type": "object"
-      }
-    },
-    "findings": {
-      "type": "array",
-      "description": "检索/问答/批注结论及证据",
-      "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["action", "target", "status", "detail"],
+        "properties": {
+          "action": {"type": "string"},
+          "target": {"type": "string"},
+          "status": {
+            "enum": ["ok", "skipped", "failed", "needs_review"]
+          },
+          "detail": {"type": "string"},
+          "evidence": {"$ref": "#/definitions/evidence"}
+        }
       }
     },
     "evidence": {
       "type": "array",
       "description": "path+locator+quote 的逐字证据",
-      "items": {
-        "type": "object"
-      }
+      "items": {"$ref": "#/definitions/evidence"}
     },
     "uncertainties": {
       "type": "array",
-      "description": "权限、损坏、跳过、冲突",
+      "description": "权限、损坏、低 OCR、旧版本、重复、跳过、冲突",
       "items": {
-        "type": "object"
+        "type": ["object", "string"]
       }
     },
-    "annotations": {
+    "findings": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
-      }
-    },
-    "notes": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
-      }
-    },
-    "links": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
-      }
-    },
-    "search_index": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
+      "description": "批注/检索结论及证据（可选）",
+      "items": {"type": "object"}
+    }
+  },
+  "definitions": {
+    "evidence": {
+      "type": "object",
+      "required": ["path", "locator", "quote"],
+      "properties": {
+        "path": {"type": "string"},
+        "locator": {"type": "string"},
+        "quote": {"type": "string"}
       }
     }
   }

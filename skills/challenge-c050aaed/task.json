@@ -156,6 +156,9 @@
   },
   "mode_metrics": [
     "每条批注有原文锚点、字符区间、anchor_status 与版本/哈希。",
-    "旧版本批注不得自动挂到新版；OCR 低置信度进复核队列。"
-  ]
+    "旧版本批注不得自动挂到新版；OCR 低置信度进复核队列。",
+    "doc 与 path 分离：二进制/扫描件批注的 quote 校验指向批注导出或 OCR 文本。",
+    "output_contract 自定义键写 output/results/<key>.json；finalize 后运行 annotation_gate.py --apply。"
+  ],
+  "version": "1.1.0"
 }

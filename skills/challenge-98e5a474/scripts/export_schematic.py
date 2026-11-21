@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Export an editable SVG with the first renderer that is actually available.
 
-Probe order: cairosvg (Python module) -> rsvg-convert -> inkscape.
+Probe order: cairosvg (Python module) -> rsvg-convert -> inkscape -> matplotlib
+(a pure-Python SVG-subset renderer bundled with scientific-python).
 
 Nothing is fabricated.  Each candidate output is verified by magic bytes
 (PNG \\x89PNG / PDF %PDF) and size; an invalid file is deleted before the next
@@ -19,6 +20,8 @@ delivered), 2 = SVG missing/unparseable.  Stdlib only, Python 3.12+.
 """
 import argparse
 import json
+import math
+import re
 import shutil
 import subprocess
 import sys
@@ -28,7 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from xml.sax.saxutils import escape
 
-TOOL_ORDER = ("cairosvg", "rsvg-convert", "inkscape")
+TOOL_ORDER = ("cairosvg", "rsvg-convert", "inkscape", "matplotlib")
 FORMATS = ("pdf", "png")
 
 
@@ -76,7 +79,8 @@ def read_svg(path):
 
 
 def probe_tools():
-    status = {"cairosvg": False, "rsvg-convert": False, "inkscape": False}
+    status = {"cairosvg": False, "rsvg-convert": False, "inkscape": False,
+              "matplotlib": False}
     try:
         import importlib.util
         status["cairosvg"] = importlib.util.find_spec("cairosvg") is not None
@@ -84,6 +88,12 @@ def probe_tools():
         status["cairosvg"] = False
     for name in ("rsvg-convert", "inkscape"):
         status[name] = bool(shutil.which(name))
+    try:
+        import importlib.util
+        status["matplotlib"] = (importlib.util.find_spec("matplotlib") is not None
+                                and importlib.util.find_spec("PIL") is not None)
+    except Exception:
+        status["matplotlib"] = False
     return status
 
 
@@ -152,6 +162,406 @@ def try_inkscape(fmt, svg, target, dpi):
     if ok2:
         return True, detail2
     return False, "%s / legacy: %s" % (detail, detail2)
+
+
+# ---------------------------------------------------------------------------
+# Pure-Python fallback: render the generated SVG subset with matplotlib.
+# This is used only after cairosvg/rsvg-convert/inkscape all fail.  It produces
+# a real PDF/PNG from the same SVG geometry; it is not a fabricated export.
+# ---------------------------------------------------------------------------
+
+def _style_attrs(element):
+    attrs = {key.split("}")[-1]: value for key, value in element.attrib.items()}
+    style = attrs.get("style") or ""
+    for part in style.split(";"):
+        if ":" in part:
+            key, value = part.split(":", 1)
+            attrs.setdefault(key.strip(), value.strip())
+    return attrs
+
+
+def _parse_svg_path(d):
+    """Parse the M/L/H/V/C/S/Q/T/A/Z subset used by the schematic builder."""
+    from matplotlib.path import Path as MPath
+    tokens = re.findall(
+        r"[MmLlHhVvCcSsQqTtAaZz]|[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?",
+        str(d or ""))
+    vertices, codes = [], []
+    index = 0
+    command = None
+    current = (0.0, 0.0)
+    start = (0.0, 0.0)
+    last_cubic = None
+    last_quad = None
+    tangent = (1.0, 0.0)
+
+    def number():
+        nonlocal index
+        value = float(tokens[index])
+        index += 1
+        return value
+
+    while index < len(tokens):
+        if tokens[index].isalpha():
+            command = tokens[index]
+            index += 1
+        if command is None:
+            break
+        relative = command.islower()
+        code = command.upper()
+        if code == "M":
+            x, y = number(), number()
+            if relative:
+                x, y = current[0] + x, current[1] + y
+            current = start = (x, y)
+            vertices.append(current)
+            codes.append(MPath.MOVETO)
+            command = "l" if relative else "L"
+        elif code == "L":
+            x, y = number(), number()
+            if relative:
+                x, y = current[0] + x, current[1] + y
+            tangent = (x - current[0], y - current[1])
+            current = (x, y)
+            vertices.append(current)
+            codes.append(MPath.LINETO)
+        elif code == "H":
+            x = number()
+            if relative:
+                x += current[0]
+            tangent = (x - current[0], 0.0)
+            current = (x, current[1])
+            vertices.append(current)
+            codes.append(MPath.LINETO)
+        elif code == "V":
+            y = number()
+            if relative:
+                y += current[1]
+            tangent = (0.0, y - current[1])
+            current = (current[0], y)
+            vertices.append(current)
+            codes.append(MPath.LINETO)
+        elif code in ("C", "S"):
+            if code == "S":
+                if last_cubic is None:
+                    control1 = current
+                else:
+                    control1 = (2 * current[0] - last_cubic[0],
+                                2 * current[1] - last_cubic[1])
+                control2 = (number(), number())
+                if relative:
+                    control2 = (current[0] + control2[0], current[1] + control2[1])
+                end = (number(), number())
+                if relative:
+                    end = (current[0] + end[0], current[1] + end[1])
+            else:
+                control1 = (number(), number())
+                control2 = (number(), number())
+                end = (number(), number())
+                if relative:
+                    control1 = (current[0] + control1[0], current[1] + control1[1])
+                    control2 = (current[0] + control2[0], current[1] + control2[1])
+                    end = (current[0] + end[0], current[1] + end[1])
+            vertices.extend([control1, control2, end])
+            codes.extend([MPath.CURVE4, MPath.CURVE4, MPath.CURVE4])
+            tangent = (end[0] - control2[0], end[1] - control2[1])
+            last_cubic = control2
+            current = end
+        elif code in ("Q", "T"):
+            if code == "T":
+                if last_quad is None:
+                    control = current
+                else:
+                    control = (2 * current[0] - last_quad[0],
+                               2 * current[1] - last_quad[1])
+                end = (number(), number())
+                if relative:
+                    end = (current[0] + end[0], current[1] + end[1])
+            else:
+                control = (number(), number())
+                end = (number(), number())
+                if relative:
+                    control = (current[0] + control[0], current[1] + control[1])
+                    end = (current[0] + end[0], current[1] + end[1])
+            control1 = (current[0] + 2.0 / 3.0 * (control[0] - current[0]),
+                        current[1] + 2.0 / 3.0 * (control[1] - current[1]))
+            control2 = (end[0] + 2.0 / 3.0 * (control[0] - end[0]),
+                        end[1] + 2.0 / 3.0 * (control[1] - end[1]))
+            vertices.extend([control1, control2, end])
+            codes.extend([MPath.CURVE4, MPath.CURVE4, MPath.CURVE4])
+            tangent = (end[0] - control2[0], end[1] - control2[1])
+            last_quad = control
+            current = end
+        elif code == "A":
+            # Arcs are rare in generated schematics; approximate with a line.
+            for _ in range(5):
+                number()
+            end = (number(), number())
+            if relative:
+                end = (current[0] + end[0], current[1] + end[1])
+            tangent = (end[0] - current[0], end[1] - current[1])
+            current = end
+            vertices.append(current)
+            codes.append(MPath.LINETO)
+        elif code == "Z":
+            vertices.append(start)
+            codes.append(MPath.CLOSEPOLY)
+            current = start
+            command = None
+        else:
+            break
+        # Guard against malformed paths with a zero-length implicit command.
+        if command is None:
+            continue
+        if index >= len(tokens):
+            break
+        if tokens[index].isalpha():
+            continue
+        # Repeated coordinate pairs are allowed for L/C/M; the loop handles them.
+    return MPath(vertices or [(0.0, 0.0)], codes or [MPath.MOVETO]), tangent, current
+
+
+def _pick_font():
+    try:
+        from matplotlib import font_manager
+        names = {font.name for font in font_manager.fontManager.ttflist}
+        for candidate in ("Microsoft YaHei", "SimHei",
+                          "Noto Sans CJK SC", "Noto Sans CJK JP",
+                          "Noto Sans SC", "Source Han Sans SC",
+                          "WenQuanYi Zen Hei", "Arial Unicode MS",
+                          "Liberation Sans", "DejaVu Sans"):
+            if candidate in names:
+                return candidate
+    except Exception:
+        pass
+    return "DejaVu Sans"
+
+
+def try_matplotlib(fmt, svg, target, dpi):
+    try:
+        import logging
+        import warnings
+        import matplotlib
+        matplotlib.use("Agg", force=True)
+        logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
+        import matplotlib.pyplot as plt
+        from matplotlib import colors as mcolors
+        from matplotlib import font_manager
+        from matplotlib.patches import (Circle, Ellipse, PathPatch, Polygon,
+                                        Rectangle)
+        from matplotlib.path import Path as MPath
+        warnings.filterwarnings("ignore", message=".*findfont.*")
+        warnings.filterwarnings("ignore", message=".*Glyph .* missing.*")
+    except Exception as exc:
+        return False, "unavailable: %s" % exc
+    try:
+        raw = Path(svg).read_text(encoding="utf-8", errors="replace")
+        root = ET.fromstring(raw)
+        viewbox = root.get("viewBox") or ""
+        numbers = [float(x) for x in re.split(r"[,\s]+", viewbox.strip()) if x]
+        if len(numbers) == 4 and numbers[2] > 0 and numbers[3] > 0:
+            width, height = numbers[2], numbers[3]
+        else:
+            width = float(re.sub(r"[^0-9.]", "", root.get("width") or "800") or 800)
+            height = float(re.sub(r"[^0-9.]", "", root.get("height") or "600") or 600)
+        fig = plt.figure(figsize=(width / 96.0, height / 96.0), dpi=dpi)
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_xlim(0, width)
+        ax.set_ylim(height, 0)
+        ax.axis("off")
+        ax.set_facecolor("white")
+        font = _pick_font()
+        available_fonts = {item.name for item in
+                           font_manager.fontManager.ttflist}
+        zorder = [0]
+
+        def next_z():
+            zorder[0] += 1
+            return zorder[0]
+
+        def paint(value, opacity=1.0):
+            if value in (None, "", "none", "transparent"):
+                return "none"
+            try:
+                return mcolors.to_rgba(value, alpha=float(opacity))
+            except (ValueError, TypeError):
+                return value
+
+        def dash_style(attrs):
+            dash = attrs.get("stroke-dasharray")
+            if not dash:
+                return "solid"
+            try:
+                parts = tuple(float(x) for x in re.split(r"[ ,]+", dash.strip()) if x)
+                return (0, parts) if parts else "solid"
+            except ValueError:
+                return "solid"
+
+        def draw_marker(attrs, end, tangent, stroke, z):
+            marker = attrs.get("marker-end") or ""
+            marker_id = ""
+            if "url(#" in marker:
+                marker_id = marker.split("url(#", 1)[1].split(")", 1)[0]
+            if not marker_id:
+                return
+            tx, ty = tangent
+            length = math.hypot(tx, ty)
+            if length == 0:
+                tx, ty, length = 1.0, 0.0, 1.0
+            ux, uy = tx / length, ty / length
+            px, py = -uy, ux
+            if "bar" in marker_id:
+                ax.plot([end[0] - px * 5, end[0] + px * 5],
+                        [end[1] - py * 5, end[1] + py * 5],
+                        color=stroke, linewidth=2.0, zorder=z,
+                        solid_capstyle="butt")
+                return
+            size = 9.0
+            tip = end
+            base = (end[0] - ux * size, end[1] - uy * size)
+            p1 = (base[0] + px * size * 0.45, base[1] + py * size * 0.45)
+            p2 = (base[0] - px * size * 0.45, base[1] - py * size * 0.45)
+            ax.add_patch(Polygon([tip, p1, p2], closed=True,
+                                 facecolor=paint(stroke), edgecolor="none",
+                                 zorder=z))
+
+        def walk(element):
+            for child in element:
+                tag = child.tag.split("}")[-1]
+                if tag in ("defs", "title", "desc", "metadata"):
+                    continue
+                attrs = _style_attrs(child)
+                fill = attrs.get("fill", "#000000")
+                stroke = attrs.get("stroke", "none")
+                try:
+                    stroke_width = float(attrs.get("stroke-width", 1) or 1)
+                except ValueError:
+                    stroke_width = 1.0
+                fill_color = paint(fill, attrs.get("fill-opacity", 1))
+                stroke_color = paint(stroke, attrs.get("stroke-opacity", 1))
+                linestyle = dash_style(attrs)
+                if tag == "g":
+                    walk(child)
+                    continue
+                if tag == "rect":
+                    try:
+                        x = float(attrs.get("x", 0) or 0)
+                        y = float(attrs.get("y", 0) or 0)
+                        w = float(attrs.get("width", 0) or 0)
+                        h = float(attrs.get("height", 0) or 0)
+                    except ValueError:
+                        continue
+                    if w <= 0 or h <= 0:
+                        continue
+                    ax.add_patch(Rectangle((x, y), w, h, facecolor=fill_color,
+                                           edgecolor=stroke_color,
+                                           linewidth=stroke_width,
+                                           linestyle=linestyle,
+                                           zorder=next_z()))
+                elif tag == "circle":
+                    try:
+                        cx = float(attrs.get("cx", 0) or 0)
+                        cy = float(attrs.get("cy", 0) or 0)
+                        r = float(attrs.get("r", 0) or 0)
+                    except ValueError:
+                        continue
+                    if r > 0:
+                        ax.add_patch(Circle((cx, cy), r, facecolor=fill_color,
+                                            edgecolor=stroke_color,
+                                            linewidth=stroke_width,
+                                            linestyle=linestyle,
+                                            zorder=next_z()))
+                elif tag == "ellipse":
+                    try:
+                        cx = float(attrs.get("cx", 0) or 0)
+                        cy = float(attrs.get("cy", 0) or 0)
+                        rx = float(attrs.get("rx", 0) or 0)
+                        ry = float(attrs.get("ry", 0) or 0)
+                    except ValueError:
+                        continue
+                    if rx > 0 and ry > 0:
+                        ax.add_patch(Ellipse((cx, cy), 2 * rx, 2 * ry,
+                                             facecolor=fill_color,
+                                             edgecolor=stroke_color,
+                                             linewidth=stroke_width,
+                                             linestyle=linestyle,
+                                             zorder=next_z()))
+                elif tag in ("polygon", "polyline"):
+                    points = []
+                    for pair in re.findall(
+                            r"[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?",
+                            attrs.get("points") or "")[0:2000]:
+                        points.append(float(pair))
+                    coords = list(zip(points[0::2], points[1::2]))
+                    if len(coords) < 2:
+                        continue
+                    if tag == "polygon":
+                        ax.add_patch(Polygon(coords, closed=True,
+                                             facecolor=fill_color,
+                                             edgecolor=stroke_color,
+                                             linewidth=stroke_width,
+                                             linestyle=linestyle,
+                                             zorder=next_z()))
+                    else:
+                        xs, ys = zip(*coords)
+                        ax.plot(xs, ys, color=stroke_color, linewidth=stroke_width,
+                                linestyle=linestyle, zorder=next_z(),
+                                solid_capstyle="round", solid_joinstyle="round")
+                elif tag == "line":
+                    try:
+                        coords = [float(attrs.get(key, 0) or 0) for key in
+                                  ("x1", "y1", "x2", "y2")]
+                    except ValueError:
+                        continue
+                    ax.plot([coords[0], coords[2]], [coords[1], coords[3]],
+                            color=stroke_color, linewidth=stroke_width,
+                            linestyle=linestyle, zorder=next_z())
+                elif tag == "path":
+                    path, tangent, end = _parse_svg_path(attrs.get("d"))
+                    ax.add_patch(PathPatch(path, facecolor="none",
+                                           edgecolor=stroke_color,
+                                           linewidth=stroke_width,
+                                           linestyle=linestyle,
+                                           capstyle="round",
+                                           joinstyle="round",
+                                           zorder=next_z()))
+                    draw_marker(attrs, end, tangent, stroke,
+                                zorder[0] + 1)
+                elif tag == "text":
+                    value = "".join(child.itertext())
+                    if not value:
+                        continue
+                    try:
+                        x = float(attrs.get("x", 0) or 0)
+                        y = float(attrs.get("y", 0) or 0)
+                        size_px = float(attrs.get("font-size", 12) or 12)
+                    except ValueError:
+                        continue
+                    anchor = attrs.get("text-anchor", "start")
+                    ha = {"start": "left", "middle": "center",
+                          "end": "right"}.get(anchor, "left")
+                    family = attrs.get("font-family") or font
+                    family = family.split(",")[0].strip("' \"") or font
+                    if family not in available_fonts:
+                        family = font
+                    weight = attrs.get("font-weight", "normal")
+                    style = attrs.get("font-style", "normal")
+                    ax.text(x, y, value, fontsize=size_px * 0.75,
+                            fontfamily=family, fontweight=weight,
+                            fontstyle=style, color=paint(fill),
+                            ha=ha, va="baseline", zorder=next_z(),
+                            clip_on=False)
+                walk(child)
+
+        walk(root)
+        target = Path(target)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(str(target), format=fmt, dpi=dpi, facecolor="white",
+                    edgecolor="none", bbox_inches=None, pad_inches=0)
+        plt.close(fig)
+        return True, "matplotlib (pure-Python SVG subset renderer)"
+    except Exception as exc:
+        return False, "render failed: %s: %s" % (type(exc).__name__, exc)
 
 
 def verify_output(path, fmt):
@@ -253,8 +663,10 @@ def export(svg_path, outdir, paths, formats, dpi):
                 ok, detail = try_cairosvg(fmt, svg_path, target, dpi)
             elif tool == "rsvg-convert":
                 ok, detail = try_rsvg(fmt, svg_path, target, dpi)
-            else:
+            elif tool == "inkscape":
                 ok, detail = try_inkscape(fmt, svg_path, target, dpi)
+            else:
+                ok, detail = try_matplotlib(fmt, svg_path, target, dpi)
             entry = {"format": fmt, "tool": tool, "ok": False, "detail": detail}
             if ok:
                 valid, why, meta = verify_output(target, fmt)

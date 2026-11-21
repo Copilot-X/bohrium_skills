@@ -8,7 +8,13 @@
     "subscription",
     "window",
     "increments",
-    "evidence"
+    "evidence",
+    "watermark",
+    "snapshot_before",
+    "snapshot_after",
+    "alert_log",
+    "suppressed",
+    "replay_key"
   ],
   "properties": {
     "case_id": {

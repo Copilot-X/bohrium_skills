@@ -17,7 +17,10 @@
   "required_fields": [
     "subscription",
     "window",
-    "increments",
+    "watermark",
+    "snapshot_before",
+    "snapshot_after",
+    "replay_key",
     "evidence"
   ],
   "focus": "增量水位、时间窗、去重、版本更新与提醒抑制",
@@ -194,5 +197,23 @@
   "mode_metrics": [
     "新增判定正确率、窗口连续性、重复/误报抑制率、重跑幂等与回放一致性。",
     "只报告相对上次快照的新增；窗口/时区固定；alert_log/suppressed 记录投递与抑制。"
+  ],
+  "domain_script": "scripts/domain_work.py",
+  "runner_script": "scripts/run_skill.py",
+  "exit_contract": {
+    "0": "result.json written and parseable",
+    "2": "installation unusable only"
+  },
+  "domain_required_fields": [
+    "subscription",
+    "window",
+    "watermark",
+    "snapshot_before",
+    "snapshot_after",
+    "increments",
+    "alert_log",
+    "suppressed",
+    "replay_key",
+    "evidence"
   ]
 }

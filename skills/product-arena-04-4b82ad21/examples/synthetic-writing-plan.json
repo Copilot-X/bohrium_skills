@@ -6,19 +6,26 @@
       "Ni-based catalysts are active at low temperature but can produce CO.",
       "Defect engineering has been proposed to tune CH4 selectivity, yet comparisons rarely fix the space velocity."
     ],
-    "sources": ["synthetic-manuscript.md P005", "synthetic-manuscript.md P006"]
+    "sources": [
+      "synthetic-manuscript.md P005",
+      "synthetic-manuscript.md P006"
+    ]
   },
   "related_work_groups": [
     {
       "group": "Defect engineering for Ni catalysts",
       "dimension": "method",
       "works": [
-        {"citation_key": "chen2019",
-         "summary": "Defect sites raised low-temperature activity of Ni catalysts.",
-         "limitation": "Space velocity was not fixed, so the defect effect is mixed with contact-time effects."},
-        {"citation_key": "patel2021",
-         "summary": "Bimetallic NiCo catalysts changed product distribution at low temperature.",
-         "limitation": "Only conversion was reported; CH4 selectivity was not compared under identical conditions."}
+        {
+          "citation_key": "chen2019",
+          "summary": "Defect sites raised low-temperature activity of Ni catalysts.",
+          "limitation": "Space velocity was not fixed, so the defect effect is mixed with contact-time effects."
+        },
+        {
+          "citation_key": "patel2021",
+          "summary": "Bimetallic NiCo catalysts changed product distribution at low temperature.",
+          "limitation": "Only conversion was reported; CH4 selectivity was not compared under identical conditions."
+        }
       ],
       "synthesis": "Both routes report activity gains, but neither isolates the defect effect on selectivity at a fixed space velocity."
     },
@@ -26,19 +33,27 @@
       "group": "Selectivity metrics for CO2 hydrogenation",
       "dimension": "metric",
       "works": [
-        {"citation_key": "garcia2022",
-         "summary": "Reviewed selectivity metrics and showed that conversion-normalised and raw selectivities can rank catalysts differently.",
-         "limitation": "The review did not test low-temperature NiCo catalysts."},
-        {"citation_key": "patel2021",
-         "summary": "Reported conversion without a selectivity metric.",
-         "limitation": "The missing selectivity metric prevents comparison with selectivity-focused studies."}
+        {
+          "citation_key": "garcia2022",
+          "summary": "Reviewed selectivity metrics and showed that conversion-normalised and raw selectivities can rank catalysts differently.",
+          "limitation": "The review did not test low-temperature NiCo catalysts."
+        },
+        {
+          "citation_key": "patel2021",
+          "summary": "Reported conversion without a selectivity metric.",
+          "limitation": "The missing selectivity metric prevents comparison with selectivity-focused studies."
+        }
       ],
       "synthesis": "Metric choice is inconsistent across studies, so cross-paper selectivity claims are not directly comparable."
     }
   ],
   "gap": {
     "statement": "Defect engineering is proposed to improve CH4 selectivity, but existing studies either vary space velocity or omit selectivity metrics; a same-condition comparison of defect-rich and defect-poor NiCo catalysts is therefore missing.",
-    "derived_from": ["chen2019", "patel2021", "garcia2022"],
+    "derived_from": [
+      "chen2019",
+      "patel2021",
+      "garcia2022"
+    ],
     "evidence": [
       "synthetic-manuscript.md P006: comparisons rarely fix the space velocity",
       "chen2019 limitation: space velocity not fixed",
@@ -46,26 +61,188 @@
     ]
   },
   "contributions": [
-    {"id": "C1",
-     "statement": "We compare NiCo-200 and NiCo-50 at a fixed space velocity and show 85% versus 65% CH4 selectivity at 250 °C.",
-     "linked_sections": ["Introduction", "Results §2"],
-     "evidence": ["synthetic-manuscript.md P009: 85% versus 65% at 250 °C"]},
-    {"id": "C2",
-     "statement": "We bound the operating window by showing that NiCo-200 selectivity decreases above 275 °C.",
-     "linked_sections": ["Results §2"],
-     "evidence": ["synthetic-manuscript.md P010: selectivity decreased above 275 °C"]},
-    {"id": "C3",
-     "statement": "We identify the unmeasured defect concentration as the remaining mechanistic uncertainty.",
-     "linked_sections": ["Discussion §3"],
-     "evidence": ["synthetic-manuscript.md P013: defect concentration was not measured operando"]}
+    {
+      "id": "C1",
+      "statement": "We compare NiCo-200 and NiCo-50 at a fixed space velocity and show 85% versus 65% CH4 selectivity at 250 °C.",
+      "linked_sections": [
+        "Introduction",
+        "Results §2"
+      ],
+      "evidence": [
+        "synthetic-manuscript.md P009: 85% versus 65% at 250 °C"
+      ]
+    },
+    {
+      "id": "C2",
+      "statement": "We bound the operating window by showing that NiCo-200 selectivity decreases above 275 °C.",
+      "linked_sections": [
+        "Results §2"
+      ],
+      "evidence": [
+        "synthetic-manuscript.md P010: selectivity decreased above 275 °C"
+      ]
+    },
+    {
+      "id": "C3",
+      "statement": "We identify the unmeasured defect concentration as the remaining mechanistic uncertainty.",
+      "linked_sections": [
+        "Discussion §3"
+      ],
+      "evidence": [
+        "synthetic-manuscript.md P013: defect concentration was not measured operando"
+      ]
+    }
   ],
   "citation_coverage": [
-    {"key": "chen2019", "used_in": "Related Work",
-     "claim": "Defect sites were reported to raise low-temperature activity, without a fixed space velocity."},
-    {"key": "patel2021", "used_in": "Related Work",
-     "claim": "Bimetallic catalysts changed product distribution but selectivity metrics were incomplete."},
-    {"key": "garcia2022", "used_in": "Related Work",
-     "claim": "Selectivity metrics are inconsistent across CO2 hydrogenation studies."}
+    {
+      "key": "chen2019",
+      "used_in": "Related Work",
+      "claim_id": "CE02",
+      "claim": "Defect sites were reported to raise low-temperature activity, without a fixed space velocity."
+    },
+    {
+      "key": "patel2021",
+      "used_in": "Related Work",
+      "claim_id": "CE03",
+      "claim": "Bimetallic catalysts changed product distribution but selectivity metrics were incomplete."
+    },
+    {
+      "key": "garcia2022",
+      "used_in": "Related Work",
+      "claim_id": "CE04",
+      "claim": "Selectivity metrics are inconsistent across CO2 hydrogenation studies."
+    }
+  ],
+  "claim_evidence": [
+    {
+      "claim_id": "CE01",
+      "claim": "CO2 methanation can store renewable hydrogen in the existing gas grid.",
+      "section": "Introduction",
+      "claim_type": "background",
+      "claim_locator": "synthetic-manuscript.md P005",
+      "citation_keys": [],
+      "evidence": [
+        {
+          "path": "synthetic-manuscript.md",
+          "locator": "P005",
+          "quote": "CO2 methanation can store renewable hydrogen in the existing gas grid."
+        }
+      ]
+    },
+    {
+      "claim_id": "CE02",
+      "claim": "Defect engineering has been proposed for selectivity, but same-condition comparisons are rare.",
+      "section": "Introduction",
+      "claim_type": "gap",
+      "claim_locator": "synthetic-manuscript.md P006",
+      "citation_keys": [
+        "chen2019",
+        "patel2021"
+      ],
+      "evidence": [
+        {
+          "path": "synthetic-manuscript.md",
+          "locator": "P006",
+          "quote": "Defect engineering has been proposed to tune CH4 selectivity, yet comparisons are rarely made at a fixed space velocity."
+        }
+      ]
+    },
+    {
+      "claim_id": "CE03",
+      "claim": "This study compares NiCo-200 and NiCo-50 at the same space velocity.",
+      "section": "Introduction",
+      "claim_type": "method",
+      "claim_locator": "synthetic-manuscript.md P006",
+      "citation_keys": [
+        "patel2021"
+      ],
+      "evidence": [
+        {
+          "path": "synthetic-manuscript.md",
+          "locator": "P006",
+          "quote": "Here we compare NiCo-200 and NiCo-50 at 200–300 °C and 1 bar under the same space velocity."
+        }
+      ]
+    },
+    {
+      "claim_id": "CE04",
+      "claim": "NiCo-200 reached 85% CH4 selectivity at 250 °C, versus 65% for NiCo-50.",
+      "section": "Introduction",
+      "claim_type": "result",
+      "claim_locator": "synthetic-manuscript.md P009",
+      "citation_keys": [
+        "garcia2022"
+      ],
+      "evidence": [
+        {
+          "path": "synthetic-manuscript.md",
+          "locator": "P009",
+          "quote": "NiCo-200 reached 85% CH4 selectivity at 250 °C, compared with 65% for NiCo-50."
+        }
+      ]
+    },
+    {
+      "claim_id": "CE05",
+      "claim": "Defect concentration was not measured operando, so the mechanism remains uncertain.",
+      "section": "Introduction",
+      "claim_type": "limitation",
+      "claim_locator": "synthetic-manuscript.md P013",
+      "citation_keys": [],
+      "evidence": [
+        {
+          "path": "synthetic-manuscript.md",
+          "locator": "P013",
+          "quote": "However, the defect concentration was not measured operando, so a causal claim is not justified."
+        }
+      ]
+    }
+  ],
+  "citation_verification": [
+    {
+      "key": "chen2019",
+      "used_in": "Related Work",
+      "title": "Defect engineering in Ni catalysts",
+      "authors": "Chen X, Li Y",
+      "year": "2019",
+      "venue": "J Catal",
+      "doi": "",
+      "source_path": "synthetic-manuscript.md",
+      "source_locator": "References [1]",
+      "source_quote": "Chen X, Li Y. Defect engineering in Ni catalysts. J Catal. 2019;12:45-53.",
+      "metadata_status": "verified",
+      "support_status": "unverifiable",
+      "note": "Synthetic example: only the bibliographic record is supplied."
+    },
+    {
+      "key": "patel2021",
+      "used_in": "Related Work",
+      "title": "Low-temperature CO2 methanation over bimetallics",
+      "authors": "Patel R, Singh K",
+      "year": "2021",
+      "venue": "ACS Catal",
+      "doi": "",
+      "source_path": "synthetic-manuscript.md",
+      "source_locator": "References [2]",
+      "source_quote": "Patel R, Singh K. Low-temperature CO2 methanation over bimetallics. ACS Catal. 2021;11:220-231.",
+      "metadata_status": "verified",
+      "support_status": "unverifiable",
+      "note": "Synthetic example: only the bibliographic record is supplied."
+    },
+    {
+      "key": "garcia2022",
+      "used_in": "Related Work",
+      "title": "Selectivity metrics for CO2 hydrogenation",
+      "authors": "Garcia M, Rossi L",
+      "year": "2022",
+      "venue": "Catal Rev",
+      "doi": "",
+      "source_path": "synthetic-manuscript.md",
+      "source_locator": "References [3]",
+      "source_quote": "Garcia M, Rossi L. Selectivity metrics for CO2 hydrogenation. Catal Rev. 2022;8:101-118.",
+      "metadata_status": "verified",
+      "support_status": "unverifiable",
+      "note": "Synthetic example: only the bibliographic record is supplied."
+    }
   ],
   "unresolved": []
 }

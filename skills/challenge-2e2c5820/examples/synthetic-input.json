@@ -41,7 +41,13 @@
     }
   ],
   "confirmation_items": [
-    "Confirm equipment access"
+    {
+      "item": "Confirm equipment access",
+      "category": "equipment",
+      "why": "synthetic only",
+      "action": "Get written confirmation from the equipment manager",
+      "blocking": true
+    }
   ],
   "evidence": [
     {
@@ -64,5 +70,12 @@
     "budget": "to_confirm",
     "safety": "to_confirm",
     "ethics": "to_confirm"
-  }
+  },
+  "conditions": [
+    {
+      "condition": "Equipment access confirmed in writing before day 1",
+      "owner": "equipment manager",
+      "acceptance": "booking record with date and model"
+    }
+  ]
 }

@@ -13,64 +13,318 @@
   "properties": {
     "case_id": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "必须与 /input/case.json 的 case_id 一致"
     },
     "mode": {
       "type": "string",
-      "description": "task-specific field"
+      "enum": [
+        "quality-review"
+      ],
+      "description": "本题模式"
     },
     "summary": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "审查摘要：问题数、六面覆盖、总体判断与主要限制"
+    },
+    "question": {
+      "type": "string",
+      "description": "从 task.md 提取的审查问题（可选）"
     },
     "findings": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "逐条问题；每条必须有定位、逐字原文、严重度、类型、修改建议与误报检查",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": [
+          "id",
+          "facet",
+          "locator",
+          "original_quote",
+          "severity",
+          "type",
+          "status",
+          "fix",
+          "false_positive_check",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "facet": {
+            "enum": [
+              "fact_consistency",
+              "citation_support",
+              "method_design",
+              "statistical_reporting",
+              "argument_chain",
+              "academic_compliance"
+            ]
+          },
+          "locator": {
+            "type": [
+              "object",
+              "string"
+            ],
+            "description": "对象形式 {path, locator} 或简洁字符串；建议对象形式"
+          },
+          "original_quote": {
+            "type": "string",
+            "minLength": 8
+          },
+          "severity": {
+            "enum": [
+              "critical",
+              "major",
+              "minor",
+              "info"
+            ]
+          },
+          "type": {
+            "enum": [
+              "error",
+              "insufficient_evidence",
+              "norm_violation",
+              "suggestion"
+            ]
+          },
+          "status": {
+            "enum": [
+              "confirmed",
+              "needs_recheck",
+              "open",
+              "resolved"
+            ]
+          },
+          "impact": {
+            "type": "string"
+          },
+          "fix": {
+            "type": "string",
+            "minLength": 8
+          },
+          "false_positive_check": {
+            "type": "string",
+            "minLength": 5
+          },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": [
+                "path",
+                "locator",
+                "quote"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "locator": {
+                  "type": "string"
+                },
+                "quote": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "checks": {
       "type": "array",
-      "description": "检查项与 pass/fail/not_checked",
+      "description": "每个检查项的 pass/fail/not_checked 结果与依据",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": [
+          "item",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "item": {
+            "type": "string"
+          },
+          "facet": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "fail",
+              "not_checked",
+              "not_applicable"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array"
+          }
+        }
       }
     },
-    "verdict": {
-      "type": "string",
-      "description": "总体判断及边界"
-    },
-    "evidence": {
+    "claim_source_matrix": {
       "type": "array",
-      "description": "path+locator+quote 的逐字证据",
+      "description": "引用-主张逐条对照；citation_support findings 必须有对应行",
       "items": {
-        "type": "object"
-      }
-    },
-    "uncertainties": {
-      "type": "array",
-      "description": "无法判断、材料不足、待复核",
-      "items": {
-        "type": "object"
+        "type": "object",
+        "required": [
+          "claim_id",
+          "claim",
+          "claim_locator",
+          "cited_source",
+          "source",
+          "source_statement",
+          "source_locator",
+          "verdict"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string"
+          },
+          "claim": {
+            "type": "string"
+          },
+          "claim_locator": {
+            "type": "string"
+          },
+          "cited_source": {
+            "type": "string"
+          },
+          "source_statement": {
+            "type": "string"
+          },
+          "source_locator": {
+            "type": "string"
+          },
+          "verdict": {
+            "enum": [
+              "full",
+              "partial",
+              "none",
+              "unverifiable"
+            ]
+          },
+          "note": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "被引文献/条目标识；finalize 引擎要求 claim+source"
+          }
+        }
       }
     },
     "facets_checked": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "minItems": 6,
+      "description": "六类检查项的状态与依据",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": [
+          "facet",
+          "status"
+        ],
+        "properties": {
+          "facet": {
+            "enum": [
+              "fact_consistency",
+              "citation_support",
+              "method_design",
+              "statistical_reporting",
+              "argument_chain",
+              "academic_compliance"
+            ]
+          },
+          "status": {
+            "enum": [
+              "checked",
+              "partial",
+              "not_applicable",
+              "not_checked"
+            ]
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "coverage_summary": {
+      "type": "object",
+      "description": "可选的覆盖统计：facets/findings/evidence/report 完整性"
+    },
+    "verdict": {
+      "type": "string",
+      "description": "总体判断（accept|minor_revision|major_revision|reject|unverifiable）及理由"
+    },
+    "evidence": {
+      "type": "array",
+      "description": "path+locator+quote 的逐字证据；建议覆盖每条 finding",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "locator",
+          "quote"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "string"
+          },
+          "quote": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "无法判断、材料不足、待复核；每项写 item/reason/impact/action",
+      "items": {
+        "type": [
+          "object",
+          "string"
+        ]
       }
     },
     "review_status": {
       "type": "string",
-      "description": "task-specific field required by this sub-challenge"
+      "enum": [
+        "pass",
+        "issues",
+        "needs_recheck",
+        "not_checked"
+      ]
     },
     "not_checked": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "未检查项：facet/位置/原因/需要的材料",
       "items": {
-        "type": "object"
+        "type": [
+          "object",
+          "string"
+        ]
       }
     }
   }

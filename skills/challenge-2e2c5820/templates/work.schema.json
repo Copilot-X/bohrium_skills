@@ -7,7 +7,9 @@
     "summary",
     "feasibility",
     "risks",
-    "evidence"
+    "evidence",
+    "conditions",
+    "confirmation_items"
   ],
   "properties": {
     "case_id": {
@@ -53,7 +55,7 @@
     },
     "confirmation_items": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "设备/材料/安全/伦理/专家确认项",
       "items": {
         "type": "object"
       }
@@ -75,6 +77,13 @@
     "feasibility": {
       "type": "object",
       "description": "task-specific field required by this sub-challenge"
+    },
+    "conditions": {
+      "type": "array",
+      "description": "可执行的关闭条件",
+      "items": {
+        "type": "object"
+      }
     }
   }
 }

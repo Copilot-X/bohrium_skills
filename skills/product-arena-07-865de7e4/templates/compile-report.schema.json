@@ -17,6 +17,9 @@
       "description": "true only if the engine exited 0 and a PDF appeared."
     },
     "engine": {"type": ["string", "null"], "description": "Engine actually used, null if unavailable."},
+    "engine_preferred": {"type": "string", "description": "Engine inferred from case.json or the project before compiling."},
+    "engine_reason": {"type": ["string", "null"], "description": "Why this engine was preferred."},
+    "tool": {"type": ["string", "null"], "description": "latexmk or the direct engine binary actually invoked."},
     "error": {"type": ["string", "null"], "description": "Engine error text or exit code."},
     "passes": {"type": ["integer", "null"], "description": "Number of passes recorded for the last attempt."},
     "errors": {
@@ -42,6 +45,19 @@
         "bib_keys": {"type": "array", "items": {"type": "string"}},
         "missing_refs": {"type": "array", "items": {"type": "string"}},
         "missing_citations": {"type": "array", "items": {"type": "string"}},
+        "inputs": {"type": "array", "items": {"type": "string"}},
+        "missing_inputs": {"type": "array", "items": {"type": "string"}},
+        "graphics": {"type": "array", "items": {"type": "string"}},
+        "missing_graphics": {"type": "array", "items": {"type": "string"}},
+        "bib_files": {"type": "array", "items": {"type": "string"}},
+        "missing_bib": {"type": "array", "items": {"type": "string"}},
+        "packages": {"type": "array", "items": {"type": "string"}},
+        "missing_packages": {"type": "array", "items": {"type": "string"}},
+        "package_check": {"type": "string", "enum": ["kpsewhich", "unavailable"]},
+        "class_available": {"type": ["boolean", "null"], "description": "null means no kpsewhich to decide."},
+        "class_source": {"type": "string", "enum": ["project", "texmf", "missing", "unknown"]},
+        "references_ok": {"type": "boolean"},
+        "assets_ok": {"type": "boolean"},
         "ok": {"type": "boolean"}
       }
     },
@@ -64,6 +80,28 @@
     "pdf": {
       "type": ["string", "null"],
       "description": "\"main.pdf\" only when a real %PDF- file was copied to output; otherwise null."
+    },
+    "pdf_sha256": {"type": ["string", "null"]},
+    "pdf_bytes": {"type": "integer"},
+    "command": {"type": ["array", "null"], "items": {"type": "string"}},
+    "elapsed_s": {"type": ["number", "null"]},
+    "compile_budget_s": {"type": "number"},
+    "reference_pdf": {
+      "type": ["string", "null"],
+      "description": "Input PDF moved to work/reference.pdf; never a build artifact."
+    },
+    "exceptions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code", "detail", "impact", "fallback"],
+        "properties": {
+          "code": {"type": "string"},
+          "detail": {"type": "string"},
+          "impact": {"type": "string"},
+          "fallback": {"type": "string"}
+        }
+      }
     }
   }
 }

@@ -1,99 +1,119 @@
 {
   "case_id": "SYNTH-LIBRARY",
   "mode": "annotation",
-  "summary": "Synthetic example only.",
+  "summary": "Synthetic example only: one verified annotation, one low-OCR annotation, one old-version annotation, structured notes and an index. Not a real reading result.",
   "items": [
     {
-      "id": "I001",
+      "id": "D1",
       "path": "synthetic.md",
-      "kind": "text",
-      "metadata": {
-        "title": "Synthetic item"
-      },
-      "version": "v1",
-      "hash": "sha256:synthetic",
+      "kind": "md",
+      "metadata": {"title": "Synthetic document"},
+      "version": "v2",
+      "hash": "sha256:synthetic-v2",
       "status": "indexed",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
-  "operations": [
+      "text_layer": true,
+      "evidence": {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"}
+    },
     {
-      "action": "index",
-      "target": "synthetic.md",
-      "status": "ok",
-      "detail": "synthetic only"
+      "id": "D2",
+      "path": "synthetic_v1.md",
+      "kind": "md",
+      "version": "v1",
+      "hash": "sha256:synthetic-v1",
+      "status": "superseded",
+      "evidence": {"path": "synthetic_v1.md", "locator": "P1", "quote": "synthetic old sentence"}
     }
   ],
-  "findings": [
-    {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P1",
-          "quote": "synthetic source sentence"
-        }
-      ]
-    }
-  ],
-  "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
-  ],
-  "uncertainties": [],
   "annotations": [
     {
       "id": "AN1",
       "doc": "synthetic.md",
+      "version": "v2",
+      "doc_sha256": "sha256:synthetic-v2",
       "page": 1,
       "paragraph": "P1",
       "char_start": 0,
-      "char_end": 10,
-      "quote": "synthetic",
-      "doc_sha256": "synthetic-sha256",
-      "type": "claim",
+      "char_end": 19,
+      "quote": "synthetic source sentence",
+      "type": "highlight",
       "color": "yellow",
       "anchor_status": "verified",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
+      "mapped_to_current": true,
+      "evidence": {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"}
+    },
+    {
+      "id": "AN2",
+      "doc": "synthetic-scan.png",
+      "version": "scan-1",
+      "doc_sha256": "sha256:synthetic-scan",
+      "page": 1,
+      "quote": "synthetic handwritten text",
+      "type": "handwriting",
+      "color": "red",
+      "anchor_status": "unverified_low_ocr",
+      "ocr_confidence": 0.42,
+      "mapped_to_current": false,
+      "evidence": {"path": "synthetic-annotations.md", "locator": "AN2", "quote": "ocr_confidence: 0.42"}
+    },
+    {
+      "id": "AN3",
+      "doc": "synthetic_v1.md",
+      "version": "v1",
+      "doc_sha256": "sha256:synthetic-v1",
+      "page": 1,
+      "paragraph": "P1",
+      "quote": "synthetic old sentence",
+      "type": "margin",
+      "color": "green",
+      "anchor_status": "version_mismatch",
+      "current_version": "v2",
+      "mapped_to_current": false,
+      "evidence": {"path": "synthetic_v1.md", "locator": "P1", "quote": "synthetic old sentence"}
     }
   ],
   "notes": [
     {
       "id": "N1",
-      "text": "Synthetic note",
+      "title": "Synthetic note",
+      "question": "Synthetic question?",
+      "method": "Synthetic method",
+      "conclusion": "Synthetic conclusion",
+      "reusable_points": ["synthetic reusable point"],
+      "caveats": ["synthetic single source"],
+      "annotation_ids": ["AN1"],
       "claims": [
-        "synthetic claim"
+        {
+          "text": "Synthetic claim",
+          "evidence": {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"},
+          "evidence_status": "confirmed"
+        }
       ],
-      "annotation_ids": [
-        "AN1"
-      ]
+      "tags": ["synthetic"]
     }
   ],
   "links": [
-    {
-      "from": "AN1",
-      "to": "N1",
-      "basis": "same quote"
-    }
+    {"from": "AN1", "to": "N1", "basis": "same_quote", "confidence": "high",
+     "evidence": {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"}}
   ],
   "search_index": [
-    {
-      "term": "synthetic",
-      "annotation_ids": [
-        "AN1"
-      ]
-    }
+    {"term": "synthetic", "kind": "tag", "annotation_ids": ["AN1"],
+     "note_ids": ["N1"], "source_docs": ["synthetic.md"], "confidence": "high",
+     "needs_review": false},
+    {"term": "synthetic handwritten text", "kind": "topic", "annotation_ids": ["AN2"],
+     "note_ids": [], "source_docs": ["synthetic-scan.png"], "confidence": "low",
+     "needs_review": true}
+  ],
+  "operations": [
+    {"action": "index", "target": "synthetic.md", "status": "ok", "detail": "synthetic only"},
+    {"action": "anchor", "target": "AN2", "status": "needs_review", "detail": "synthetic low OCR 0.42"},
+    {"action": "anchor", "target": "AN3", "status": "skipped", "detail": "synthetic old version; not migrated"}
+  ],
+  "evidence": [
+    {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"},
+    {"path": "synthetic_v1.md", "locator": "P1", "quote": "synthetic old sentence"}
+  ],
+  "uncertainties": [
+    {"item": "AN2", "reason": "synthetic OCR confidence 0.42", "impact": "not verified", "action": "human check"},
+    {"item": "AN3", "reason": "synthetic annotation belongs to v1", "impact": "not migrated to v2", "action": "human check"}
   ]
 }

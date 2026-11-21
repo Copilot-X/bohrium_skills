@@ -1,23 +1,30 @@
 ---
 name: review-quality-review-skill
-description: 论文质量审查：论文质量审查、逐条问题、严重度与修改建议。交付逐条问题、位置、严重度与修复，保留来源/定位与不确定性，并生成含官方 reading/writing 字段的 result.json。review skill with a source-bound work file, evidence checks and an honest result envelope. Use for 论文质量审查、quality-review、review、证据绑定、结果复核.
+description: 论文质量审查：围绕事实核验、引用支持、方法设计、统计报告、论证链、学术规范六类检查项，逐条产出可定位、可核对、分严重度的审查问题，附原文证据、claim-source 对照、误报检查与可执行修改建议；交付 review-report.md、findings.json、evidence-map.json 和含官方 reading/writing 字段的 result.json。Use for 论文质量审查、quality-review、review、证据绑定、claim-source matrix、结果复核.
 ---
 
 # 论文质量审查（review track · quality-review）
 
 ## 用途与触发
 
-task.md 要求“论文质量审查、逐条问题、严重度与修改建议”，或 `/input/case.json` 给出 `review` / `quality-review`
-相关字段时使用。本题属于 **论文质量审查** 类任务，核心交付是
-**逐条问题、位置、严重度与修复**，不是一段泛泛建议。
+task.md 要求“论文质量审查、逐条问题、严重度与修改建议”，或
+`/input/case.json` 给出 `review` / `quality-review` 相关字段时使用。
+核心交付是**逐条、可定位、可核对的问题清单**：
+
+- 每条问题有 facet、原文位置、逐字原文、严重度、问题类型、影响与修改建议；
+- 引用类问题有“本文论断 → 被引文献实际主张 → 判定”的 claim-source 对照；
+- 六类检查项逐项有状态，未检查项显式列出，不用“通过”掩盖未查；
+- 错误、证据不足、规范问题和建议性意见分开；
+- 误报检查逐条记录，学科惯例、期刊格式差异和作者有意取舍不判为缺陷。
 
 不适用：输入没有可读材料、要求联网获取未提供的数据、或要求替代
 同行评审/机构审查/临床决策。材料不足时只交付可确认部分，并把缺口写成
-`uncertainty`，不要补造。
+`uncertainties`，不要补造。
 
-核心原则：**有输入、有依据、有产物、有边界**。脚本负责盘点材料、建立
-工作区、校验证据/字段/产物并组装 `result.json`；模型负责判断、筛选、
-分析或写作。脚本不会替你生成候选、结论或审查意见。
+核心原则：**有输入、有依据、有产物、有边界，先分面审查再汇总结论**。
+脚本负责盘点材料、建立工作区、校验证据/字段/产物、运行分面自检并组装
+`result.json`；模型负责逐段阅读、判断、定位与写修改建议。脚本不会替你
+生成问题、结论或审查意见。
 
 ## 输入
 
@@ -26,7 +33,7 @@ task.md 要求“论文质量审查、逐条问题、严重度与修改建议”
 - `/input` 下的材料：`.md/.txt/.json/.csv/.pdf/.docx/.tex/.yaml` 等。
   `scripts/parsers.py` 会提取文本、JSON 数据与 CSV 行；无文字层 PDF
   尝试 OCR，失败如实记录。
-- 可选：已有工作文件、术语表、数据字典、候选列表、查询日志。
+- 可选：已有工作文件、术语表、数据字典、模板、参考文献导出。
 
 ```bash
 export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md 2>/dev/null | head -n 1)")"
@@ -41,11 +48,13 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
-| `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
+| `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、产物登记与 result 信封 |
+| `scripts/review_gate.py` | 分面覆盖、finding 子字段、逐字证据、claim-source 与报告自检 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/review-findings.json` 的字段契约 |
-| `references/review-rules.md` | 论文质量审查 的可执行规则与失败模式 |
-| `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
+| `templates/review-report-template.md` | 审查报告骨架（按此写，不照抄结论） |
+| `references/review-rules.md` | 六类检查项、严重度锚点、误报抑制与判定规则 |
+| `examples/synthetic-input.json` | synthetic 工作文件示意（非正式案例） |
 
 ## 工作流
 
@@ -63,81 +72,173 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 2. 生成 `work/review-findings.json` 骨架（已存在则不覆盖）；
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
-先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+先读 `work/materials.json`、`work/inventory.json` 与 `task.md`，确认：
+稿件版本、可用材料、题目指定的检查项、输出契约键和缺失项。
+材料缺失、文件不可读、图表无文字层要立即写入 `uncertainties` 与
+`not_checked`，不要在后面假装查过。
 
-### 第 2 步：写 `work/review-findings.json`（约 60% 预算）
+### 第 2 步：分面审查（约 60% 预算）
 
-按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`findings`, `facets_checked`, `review_status`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+按下面六类逐面阅读并记录。**每一面都先写覆盖状态，再写发现**；没有
+问题的面要给出“查了什么、为何通过”的证据，而不是留空。
+
+| facet | 必查内容 | 典型证据 |
+|---|---|---|
+| `fact_consistency` | 摘要/正文/图表/结论的数据与术语是否一致；数值、单位、样本量、方向是否冲突 | 两处原文 + 各自 locator |
+| `citation_support` | 每处引用是否支持所在论断；被引文献主张、设计与本文论断是否匹配；参考文献元数据是否完整 | 论断原文 + 文献原句/条目 + claim-source 行 |
+| `method_design` | 对照、随机化、盲法、样本量与抽样、纳排标准、混杂控制、重复与随机化说明 | 方法段原文 + 缺失项说明 |
+| `statistical_reporting` | 效应量、置信区间、检验统计量、p 值口径、多重比较、缺失数据处理、事后分析 | 结果段原文 + 应报未报量 |
+| `argument_chain` | 假设→方法→结果→结论是否闭合；因果/相关混淆、外推边界、循环论证、替代解释 | 结论句 + 支持/不支持它的证据 |
+| `academic_compliance` | 伦理、知情同意、利益冲突、数据/代码可用性、图表版权与来源、目标期刊规范 | 声明缺失或不合规的原文/位置 |
+
+分面规则：
+
+1. **先定位再判断**。任何问题都要能指到 `path` + locator（段落号、
+   行号、页码、章节名或图表号）并复制逐字原文；不能逐字复制的内容
+   不算已确认问题，写入 `uncertainties`。
+2. **区分四类**：
+   - `error`：事实错误、数据冲突、引用与论断错配、方法描述自相矛盾；
+   - `insufficient_evidence`：材料未报告、无法判断、需要补充证据；
+   - `norm_violation`：伦理/数据声明/引用格式等规范问题；
+   - `suggestion`：可改进但不构成错误的写作或报告建议。
+3. **严重度与影响匹配**：`critical` 只给会改变主要结论或涉及学术
+   不端的问题；`major` 给影响可信度/可复现性的问题；`minor` 给局部
+   表述或格式问题；`info` 给建议。每条 finding 写一句 `impact`。
+4. **误报检查**：每条 finding 必填 `false_positive_check`，至少核对
+   以下之一：学科写作惯例、目标期刊格式差异、作者明确声明的取舍、
+   方法本身可接受但报告不全。无法排除时把 finding 标
+   `status=needs_recheck` 并写入 `uncertainties`。
+5. **建议要可执行**：`fix` 必须写“改哪句/哪段 + 改成什么口径 +
+   需要补什么证据”，不能只写“建议完善”。
+6. **不硬凑问题**：这一面确实没有发现时，`checks[]` 写
+   `status=pass`、`detail` 说明查过的具体位置与判定依据；不要为了
+   数量编造缺陷，也不要把“未报告”写成“错误”。
+
+### 第 3 步：写 `work/review-findings.json`（与第 2 步同步）
+
+按 `templates/work.schema.json` 写结构化工作文件。必需字段：
+`findings`, `facets_checked`, `review_status`, `evidence`。建议同时写
+`checks`, `claim_source_matrix`, `coverage_summary`, `not_checked`,
+`verdict`, `uncertainties`。
+
+finding 的最小结构（字段名必须一致）：
 
 ```json
 {
-  "case_id": "SYNTH-REVIEW",
-  "mode": "quality-review",
-  "summary": "Synthetic example only.",
-  "findings": [
-    {
-      "id": "R001",
-      "facet": "methods",
-      "locator": {
-        "path": "synthetic.md",
-        "locator": "P1"
-      },
-      "original_quote": "synthetic source sentence",
-      "severity": "major",
-      "type": "error",
-      "status": "open",
-      "fix": "synthetic fix",
-      "false_positive_check": "author assumption checked",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
-  "checks": [
-    {
-      "item": "synthetic check",
-      "status": "pass",
-      "detail": "synthetic only"
-    }
-  ],
-  "verdict": "major_revision",
+  "id": "Q01",
+  "facet": "citation_support",
+  "locator": {"path": "manuscript.md", "locator": "P2 / References P12"},
+  "original_quote": "Prior work suggests mindfulness training may improve attention [1].",
+  "severity": "major",
+  "type": "error",
+  "status": "confirmed",
+  "impact": "The cited survey cannot support an interventional claim.",
+  "fix": "Rewrite P2 as an association or cite an intervention study; keep [1] only for the survey claim.",
+  "false_positive_check": "Checked against discipline convention: a cross-sectional survey still cannot support an intervention claim.",
   "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
-  ],
-  "uncertainties": [],
-  "facets_checked": [
-    {
-      "facet": "methods",
-      "status": "checked",
-      "items": [
-        "synthetic check"
-      ]
-    }
-  ],
-  "review_status": "issues",
-  "not_checked": []
+    {"path": "manuscript.md", "locator": "P2", "quote": "Prior work suggests mindfulness training may improve attention [1]."},
+    {"path": "manuscript.md", "locator": "P12", "quote": "A cross-sectional survey of meditation experience and self-rated attention (n=210). No intervention was tested."}
+  ]
 }
 ```
 
-同时写以下产物：
+逐字证据规则：
 
-- `output/review-report.md`
-- `output/findings.json`
-- `output/evidence-map.json`
+- `original_quote` 与 `evidence[].quote` 必须能在对应 `path` 的材料中
+  逐字找到（允许空白折叠、省略号分段，不允许改写或翻译）；
+- `locator` 至少给出段落号/行号/页码/章节之一；引用类问题同时给
+  论断位置和文献条目位置；
+- 同一问题需要多处原文才能成立时，把多处都放进 `evidence[]`；
+- 无法逐字核对的候选问题不要放进 `findings`，放进 `uncertainties`
+  并标 `needs_recheck`。
 
-- `output/review-report.md` 是主交付物，必须真实存在且非空。
-- 所有 `quote` 必须能在对应 `path` 的材料中逐字（允许空白折叠/省略号分段）
-  找到；找不到的写入 `uncertainties`，不要改写成“大意”。
-- 区分错误、证据不足与建议；做误报检查。
+### 第 4 步：claim-source 对照（`citation_support` 必做）
 
-### 第 3 步：finalize（约 30% 预算）
+对正文中每一处引用（或每个引用键/编号），至少给一行
+`claim_source_matrix`：
+
+```json
+{
+  "claim_id": "CS01",
+  "claim": "Mindfulness training may improve attention.",
+  "claim_locator": "manuscript.md P2",
+  "source": "[1] / reference P12",
+  "cited_source": "[1] / reference P12",
+  "source_statement": "A cross-sectional survey of meditation experience and self-rated attention (n=210). No intervention was tested.",
+  "source_locator": "manuscript.md P12",
+  "verdict": "none",
+  "note": "Design mismatch: no intervention and no training manipulation."
+}
+```
+
+`source` 是 finalize 引擎要求的字段，写被引文献/条目标识（可与 `cited_source` 相同）；
+`verdict` 只能是 `full`（直接支持）、`partial`（部分支持/需限定）、
+`none`（不支持或支持的是另一主张）、`unverifiable`（材料不足）。
+同一文献支撑多个不同论断时分别建行。矩阵行与 findings 可以多对一：
+一个矩阵行可以支撑一条 finding，也可以只是“已核对且 full”的记录。
+
+### 第 5 步：覆盖矩阵与结果状态
+
+在 `facets_checked` 里逐面记录（六面都要有）：
+
+```json
+{"facet": "statistical_reporting", "status": "checked",
+ "items": ["effect size", "95% CI", "test statistic", "missing-data handling"],
+ "evidence": ["Results P7-P8"]}
+```
+
+`status` 取 `checked|partial|not_applicable|not_checked`。`partial`、
+`not_checked` 与 `not_applicable` 都要在 `reason` 说明原因；例如
+“材料未提供图 1，图表一致性无法核对”。`review_status` 取
+`pass|issues|needs_recheck|not_checked`，表示稿件结论，不是流程状态：
+有 confirmed finding 用 `issues`；只有待复核问题用 `needs_recheck`；
+材料不足无法审查用 `not_checked`；确实未发现问题才用 `pass`。
+
+### 第 6 步：写报告（`output/review-report.md`）
+
+按 `templates/review-report-template.md` 的骨架写，至少包含：
+
+1. **审查元信息**：case_id、稿件版本/文件、审查范围、材料清单与缺口；
+2. **方法与覆盖**：六面状态表（checked/partial/not_checked）、每面查了
+   什么、用什么证据；
+3. **结论摘要**：总体判断（接受/小修/大修/无法判断）及理由，最多 5 条；
+4. **问题清单**：按严重度分组，表格列 `ID | facet | 位置 | 严重度 |
+   类型 | 问题 | 修改建议`；随后逐条给出原文引文、impact、
+   误报检查与证据 locator；
+5. **引用-主张对照**：claim-source 矩阵（至少覆盖所有
+   citation_support findings 涉及的引用）；
+6. **错误/证据不足/建议分栏**：把三类分开，避免把建议写成缺陷；
+7. **待复核与未检查**：逐项写原因、影响和需要谁补什么材料；
+8. **可复核性**：locator 约定、版本/哈希（若有）、运行与工具限制。
+
+报告要能独立阅读：每条 finding 的 ID 必须同时出现在 `findings.json`
+与报告中；报告中的引文必须与 `findings.json` 一致。不要写“总体
+结构完整、论证较充分”这类无法交办的整篇评语。
+
+同时写：
+
+- `output/review-report.md`（主交付物，必须非空）
+- `output/findings.json`（findings 的独立导出，字段与工作文件一致）
+- `output/evidence-map.json`（evidence 与 claim-source 的合并索引）
+- 若 `output_contract` 有自定义键：在 result.json 顶层保留原键名，
+  并写 `output/results/<key>.json`（该目录会被 finalize 登记）。
+
+### 第 7 步：自检（finalize 前必须运行）
+
+```bash
+python3 "$SKILL_DIR/scripts/review_gate.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+自检会检查：六面覆盖、finding 子字段、逐字证据、claim-source 矩阵、
+报告章节与 ID 一致性、review_status/not_checked 一致性、契约键
+产物。输出 `output/self-check.json`。有 `problems` 时先修工作文件或
+报告，再重跑；不要带着未解决项 finalize。`warnings` 需在报告的
+“限制”里说明。finalize 之后**再运行一次** `review_gate.py --apply`：
+若仍有 problems，会把 `result.json` 的 `status` 降为 `partial` 并写入
+`self_check` uncertainty，避免把不合格结果标成 completed。
+
+### 第 8 步：finalize（约 20% 预算）
 
 ```bash
 python3 "$SKILL_DIR/scripts/run_case.py" finalize \
@@ -146,129 +247,120 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/review-findings.json`（或 JSON 主产物），检查必填字段 `findings`, `facets_checked`, `review_status`, `evidence`；
+1. 读取 `work/review-findings.json`（或 JSON 主产物），检查必填字段
+   `findings`, `facets_checked`, `review_status`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
-3. 登记 `output/review-report.md` 与 `output/findings.json`, `output/evidence-map.json` 的真实文件；
+3. 登记 `output/review-report.md` 与 `output/findings.json`,
+   `output/evidence-map.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
    stdout/stderr 写入 `output/execution.log`；失败不伪造结果；
 5. 写 `output/result.json`，含 `status/result/claims/uncertainties`
    与 `deliverable/preserved_facts/evidence_map/change_log`。
 
-`status` 取 `completed|partial|input_error`。有缺字段、证据
-不匹配、主产物缺失或执行失败时用 `partial`。
+`status` 取 `completed|partial|input_error`。有缺字段、证据不匹配、
+主产物缺失或执行失败时用 `partial`；material 不可读时用 `input_error`。
+若 finalize 退出异常或 `output/result.json` 缺失，先检查错误原因；
+不要手工伪造 completed。
 
 ## 输出契约
 
 `result.json` 必须含：
 
-- `case_id`、`status`、`task_status`；
+- `case_id`、`status`、`task_status`、`profile`；
 - `deliverable`：`output/review-report.md` 的真实路径（存在时）；
 - `result`：摘要、mode、必填字段、证据数、执行结果、产物列表；
-- `claims[]`：`findings`/`candidates`/`summary` 的投影；
+- `claims[]`：`findings` 的投影（claim_id/text/evidence）；
 - `preserved_facts[]`：证据中的数字/单位（有则填）；
-- `evidence_map[]`：每条证据的 path/locator/quote；
-- `artifacts[]`：主产物与 `output/findings.json`, `output/evidence-map.json`；
-- `uncertainties[]`、`change_log[]`、`output_contract`、`contract_coverage`。
+- `evidence_map[]`：每条证据的 path/locator/quote/claim 映射；
+- `artifacts[]`：主产物、`output/findings.json`、
+  `output/evidence-map.json` 与 `output/self-check.json`；
+- `uncertainties[]`、`change_log[]`、`output_contract`、
+  `contract_coverage`。
 
 若 `/input/case.json` 的 `output_contract` 含本题特有键（例如
-`cleaned_table`、`quality_report`、`rule_log`、`original_snapshot`），必须：
+`review_report`、`findings`、`evidence_map`、`status`），必须：
 
-1. 在 `result.json` 顶层保留原键名；
-2. 优先写同名产物 `output/<field>.json/.csv/.md`，或把对应 canonical
-   字段/artifact 路径填入该键；
-3. finalize 会检查 `contract_coverage`，未覆盖的键会降级 `partial` 并写入
-   `uncertainties`；不要只写 `status/result/claims` 而忽略原契约字段。
+1. 在 `result.json` 顶层保留原键名（finalize 会做别名映射）；
+2. 同时写 `output/results/<key>.json` 或把 canonical 字段/artifact
+   路径填入该键；
+3. 查看 `contract_coverage`，任一 `present=false` 都视为交付不完整，
+   写入 `uncertainties` 并降级 `partial`。
 
 ## 质量闸门
 
 | # | 检查 | 通过标准 |
 |---|---|---|
-| G1 | 主产物 | `output/review-report.md` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `findings`, `facets_checked`, `review_status`, `evidence` 齐全 |
-| G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
-| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | 问题有位置/原文；区分错误/建议；覆盖检查项 |
-| G6 | 产物 | 声明的每个 artifact 路径真实存在 |
-| G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+| G1 | 主产物 | `output/review-report.md` 存在、非空、含 5 个必备章节 |
+| G2 | 必填字段 | `findings`, `facets_checked`, `review_status`, `evidence` 齐全且非空 |
+| G3 | 定位与原文 | 每条 finding 有 path+locator+逐字 `original_quote`；多证据逐条可查 |
+| G4 | 分面覆盖 | 六类检查项都有状态；`partial/not_checked/not_applicable` 有 reason |
+| G5 | 类型与严重度 | `type` ∈ error/insufficient_evidence/norm_violation/suggestion；`severity` ∈ critical/major/minor/info；`fix` 可执行 |
+| G6 | 误报 | 每条 finding 有 `false_positive_check`；无法排除的标 needs_recheck |
+| G7 | 引用对照 | 所有 citation_support findings 都能在 claim_source_matrix 找到对应行；verdict 合法 |
+| G8 | 结果状态 | `review_status` 合法；`not_checked` 与实际未查面一致；不把未查写成通过 |
+| G9 | 报告一致 | 报告中出现每条 finding ID 与对应引文；不写整篇泛评 |
+| G10 | 契约/产物 | result.json 可解析，case_id 与输入一致；所有 artifact 真实存在；contract_coverage 无 false |
 
 ## 评分维度对照
 
 | 评分维度 | 本题要交付的证据 | 主要产物 |
 |---|---|---|
-| 实际效果 | 论文质量审查、逐条问题、严重度与修改建议；问题有位置/原文；区分错误/建议；覆盖检查项 | `output/review-report.md` + evidence |
-| 使用增益 | 可复跑的查询/步骤/规则/日志，以及同条件对照 | `output/findings.json`, `output/evidence-map.json` |
-| 创新增益 | 本题专项方法（quality-review）及其与基线方案的边界 | `references/review-rules.md` + `output/review-report.md` |
-| 可靠体验 | 空结果、冲突、缺字段、权限/格式错误的识别与降级 | `uncertainties` + `output/result.json` |
-| 生态贡献 | SKILL.md、schema、规则、synthetic 示例可被他人复用 | `SKILL.md` + `templates/` + `references/` + `examples/` |
+| 实际效果 | 六面覆盖、逐条问题可定位、原文准确、严重度与类型合理、误报可控 | `output/review-report.md` + `findings.json` |
+| 使用增益 | 可复跑的分面步骤、检查项、证据索引与日志；同条件可对照 | `output/self-check.json` + `evidence-map.json` |
+| 创新增益 | 可定位到原句的问题清单、claim-source 逐条对照、严重度分级、误报抑制 | `claim_source_matrix` + `references/review-rules.md` |
+| 可靠体验 | 空材料/缺图表/解析失败/超长稿件的降级与待复核 | `uncertainties` + `not_checked` + `result.json` |
+| 生态贡献 | SKILL.md、schema、报告模板、规则、synthetic 示例可复用 | `SKILL.md` + `templates/` + `references/` + `examples/` |
 
 ## 异常处理
 
 | 情况 | 处理 |
 |---|---|
-| 材料为空/不可读 | `input_error`；不生成伪候选/结论/审查意见 |
-| 只有摘要/部分材料 | 只交付可确认部分；正文标“基于摘要”；`status=partial` |
-| 证据 quote 找不到 | 回到原文重摘；无法逐字时删除该证据或标 `uncertainty` |
-| 候选/文献重复 | 用 DOI/标题+年份合并；保留合并依据 |
-| 空结果/无命中 | 明确写“未检索到/未命中”，不把空白写成排除 |
-| 数字/统计不一致 | 以数据文件为准；报告与结果文件对齐 |
+| 材料为空/不可读 | `input_error`；不生成伪问题/伪结论 |
+| 只有摘要/部分材料 | 只审可确认部分；正文标“基于摘要”；`status=partial` |
+| 图表/补充材料缺失 | 写入 `uncertainties` 与 `not_checked`，不把“未见”判成“错误” |
+| 证据 quote 找不到 | 回到原文重摘；无法逐字时删除该 finding 或标 `needs_recheck` |
+| 引用元数据不全 | 记 `insufficient_evidence`；不补造作者/年份/DOI |
+| 统计量缺失 | 区分“未报告”（insufficient_evidence）与“数值冲突”（error） |
+| 学科惯例/期刊差异 | 先做 `false_positive_check`；无法确认时降为 suggestion 或待复核 |
+| 稿件超长 | 按 facet 分块读取；在报告中写清覆盖的章节范围与未覆盖部分 |
 | 代码执行失败 | 保留 `execution.log` 与失败原因；不伪造输出 |
 | 权限/接口/格式错误 | 写 `uncertainty` 与已完成范围；建议人工接管 |
 
 ## 最小示例（synthetic，不是正式答案）
 
+工作文件片段：
+
 ```json
 {
   "case_id": "SYNTH-REVIEW",
   "mode": "quality-review",
-  "summary": "Synthetic example only.",
+  "summary": "Synthetic only.",
   "findings": [
     {
-      "id": "R001",
-      "facet": "methods",
-      "locator": {
-        "path": "synthetic.md",
-        "locator": "P1"
-      },
+      "id": "Q01",
+      "facet": "method_design",
+      "locator": {"path": "synthetic.md", "locator": "P1"},
       "original_quote": "synthetic source sentence",
       "severity": "major",
       "type": "error",
-      "status": "open",
-      "fix": "synthetic fix",
-      "false_positive_check": "author assumption checked",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
-  "checks": [
-    {
-      "item": "synthetic check",
-      "status": "pass",
-      "detail": "synthetic only"
-    }
-  ],
-  "verdict": "major_revision",
-  "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
-  ],
-  "uncertainties": [],
-  "facets_checked": [
-    {
-      "facet": "methods",
-      "status": "checked",
-      "items": [
-        "synthetic check"
+      "status": "confirmed",
+      "impact": "Synthetic impact.",
+      "fix": "Synthetic fix targeting P1.",
+      "false_positive_check": "Checked against synthetic convention.",
+      "evidence": [
+        {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"}
       ]
     }
   ],
+  "facets_checked": [
+    {"facet": "method_design", "status": "checked", "items": ["control"], "evidence": ["P1"]}
+  ],
+  "claim_source_matrix": [],
   "review_status": "issues",
-  "not_checked": []
+  "not_checked": [],
+  "evidence": [
+    {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"}
+  ]
 }
 ```
 
@@ -276,9 +368,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
-- 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
-  证据/字段/产物审计。
-- 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；
-  不伪造在线查询结果。
-- 证据校验是逐字匹配启发式，不能替代语义蕴含判断。
+- 版本 `1.1.0`：六面审查协议 + finding 子字段 + claim-source 矩阵 +
+  `scripts/review_gate.py` 自检；模型写内容，脚本做可核对性审计。
+- 不联网：只使用 `/input` 提供的材料或导出；不伪造在线检索结果。
+- 证据校验是逐字匹配启发式，不能替代语义蕴含判断；引用是否真正
+  支持论断仍需作者/审稿人复核。
 - 示例是 synthetic 接口样例，不是正式案例答案。
+- 材料不足、扫描质量差、图表缺失时，报告只覆盖已核对范围，并把
+  未覆盖部分显式列为 `not_checked`。

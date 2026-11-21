@@ -7,104 +7,155 @@
     "summary",
     "observations",
     "interpretations",
+    "trends",
+    "recheck_steps",
+    "next_experiments",
     "evidence"
   ],
   "properties": {
-    "case_id": {
-      "type": "string",
-      "description": "task-specific field"
-    },
-    "mode": {
-      "type": "string",
-      "description": "task-specific field"
-    },
-    "summary": {
-      "type": "string",
-      "description": "task-specific field"
-    },
-    "hypothesis": {
-      "type": "string",
-      "description": "可检验假设"
-    },
-    "variables": {
-      "type": "object",
-      "description": "自变量、因变量、对照"
-    },
-    "steps": {
-      "type": "array",
-      "description": "可执行步骤、参数、时长与材料",
-      "items": {
-        "type": "object"
-      }
-    },
-    "parameters": {
-      "type": "array",
-      "description": "参数值、单位与依据",
-      "items": {
-        "type": "object"
-      }
-    },
-    "risks": {
-      "type": "array",
-      "description": "风险、影响与处置",
-      "items": {
-        "type": "object"
-      }
-    },
-    "confirmation_items": {
-      "type": "array",
-      "description": "需要作者确认的设备/安全/伦理条件",
-      "items": {
-        "type": "object"
-      }
-    },
+    "case_id": {"type": "string"},
+    "mode": {"type": "string", "const": "result-interpretation"},
+    "summary": {"type": "string"},
+    "hypothesis": {"type": "string"},
+    "variables": {"type": "object"},
+    "steps": {"type": "array", "items": {"type": "object"}},
+    "parameters": {"type": "array", "items": {"type": "object"}},
+    "risks": {"type": "array", "items": {"type": "object"}},
+    "confirmation_items": {"type": "array", "items": {"type": "object"}},
     "evidence": {
       "type": "array",
-      "description": "path+locator+quote 的逐字证据",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["path", "locator", "quote"]
       }
     },
-    "uncertainties": {
+    "uncertainties": {"type": "array", "items": {"type": "object"}},
+    "trends": {
       "type": "array",
-      "description": "未确认、冲突、缺口",
+      "minItems": 1,
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["metric", "direction", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "metric": {"type": "string"},
+          "direction": {
+            "enum": ["up", "down", "flat", "mixed", "increase", "decrease",
+                     "上升", "下降", "持平", "混合"]
+          },
+          "interval": {"type": "string"},
+          "statement": {"type": "string"},
+          "evidence": {"type": "object"}
+        }
       }
     },
     "observations": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "minItems": 1,
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "statement", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "statement": {"type": "string"},
+          "value": {"type": ["number", "string", "null"]},
+          "unit": {"type": "string"},
+          "run_id": {"type": "string"},
+          "evidence": {"type": "object"}
+        }
       }
     },
     "interpretations": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "minItems": 1,
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "statement", "type", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "statement": {"type": "string"},
+          "type": {
+            "enum": ["observation", "inference", "causal", "causal_hypothesis",
+                     "association", "hypothesis"]
+          },
+          "strength": {
+            "enum": ["strong", "moderate", "suggestive", "speculative", "weak",
+                     "high", "medium", "low"]
+          },
+          "support": {"type": ["array", "string", "object"]},
+          "exclusion": {"type": ["array", "string", "object"]},
+          "confounders": {"type": "array"},
+          "evidence": {"type": "object"}
+        }
       }
     },
     "alternative_explanations": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["explanation", "status"],
+        "properties": {
+          "explanation": {"type": "string"},
+          "status": {
+            "enum": ["excluded", "not_excluded", "untested", "supported"]
+          },
+          "test": {"type": "string"}
+        }
       }
     },
     "anomalies": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "observation_id", "threshold", "method", "action"],
+        "properties": {
+          "id": {"type": "string"},
+          "observation_id": {"type": "string"},
+          "value": {"type": ["number", "string", "null"]},
+          "run_id": {"type": "string"},
+          "threshold": {"type": "string"},
+          "method": {"type": "string"},
+          "severity": {"type": "string"},
+          "action": {"type": "string"},
+          "rationale": {"type": "string"},
+          "evidence": {"type": "object"}
+        }
+      }
+    },
+    "recheck_steps": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "action", "expected"],
+        "properties": {
+          "id": {"type": "string"},
+          "action": {"type": "string"},
+          "observation_id": {"type": "string"},
+          "anomaly_id": {"type": "string"},
+          "interpretation_id": {"type": "string"},
+          "expected": {"type": "string"},
+          "evidence": {"type": "object"}
+        }
       }
     },
     "next_experiments": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "minItems": 1,
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "experiment", "purpose", "expected_outcome"],
+        "properties": {
+          "id": {"type": "string"},
+          "experiment": {"type": "string"},
+          "purpose": {"type": "string"},
+          "observation_id": {"type": "string"},
+          "anomaly_id": {"type": "string"},
+          "interpretation_id": {"type": "string"},
+          "expected_outcome": {"type": "string"},
+          "decision_rule": {"type": "string"},
+          "evidence": {"type": "object"}
+        }
       }
     }
   }

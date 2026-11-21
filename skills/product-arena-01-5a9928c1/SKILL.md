@@ -59,13 +59,21 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 入口会：
 
 1. 盘点 `/input`，提取原文并写出 `work/inventory.json`；
-2. 按标题/段落/空行切分，生成 `work/segments.json`（`P001…`，
-   每段含 `locator` 和 `sentences[]`）；
-3. 生成 `work/glossary-candidates.json` 与 `work/translation-brief.json`；
-4. 生成 `work/bilingual-template.md`（Source 已填、Target 待填）；
-5. 写一份 `status=partial` 的 provisional `result.json`。
+   选择源文时排除 `glossary/translation/bilingual/template/schema` 等
+   辅助文件，优先与 `case.json` 方向一致、篇幅最长的正文；
+2. 方向判定顺序：`case.json` 的 `direction/translation_direction/
+   language_direction`（支持 `zh->en`、`zh2en`、`中文→英文`）>
+   `source_language`/`target_language` > `task.md` 的“中译英/英译中” >
+   源文 CJK 比例；
+3. 按标题/段落/空行切分，生成 `work/segments.json`（`P001…`，
+   每段含 `locator`、`line_start/line_end` 和 `sentences[]`）；
+4. 生成 `work/glossary-candidates.json`、`work/translation-brief.json`
+   与 `work/translation-notes-template.json`；
+5. 生成 `work/bilingual-template.md`（Source 已填、Target 待填）；
+6. 写一份 `status=partial` 的 provisional `result.json`。
 
-如果原文不可读，入口写 `input_error` 并退出 0；不要编造原文。
+如果原文不可读或切不出任何段落，入口写 `input_error` 并退出 0；
+不要编造原文。
 
 ### 第 2 步：模型写译文（约 60% 预算）
 
@@ -108,18 +116,29 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 优先按 `bilingual.md` 的 `Pxxx` 对齐；没有时按 `translation.md` 的
-   空行块顺序对齐，并在 `alignment_issues` 标明近似对齐；
-2. 重建 `output/bilingual.md`（Source/Target 成对）；
-3. 生成 `output/glossary.json`（锁定术语 + 候选缺口）；
-4. 生成 `output/translation-check.json`：
-   段覆盖、数字、引用、图表/公式编号、否定、情态、术语；
-5. 生成 `output/result.json`，包含 reading 字段
+1. 对齐顺序：`bilingual.md` 的 `Pxxx` > `translation.md` 的 `Pxxx`
+   （`## P001`、`## P001 摘要`、`### P001` 均可）> 与段数完全相等的
+   空行块顺序；只有「块数 = 段数 + 1 且首块是文件标题」时才接受
+   标题偏移，并把方法写进 `alignment.method`。块数不一致时不会静默
+   错位填充，而是保留空 Target 并在 `alignment_issues` 说明；
+2. 解析 Source/Target 时支持 `**Source (zh):**`、`**Source (zh)**:`、
+   全角冒号与多行续写；表格式 Target 保留换行；
+3. 重建 `output/bilingual.md`（Source/Target 成对，含 `Pxxx` locator）；
+4. 生成 `output/glossary.json`（锁定术语 + 候选缺口 + `issues`）：
+   `work/glossary.json` 支持 `{"terms":[...]}`、`{"glossary":[...]}`、
+   `{"源词":"译词"}` 映射；没有带 target 的术语表时 `locked=false`，
+   状态不能标 `answered`；
+5. 生成 `output/translation-check.json`：段覆盖、数字、引用（方括号、
+   作者—年份、TeX/Pandoc）、图/表/公式编号、否定、情态、术语与对齐；
+6. 若写了 `work/translation-notes.json`，复制为
+   `output/translation-notes.json` 并写入 uncertainty；
+7. 生成 `output/result.json`，包含 reading 字段
    `status/result/claims/uncertainties` 与 writing 字段
    `deliverable/preserved_facts/evidence_map/change_log`。
 
 `status` 取 `answered|partial|insufficient_evidence|input_error`：
-全部段落有 Target、数字/引用/术语检查通过 → `answered`；否则 `partial`。
+全部段落有 Target，且数字/引用/图表编号/否定/情态/术语锁定/对齐
+全部通过 → `answered`；否则 `partial`，逐项写 uncertainty。
 
 ## 输出契约
 
@@ -140,6 +159,17 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "evidence_map": [{"claim_id": "P001", "source": {"path": "paper.md",
                      "locator": "paper.md P001"}, "quote": "..."}],
   "change_log": [{"step": 1, "action": "prepare", "reason": "..."}],
+  "checks": {"segments_total": 20, "segments_translated": 20,
+              "numbers": {"missing": [], "extra": []},
+              "citations": {"missing": [], "extra": []},
+              "figures": {"missing": [], "extra": []},
+              "negation": {"ok": true}, "hedging": {"ok": true},
+              "glossary": {"locked": true, "ok": true},
+              "alignment": {"method": ["bilingual:Pxxx"], "issues": []}},
+  "preservation": {"numbers_match": true, "citation_numbers_match": true,
+                    "figure_references_match": true, "negation_match": true,
+                    "modality_match": true, "glossary_locked": true},
+  "untranslated": [],
   "result": {"summary": "Translated 20/20 segments"},
   "claims": [{"claim_id": "P001", "text": "..."}],
   "uncertainties": [],
@@ -149,30 +179,39 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 ```
 
 `deliverable.path` 必须指向真实、非空的 `translation.md`；`artifacts[]`
-每个路径必须存在。`preserved_facts` 覆盖真实出现的数字、引用、图表/公式编号
-和锁定术语。`evidence_map` 每段至少一条可回查的 Source/Target 对。
+每个路径必须存在。`preserved_facts` 覆盖**译文中真实保留**的数字、引用、
+图表/公式编号和锁定术语（只列 target 确实出现的项，不把 source 原文
+直接当 preserved）。`evidence_map` 每段至少一条可回查的 Source/Target 对。
+`translation-check.json` 的 `entries[]` 保留每段 `locator` 与
+`source_locator`，供逐段回看；`glossary.json` 的 `locked` 为 false 时
+不得把 `status` 写成 `answered`。
 
 ## 质量闸门
 
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 段覆盖 | `missing_segments=[]`，顺序与原文一致 |
-| G2 | 数字 | 每个数值、单位、范围、百分数在译文中保留 |
-| G3 | 引用/编号 | 引用、图/表/公式编号位置与编号不漂移 |
-| G4 | 否定/情态 | 否定范围与情态强度不升级、不弱化 |
-| G5 | 术语 | 锁定术语只有一种译法；标题/正文/图注/结论一致 |
-| G6 | 对齐 | 每个 `Pxxx` 有 Source/Target；无空 Target |
-| G7 | 契约 | `result.json` 可解析，官方字段与 artifact 路径真实 |
+| G2 | 数字 | 每个数值、单位、范围、百分数在译文中保留；`numbers.missing=[]` |
+| G3 | 引用/编号 | 方括号引用、作者—年份、TeX/Pandoc 引用签名一致；`citations.missing=[]` |
+| G4 | 图表/公式编号 | `Fig./Table/Eq./图/表/式` 的 kind 与编号不漂移；`figures.missing=[]` |
+| G5 | 否定/情态 | 否定计数在容差内；强断言不增加、模糊限制语不明显丢失 |
+| G6 | 术语 | `glossary.locked=true`，每个锁定 target/alias 在译文中出现 |
+| G7 | 对齐 | 每个 `Pxxx` 有 Source/Target；无空 Target；`alignment.issues=[]` |
+| G8 | 契约 | `result.json` 可解析，官方字段与 artifact 路径真实 |
 
 ## 异常处理
 
 | 情况 | 处理 |
 |---|---|
 | 原文为空/不可读 | `input_error`；不生成伪译文 |
+| 输入同时有辅助文件（术语表/模板） | 源文选择会排除这类文件；仍应核对 `work/segments.json` 的 `source_path` |
 | 扫描页无文字层 | 尝试 OCR；失败写 `ocr_unavailable` 和页码 |
 | 跨页/跨栏段落被切碎 | 在 `bilingual.md` 中按语义合并到同一个 `Pxxx`，并在 `uncertainty` 说明 |
 | 公式/表格为图片 | 在译文中保留占位符 `[Formula: p3]`，并在 `untranslated`/`uncertainty` 标注 |
 | 术语表与原文冲突 | 以术语表为准，记录冲突；无法确定时保留原文并标注 |
+| 没有写术语表或 target 为空 | `glossary.locked=false`，`status=partial` + `glossary_not_locked`；不要假装已锁定 |
+| `bilingual.md` 块数/标题格式异常 | 优先按 `Pxxx`；块数不等时不静默错位，写 `alignment` issue 并保留空 Target |
+| 译文漏数字/引用/图表编号 | 对应 `number_mismatch`/`citation_mismatch`/`figure_reference_mismatch`，`status=partial` |
 | 时间不足 | 先写已译段落；未译段留空，`status=partial` |
 | 入口脚本失败 | 读 `work/main-error.json`；保留已写译文，修复后重跑 finalize |
 
@@ -186,13 +225,24 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 - **Target (en):** Oxygen vacancies are the key defects governing the catalytic activity of CeO2 surfaces. We tested 3 samples at 120 °C [3].
 ```
 
+同时写最小锁定术语表（`work/glossary.json`）：
+
+```json
+{"terms": [{"source": "氧空位", "target": "oxygen vacancy"}]}
+```
+
 `finalize` 后应能核对：`120 °C`、`3`、`[3]` 在 `preserved_facts`；
-`status=answered`；`deliverable.path=translation.md`。
+`glossary.locked=true`；`status=answered`；`deliverable.path=translation.md`。
+如果只有译文、没有带 target 的术语表，`glossary.locked=false`，结果只能是
+`partial` 并写 `glossary_not_locked`。
 
 ## 版本与限制
 
-- 版本 `1.0.0`：单入口 + 共享引擎 + 本任务模块；prepare 写 provisional result；
-  官方字段由入口从真实文件生成。
-- 数字/否定/情态检查是启发式筛检，不能替代人工语义判断。
+- 版本 `1.1.0`：单入口 + 共享引擎 + 本任务模块；新增源文选择、
+  方向推断、标题后缀/多行解析、ID 优先且拒绝静默错位的对齐、
+  术语表锁定校验、图表编号检查、方向感知的否定/情态检查，以及
+  `translation-notes.json` 支持。
+- 数字/图表/术语/否定/情态检查是启发式筛检，不能替代人工语义判断；
+  报告中的 `checks` 是复核起点，不是自动评分。
 - PDF/OCR 依赖运行时工具；超长文需分块并在最后复核段数与术语。
 - 示例是 synthetic 接口样例，不是本题答案；不要复制其中的实体或来源。

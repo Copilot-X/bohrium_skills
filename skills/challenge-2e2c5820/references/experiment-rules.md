@@ -2,9 +2,9 @@
 
 ## 1. 任务口径
 
-- 目标：设备/材料/时间/预算/安全/伦理可行性与风险。
+- 目标：设备/材料/时间/预算/安全/伦理（另加样本）可行性与风险。
 - 主产物：`output/experiment-report.md`。
-- 必填字段：`feasibility`, `risks`, `evidence`。
+- 必填字段：`feasibility`, `conditions`, `risks`, `confirmation_items`, `evidence`。
 
 ## 2. 证据
 
@@ -17,6 +17,35 @@
 ## 3. 专项检查
 
 每项可行性有条件；风险有处置；不把未确认写成可执行。
+
+### 3.1 六类可行性状态机
+
+| 状态 | 含义 | 必要条件 |
+|---|---|---|
+| `available_with_confirmation` | 材料明确可用，但仍需执行前核对 | 有逐字证据；仍写 `condition` |
+| `conditional` | 有条件可用（排期、校准、资质、培训） | 写清谁在何时提供什么 |
+| `procurement_required` | 需采购/订货 | 写货期、验收标准与替代方案 |
+| `approval_pending` | 伦理/安全审批未生效 | 批件未生效前不得开始 |
+| `blocked` | 不具备且无替代 | 明确降级路径与转人工节点 |
+| `unknown` | 材料没写或不可判定 | 不得当作满足；列入确认项 |
+
+判定顺序：`not_available` → `procurement_required` → `conditional` →
+`available`。同一行同时出现 “available” 和 “booked/排期” 时按
+`conditional` 处理，要求确认预约窗口。
+
+### 3.2 时间与预算复算
+
+- 时间：只累加互不重复的步骤时长；等待、检测周转、返工、设备排队不计入，
+  必须写在 `condition` 中。重复出现的同一时长不得重复相加。
+- 预算：只按材料中的原币金额直接相加，分币种列出；不做汇率换算；
+  税费、运费、人工与缓冲单列为未覆盖项。
+- 任何估算都要给 `basis`（哪些行、哪些步骤），使他人可复算。
+
+### 3.3 条件与确认项
+
+- `conditions[]` 是“有条件可行”的关闭条件；每条包含动作、责任方与验收标准。
+- `confirmation_items[]` 每条含 `category`、`why`、`action`、`blocking`。
+- 安全/伦理条目不得写成“已满足”，除非材料给出批准号/有效期/批准范围。
 
 ## 4. 产物
 

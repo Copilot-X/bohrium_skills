@@ -114,6 +114,119 @@ def artifact_entries(root):
     return entries
 
 
+NUMBER_RE = re.compile(
+    r"(?<![\w.])[-+]?\d+(?:[.,]\d+)?(?:\s*[–~\-]\s*[-+]?\d+(?:[.,]\d+)?)?"
+    r"\s*(?:%|°C|℃|eV|meV|nm|µm|μm|mm|cm|m|km|s|ms|min|h|hr|K|MPa|GPa|"
+    r"kPa|Pa|mM|µM|μM|nM|mg|g|kg|mL|µL|μL|L|Da|kDa|ppm|mol|wt%|at%|"
+    r"bar|atm|Torr|rpm)?", re.I)
+CITE_RE = re.compile(
+    r"\[[0-9,\s–\-]+\]|\([A-Z][^()]{0,80}?(?:19|20)\d{2}[a-z]?\)|"
+    r"(?:Fig(?:ure)?|Table|Eq(?:uation)?)\.?\s*\d+[A-Za-z]?|"
+    r"(?:图|表|式)\s*\d+[A-Za-z]?", re.I)
+FORMULA_RE = re.compile(r"\$[^$]{2,}\$|\\\([^)]{2,}\\\)|\\begin\{[a-z]+\*?\}")
+NEG_CUES = ("not ", "no ", "never", "without", "n't", "未", "不", "无", "没有", "并非")
+MOD_CUES = ("may", "might", "could", "suggest", "likely", "possibly",
+            "可能", "或许", "提示", "倾向于", "有望")
+
+
+def _norm(text):
+    return re.sub(r"\s+", " ", str(text or "")).strip().lower()
+
+
+def _canon(kind, value):
+    text = _norm(value)
+    if kind == "citation":
+        text = (text.replace("图", "fig").replace("表", "table")
+                .replace("式", "eq").replace("figure", "fig")
+                .replace("equation", "eq"))
+        return re.sub(r"[^a-z0-9\[\]()]", "", text)
+    if kind == "number":
+        return re.sub(r"\s+", "", text).replace(",", "")
+    return text
+
+
+def _features(text):
+    text = str(text or "")
+    return {
+        "number": sorted(set(_canon("number", x) for x in NUMBER_RE.findall(text))),
+        "citation": sorted(set(_canon("citation", x) for x in CITE_RE.findall(text))),
+        "formula": sorted(set(_canon("formula", x) for x in FORMULA_RE.findall(text))),
+    }
+
+
+def _term_present(term, text):
+    low = str(text or "").lower()
+    base = str(term or "").lower()
+    variants = {base, base + "s", base + "es"}
+    if base.endswith("y"):
+        variants.add(base[:-1] + "ies")
+    return any(v and v in low for v in variants)
+
+
+def _cue_count(text, cues):
+    low = str(text or "").lower()
+    return sum(low.count(_norm(c)) for c in cues)
+
+
+def collect_preservation(segments, locked_terms):
+    facts, evidence, mismatches = [], [], []
+    number_mismatch = citation_mismatch = formula_mismatch = False
+    negation_mismatch = modality_mismatch = False
+    for seg in segments:
+        sid = seg.get("segment_id")
+        source = seg.get("source") or ""
+        target = seg.get("target") or ""
+        sf, tf = _features(source), _features(target)
+        for kind, flag_name in (("number", "numbers"), ("citation", "citations"),
+                                ("formula", "formulas")):
+            for item in sf[kind]:
+                if item in tf[kind]:
+                    facts.append({"kind": kind, "source": item, "target": item,
+                                  "locator": sid})
+                else:
+                    mismatches.append("%s %s not found in target: %s" % (sid, kind, item))
+                    if kind == "number":
+                        number_mismatch = True
+                    elif kind == "citation":
+                        citation_mismatch = True
+                    else:
+                        formula_mismatch = True
+        for term in locked_terms:
+            src_term = term.get("source") or ""
+            tgt_term = term.get("target") or ""
+            if src_term and src_term in source:
+                if tgt_term and _term_present(tgt_term, target):
+                    facts.append({"kind": "term", "source": src_term,
+                                  "target": tgt_term, "locator": sid})
+                else:
+                    mismatches.append("%s locked term not found in target: %s"
+                                      % (sid, src_term))
+        if _cue_count(source, NEG_CUES) != _cue_count(target, NEG_CUES):
+            negation_mismatch = True
+            mismatches.append("%s negation cue count mismatch" % sid)
+        if _cue_count(source, MOD_CUES) != _cue_count(target, MOD_CUES):
+            modality_mismatch = True
+            mismatches.append("%s modality cue count mismatch" % sid)
+        if target:
+            evidence.append({
+                "claim_id": sid,
+                "claim": one_line(target)[:240],
+                "source": sid,
+                "locator": "%s source" % sid,
+                "quote": one_line(source)[:300],
+            })
+    preservation = {
+        "numbers_match": not number_mismatch,
+        "units_match": not number_mismatch,
+        "formulas_match": not formula_mismatch,
+        "citation_numbers_match": not citation_mismatch,
+        "figure_refs_match": not citation_mismatch,
+        "negation_match": not negation_mismatch,
+        "modality_match": not modality_mismatch,
+    }
+    return facts, evidence, preservation, mismatches
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case-id", required=True)
@@ -203,6 +316,13 @@ def main():
 
     root = Path(args.artifact_root) if args.artifact_root else Path(args.out).resolve().parent
     artifacts = artifact_entries(root)
+    facts, evidence, preservation, mismatches = collect_preservation(
+        segments, locked_terms)
+    if mismatches:
+        uncertainty.extend("preservation_mismatch: %s" % item
+                           for item in mismatches[:40])
+        uncertainty.append("preservation booleans are computed from source/target "
+                           "segment text; review the mismatch list before submitting")
 
     result = {
         "case_id": args.case_id,
@@ -215,22 +335,15 @@ def main():
         "segments": segments,
         "glossary": [{"source": t["source"], "target": t["target"], "locked": True}
                      for t in locked_terms],
-        "preservation": {
-            "numbers_match": False,
-            "units_match": False,
-            "formulas_match": False,
-            "citation_numbers_match": False,
-            "figure_refs_match": False,
-            "negation_match": False,
-            "modality_match": False,
-        },
+        "preservation": preservation,
         "back_translation_check": [],
         "untranslated": untranslated,
         "uncertainty": uncertainty,
         "change_log": [
             {"action": "assembled", "scope": "segments from bilingual.md",
-             "reason": "assemble_result.py; preservation/evidence left for manual completion",
-             "human_review": False}
+             "reason": "assemble_result.py; preservation facts/evidence computed "
+                       "from source and target segments; manual review still required",
+             "human_review": bool(mismatches)}
         ],
         "translation_check": {
             "path": "translation-check.json" if (root / "translation-check.json").is_file() else None,
@@ -238,8 +351,8 @@ def main():
             "note": "optional audit; fill after running check_translation.py",
         },
         "deliverable": {"path": "translation.md", "format": "markdown"},
-        "preserved_facts": [],
-        "evidence_map": [],
+        "preserved_facts": facts,
+        "evidence_map": evidence,
     }
 
     out = Path(args.out)
@@ -254,7 +367,10 @@ def main():
         "duplicate_sections": sorted(set(duplicates)),
         "extra_sections": extra,
         "locked_terms": len(locked_terms),
-        "note": "preservation defaults to false; set true only after manual checks",
+        "preserved_facts": len(facts),
+        "evidence_map": len(evidence),
+        "preservation_mismatches": len(mismatches),
+        "note": "preservation/facts/evidence are computed from source/target segments; review mismatches",
     }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))

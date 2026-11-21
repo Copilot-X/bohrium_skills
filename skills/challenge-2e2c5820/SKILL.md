@@ -16,8 +16,9 @@ task.md 要求“设备/材料/时间/预算/安全/伦理可行性与风险”�
 `uncertainty`，不要补造。
 
 核心原则：**有输入、有依据、有产物、有边界**。脚本负责盘点材料、建立
-工作区、校验证据/字段/产物并组装 `result.json`；模型负责判断、筛选、
-分析或写作。脚本不会替你生成候选、结论或审查意见。
+工作区、做确定性的逐条核对、校验证据/字段/产物并组装 `result.json`；
+模型负责领域判断、补证、改写结论与最终复核。脚本不会凭空补造设备可用、
+审批状态、价格或文献；所有“已具备”都必须能在材料中找到逐字依据。
 
 ## 输入
 
@@ -38,7 +39,10 @@ mkdir -p /app/work /app/output
 
 | 文件 | 作用 |
 |---|---|
-| `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
+| `scripts/run_skill.py` | **推荐入口**：prepare → 确定性核对 → finalize → 契约补全；输入不完整也写合法 `result.json` |
+| `scripts/domain_work.py` | 本模式确定性初稿：六类可行性矩阵、条件、风险、确认项、证据；可重复运行 |
+| `scripts/run_case.py` | 分步入口：prepare / finalize / run / inspect |
+| `scripts/selftest.py` | 正向 + 空输入边界自测，真实执行并断言产物/契约 |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
@@ -48,6 +52,24 @@ mkdir -p /app/work /app/output
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
 ## 工作流
+
+### 第 0 步：一条命令拿到可复核初稿（推荐，先保证不空转）
+
+```bash
+python3 "$SKILL_DIR/scripts/run_skill.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+它会依次执行 prepare、`domain_work.py` 确定性核对、finalize，并检查：
+
+1. `work/experiment-plan.json`、4 个声明产物和 `output/result.json` 都存在；
+2. `output_contract` 的每个键在 `result.json` 或同名产物中有真实内容；
+3. 输入为空/不可读时仍写合法 `result.json`（`status=input_error`）且退出码为 0；
+4. 任何声明输出缺失时自动补写，再跑一次 finalize。
+
+随后读 `output/experiment-report.md`、`work/materials.json` 与
+`work/domain-status.json`，用剩余预算补充专家判断、纠正误判，再运行
+`run_case.py finalize`。不要把确定性初稿当成最终结论。
 
 ### 第 1 步：prepare（约 10% 预算）
 
@@ -67,8 +89,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 
 ### 第 2 步：写 `work/experiment-plan.json`（约 60% 预算）
 
-按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`feasibility`, `risks`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+按 `templates/work.schema.json` 写结构化工作文件。必填字段为
+`feasibility`, `conditions`, `risks`, `confirmation_items`, `evidence`，
+并为每条关键判断/步骤绑定 `evidence`。`blocking`/`conditional` 条目必须
+在 `conditions` 或条目自身的 `condition` 中写出可执行条件（谁、做什么、
+何时关闭），不能只写“建议进一步确认”。
 
 ```json
 {
@@ -114,7 +139,20 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
     }
   ],
   "confirmation_items": [
-    "Confirm equipment access"
+    {
+      "item": "Confirm equipment access",
+      "category": "equipment",
+      "why": "synthetic only",
+      "action": "Get written confirmation from the equipment manager",
+      "blocking": true
+    }
+  ],
+  "conditions": [
+    {
+      "condition": "Equipment access confirmed in writing before day 1",
+      "owner": "equipment manager",
+      "acceptance": "booking record with date and model"
+    }
   ],
   "evidence": [
     {
@@ -152,6 +190,15 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 - 所有 `quote` 必须能在对应 `path` 的材料中逐字（允许空白折叠/省略号分段）
   找到；找不到的写入 `uncertainties`，不要改写成“大意”。
 - 未确认条件不写成可执行。
+- 六类 `feasibility`（equipment/materials/time/budget/safety/ethics）每类
+  必须有 `status`、`condition`；`status=available` 必须有材料证据，
+  否则只能是 `to_confirm`/`unknown`。
+- 时间只累加互不重复的显式步骤时长，并说明等待、检测周转、返工未计入；
+  预算只累加材料中出现的原币金额，不做汇率换算。
+- `risks[]` 每条必须有 `mitigation` 与 `fallback`；`confirmation_items[]`
+  每条必须有 `category`、`why`、`action`、`blocking`。
+- `output_contract` 中的每个键都会写成 `output/<key>.json`（真实内容或
+  明确的 partial 指针），并在 `result.json.contract_coverage` 中逐键报告。
 
 ### 第 3 步：finalize（约 30% 预算）
 
@@ -162,7 +209,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/experiment-plan.json`（或 JSON 主产物），检查必填字段 `feasibility`, `risks`, `evidence`；
+1. 读取 `work/experiment-plan.json`（或 JSON 主产物），检查必填字段与 `track` 专项结构；
 2. 逐条核验 evidence 的 path/locator/quote；
 3. 登记 `output/experiment-report.md` 与 `output/feasibility-review.json`, `output/risk-assessment.json`, `output/confirmation-items.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
@@ -171,7 +218,12 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
    与 `deliverable/preserved_facts/evidence_map/change_log`。
 
 `status` 取 `completed|partial|input_error`。有缺字段、证据
-不匹配、主产物缺失或执行失败时用 `partial`。
+不匹配、主产物缺失或执行失败时用 `partial`。`scripts/run_skill.py` 还会
+读取 `work/domain-status.json`：无任何可读材料时强制 `input_error`；
+专项检查有阻塞项时降级 `partial`；全部通过且契约覆盖完整时才允许成功态。
+
+退出码约定：只要写出了可解析的 `result.json` 就返回 0；只有
+`scripts/run_case.py` 本身缺失、无法启动时才返回 2。
 
 ## 输出契约
 
@@ -184,28 +236,33 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 - `preserved_facts[]`：证据中的数字/单位（有则填）；
 - `evidence_map[]`：每条证据的 path/locator/quote；
 - `artifacts[]`：主产物与 `output/feasibility-review.json`, `output/risk-assessment.json`, `output/confirmation-items.json`；
-- `uncertainties[]`、`change_log[]`、`output_contract`、`contract_coverage`。
+- `uncertainties[]`、`change_log[]`、`output_contract`、`contract_coverage`；
+- `run_skill`：各步骤返回码、fallback 是否触发、声明产物的实际大小；
+- `domain-audit.json`：来源数、证据数、专项检查的 problems/warnings。
 
 若 `/input/case.json` 的 `output_contract` 含本题特有键（例如
-`cleaned_table`、`quality_report`、`rule_log`、`original_snapshot`），必须：
+`实验方案`、`依据与风险`、`确认项` 或 `feasibility_review`），必须：
 
 1. 在 `result.json` 顶层保留原键名；
-2. 优先写同名产物 `output/<field>.json/.csv/.md`，或把对应 canonical
-   字段/artifact 路径填入该键；
+2. 写同名产物 `output/<field>.json`（中文键直接作为文件名），内容必须是
+   真实结构或明确的 partial 指针，不能只写一句“见报告”；
 3. finalize 会检查 `contract_coverage`，未覆盖的键会降级 `partial` 并写入
-   `uncertainties`；不要只写 `status/result/claims` 而忽略原契约字段。
+   `uncertainties`；`run_skill.py` 会在最后再补一次映射并重算覆盖表。
+   不要只写 `status/result/claims` 而忽略原契约字段。
 
 ## 质量闸门
 
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/experiment-report.md` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `feasibility`, `risks`, `evidence` 齐全 |
+| G2 | 必填字段 | `feasibility`, `conditions`, `risks`, `confirmation_items`, `evidence` 齐全 |
 | G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
 | G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | 每项可行性有条件；风险有处置；不把未确认写成可执行 |
-| G6 | 产物 | 声明的每个 artifact 路径真实存在 |
-| G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+| G5 | 专项 | 六类可行性各自有 status/condition；条件可执行；风险有 mitigation+fallback；未确认不写成可执行 |
+| G6 | 产物 | 声明的每个 artifact 路径真实存在且非空 |
+| G7 | 契约 | result.json 可解析，case_id 与输入一致，contract_coverage 全覆盖 |
+| G8 | 不空转 | 材料不可读时仍写合法 result.json（`input_error`）且退出码 0 |
+| G9 | 可复跑 | `python3 scripts/selftest.py` 正反向均通过；同输入重跑矩阵一致 |
 
 ## 评分维度对照
 
@@ -221,13 +278,15 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 | 情况 | 处理 |
 |---|---|
-| 材料为空/不可读 | `input_error`；不生成伪候选/结论/审查意见 |
+| 材料为空/不可读 | `input_error`；仍写报告/矩阵/风险/确认项与合法 result.json，但全部标“无可读材料”，不生成伪设备/审批/金额 |
 | 只有摘要/部分材料 | 只交付可确认部分；正文标“基于摘要”；`status=partial` |
 | 证据 quote 找不到 | 回到原文重摘；无法逐字时删除该证据或标 `uncertainty` |
-| 候选/文献重复 | 用 DOI/标题+年份合并；保留合并依据 |
-| 空结果/无命中 | 明确写“未检索到/未命中”，不把空白写成排除 |
+| 设备状态/预订缺失 | 标 `to_confirm`，写入确认项；不写成“可用” |
+| 伦理状态未定 | 标 `approval_pending`/`to_confirm`，作为阻塞条件；不写成“已批准” |
+| 参数/时长/预算缺失 | 保持 `unknown`，在条件中说明需要谁补什么；不做默认假设 |
+| 方案自相矛盾 | 两条原文都保留为证据，在 `uncertainties` 登记冲突并转人工裁决 |
 | 数字/统计不一致 | 以数据文件为准；报告与结果文件对齐 |
-| 代码执行失败 | 保留 `execution.log` 与失败原因；不伪造输出 |
+| 脚本异常 | `run_skill.py` 仍会 finalize 并写 result.json；查看 `work/main-error.json` 与 `run_skill.steps` |
 | 权限/接口/格式错误 | 写 `uncertainty` 与已完成范围；建议人工接管 |
 
 ## 最小示例（synthetic，不是正式答案）
@@ -276,7 +335,20 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
     }
   ],
   "confirmation_items": [
-    "Confirm equipment access"
+    {
+      "item": "Confirm equipment access",
+      "category": "equipment",
+      "why": "synthetic only",
+      "action": "Get written confirmation from the equipment manager",
+      "blocking": true
+    }
+  ],
+  "conditions": [
+    {
+      "condition": "Equipment access confirmed in writing before day 1",
+      "owner": "equipment manager",
+      "acceptance": "booking record with date and model"
+    }
   ],
   "evidence": [
     {
@@ -307,6 +379,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
+- 版本 `1.1.0`：新增 `run_skill.py` 一键兜底入口与 `domain_work.py`
+  确定性可行性核对；无材料/缺产物时仍写合法 result.json 与全部声明输出；
+  契约键按同名产物映射并逐键报告覆盖。
 - 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
   证据/字段/产物审计。
 - 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；

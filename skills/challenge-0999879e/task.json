@@ -43,6 +43,8 @@
     "checks": [],
     "verdict": "",
     "facets_checked": [],
+    "claim_source_matrix": [],
+    "coverage_summary": {},
     "review_status": "",
     "not_checked": []
   },
@@ -111,6 +113,9 @@
   },
   "mode_metrics": [
     "每个 finding 有 facet/locator/original_quote/severity/type/fix/误报检查。",
-    "review_status 区分稿件结论与流程状态；未检查项列 not_checked。"
-  ]
+    "review_status 区分稿件结论与流程状态；未检查项列 not_checked。",
+    "六类检查项逐面记录状态；citation_support 问题必须有 claim_source_matrix 行（含 source）。",
+    "finalize 后运行 review_gate.py --apply，未解决项会把 result 降级为 partial。"
+  ],
+  "version": "1.1.0"
 }

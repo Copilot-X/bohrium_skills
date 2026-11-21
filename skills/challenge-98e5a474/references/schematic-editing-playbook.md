@@ -67,10 +67,15 @@ python3 "$SKILL_DIR/scripts/export_schematic.py" \
   --svg /app/output/figures/fig1.svg --outdir /app/output --dpi 300 --json
 ```
 
-- 探测顺序 `cairosvg -> rsvg-convert -> inkscape`；脚本校验 PNG `\x89PNG`、
-  PDF `%PDF`，无效文件删除后换下一个工具。
+- 探测顺序 `cairosvg -> rsvg-convert -> inkscape -> matplotlib`；脚本校验
+  PNG `\x89PNG`、PDF `%PDF`，无效文件删除后换下一个工具。
+- matplotlib 是 `scientific-python` 常见预装的最后回退，渲染本 skill 生成的
+  SVG 子集（矩形/圆/椭圆/多边形/路径/文本/箭头），产出真实 PDF/PNG；记录
+  `exported_by`，不要把它写成 cairosvg。
 - 全部不可用：交付 SVG + 自包含 HTML 预览，`status=partial`，
   `exceptions` 写 `export_unavailable`，`export_artifact: null`。
+- 导出后运行 `assemble_result.py` 生成契约完整的 result.json；缺导出时脚本
+  自动写 null + partial，不伪造。
 - 不要调用 `latex-compiler`/`office-renderer`/`pdf-render-tool`/`browser-automation`。
 
 ## 6. 常见失败模式

@@ -65,13 +65,17 @@ task.md 要求"画科研示意图 / 机制图 / 关系图 / 流程图"或"在给
 
 ```bash
 python3 "$SKILL_DIR/scripts/export_schematic.py" \
-  --svg /app/output/figures/fig1.svg --outdir /app/output --dpi 300 --json
+  --svg /app/output/figures/fig1.svg --outdir /app/output --dpi 300 \
+  --json > /app/work/export.json
 ```
 
-- 探测顺序固定为 `cairosvg` → `rsvg-convert` → `inkscape`；输出必须通过
-  PNG `\x89PNG` / PDF `%PDF` 文件头校验，校验失败的文件会被删除，**绝不伪造导出件**。
+- 探测顺序：`cairosvg` → `rsvg-convert` → `inkscape` → `matplotlib`
+  （`scientific-python` 通常预装 matplotlib；最后一级是真实 SVG 子集渲染器，
+  不是伪造导出）。输出必须通过 PNG `\x89PNG` / PDF `%PDF` 文件头校验，
+  校验失败的文件会被删除，**绝不伪造导出件**。
 - 全部不可用：交付 SVG + **自包含 HTML 预览**（脚本自动生成），
   `status: "partial"`，`exceptions` 写 `export_unavailable`，`export_artifact: null`。
+- 把完整 JSON 报告保存到 `work/export.json`，下一步组装 result.json 要用。
 - 可选审计（失败不阻塞交付）：
 
 ```bash
@@ -88,6 +92,24 @@ python3 "$SKILL_DIR/scripts/compare_svg.py" \
 **非 0 = 审计未通过，但不阻塞交付**：把失败原因写进 `exceptions`
 （`audit_unavailable` / `audit_failed`）与 `uncertainty`，继续手工核对。
 不要为了过 checker 删减真实内容或编造字段。
+
+### 第 4.5 步（约 5% 预算）：用脚本组装契约完整的 result.json
+
+```bash
+python3 "$SKILL_DIR/scripts/assemble_result.py" \
+  --entities /app/work/entities.json --svg /app/output/figures/fig1.svg \
+  --root /app/output --export /app/work/export.json \
+  --out /app/output/result.json --case-id "$CASE_ID" \
+  [--before /app/work/start.svg --workorder /app/work/workorder.json] --json
+```
+
+- 脚本从真实实体表、真实 SVG 和真实导出报告生成全部任务字段与 media 别名；
+  缺 PDF/PNG 时自动写 `export_artifact: null`、`export_unavailable`、`partial`，
+  不伪造。
+- 编辑模式传 `--before` + `--workorder`，脚本调用 `compare_svg.py` 生成
+  `edit.diff/preserved/removed` 并检查越界改动。
+- 退出码 0 = 无缺口；1 = 已写 result 但有 contract_gaps；2 = 核心输入不可读。
+  有缺口时按 `contract_gaps` 修正后重跑。
 
 ### 第 5 步（约 5% 预算）：落盘核对
 
@@ -117,7 +139,8 @@ echo "SKILL_DIR=$SKILL_DIR"
 | `references/schematic-editing-playbook.md` | 建表、改稿、语义核对前 | 可选方法参考；与 task.md 冲突时以 task.md 为准 |
 | `templates/entities.json` | 新建模式起步 | 可选；复制后替换，模板来源是示例，不能当证据 |
 | `scripts/build_schematic.py` | 想用表驱动出图时 | `python3 "$SKILL_DIR/scripts/build_schematic.py" --entities /app/work/entities.json --out /app/output/figures/fig1.svg --json`；结构错误返回 JSON（exit 2），不会 traceback |
-| `scripts/export_schematic.py` | 需要 PDF/PNG 或降级预览 | 见第 4 步；无渲染器时生成 HTML 预览并报 `export_unavailable` |
+| `scripts/export_schematic.py` | 需要 PDF/PNG 或降级预览 | 见第 4 步；探测 cairosvg/rsvg/inkscape/matplotlib；全不可用时生成 HTML 预览并报 `export_unavailable` |
+| `scripts/assemble_result.py` | 组装 result.json | 见第 4.5 步；从实体表/SVG/导出报告生成全部字段与 media 别名；支持 `--self-test` |
 | `scripts/check_schematic_result.py` | 交付前自查 | 见第 4 步；缺文件/空表也返回可读 JSON |
 | `scripts/compare_svg.py` | 编辑模式核对改动范围 | 先写 `/app/work/workorder.json`：`{"targets":["E2"],"add":["E6"],"remove":["E3"],"source":"task.md §…"}` |
 | `README.md` | 安装/接口/限制速查 | 与 SKILL.md 同步维护的简明说明 |
@@ -253,11 +276,14 @@ echo "SKILL_DIR=$SKILL_DIR"
 
 ## 版本与限制
 
-- 版本：`0.5.0`（交付物优先流程；脚本为可选加速器）。
-- 脚本 stdlib-only（Python 3.12+）；`cairosvg`/`rsvg-convert`/`inkscape` 只做可选探测。
+- 版本：`0.6.0`（交付物优先流程；matplotlib 真实导出回退；result.json 组装器）。
+- 核心脚本 stdlib-only（Python 3.12+）；导出额外探测 `cairosvg`/`rsvg-convert`/`inkscape`，
+  最后使用 `scientific-python` 的 matplotlib 渲染 SVG 子集，产出真实 PDF/PNG。
 - `compare_svg.py` 只比较 `<g id>` 与组内文本，**不检测纯坐标移动**；
   坐标级改动必须写进 `edit.diff` 并人工复核。
 - 自动布局只保证基本不重叠；复杂拓扑仍建议手工指定 `rank/order` 或坐标。
-- 无渲染器环境下 PDF/PNG 不可得，只能交付 SVG + HTML 预览（诚实降级）。
+- 无任何渲染器（含 matplotlib）时 PDF/PNG 不可得，只能交付 SVG + HTML 预览（诚实降级）。
+- matplotlib 回退渲染的是本 skill 生成的 SVG 子集（rect/circle/ellipse/polygon/
+  polyline/line/path/text + 箭头标记）；复杂的滤镜、裁剪路径和外部字体不会完全保真。
 - 维护：改脚本后同步更新本文件、`README.md` 与 `references/schematic-editing-playbook.md`；
   不写无法验证的分数、运行记录或截图。

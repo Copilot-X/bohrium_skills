@@ -83,6 +83,27 @@
 - 不允许针对单一指标优化：报告至少 3 个维度，并列出失败案例。
 - 不把合成检查器日志冒充官方 DSH 分数。
 
+## 6.1 逐题 0/1/2 rubric 与部分分
+
+任务建议按 0/1/2 记录逐题分。`run_benchmark_case.py` 只从 scorer 的逐题事实推导，
+不另造判断：
+
+| 分值 | 答案 | 证据 | 拒答 |
+|---|---|---|---|
+| 2 | 完全匹配 gold points | gold evidence 被引用且可定位 | 正确拒答且有依据 |
+| 1 | 部分匹配 | 答案正确但缺证据 / 证据不全 | 拒答但缺依据 |
+| 0 | 错误或缺失 | — | 该拒答却作答、该作答却拒答 |
+
+部分分覆盖要求 `per_item_scores` 覆盖**全部** workorder 题：缺预测的题也保留一行，
+`failure_type=missing_prediction`、`score_0_2=0`，并计入 `coverage`，不能静默跳过。
+汇总同时给 `rubric.total/max/mean` 与按 capability/type 的失败分布。
+
+## 6.2 trace 索引
+
+每个 `per_item_scores[]` 必须能通过 `trace_index[]` 找到：
+gold 行（`work/gold.jsonl#k`）、prediction 行、scorer `items[]` 下标、`run_id`、
+`work/metrics.json` 路径。版本快照记录 workorder 与材料 sha256，说明历史分数是否可比。
+
 ## 7. 报告结构
 
 ```json

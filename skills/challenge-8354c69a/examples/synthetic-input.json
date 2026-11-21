@@ -1,99 +1,203 @@
 {
   "case_id": "SYNTH-EXPERIMENT",
   "mode": "result-interpretation",
-  "summary": "Synthetic example only.",
-  "hypothesis": "Synthetic hypothesis",
+  "summary": "Synthetic example only: trend, anomaly, causal hypothesis, recheck, follow-up.",
+  "hypothesis": "Higher temperature increases conversion without reducing selectivity.",
   "variables": {
     "independent": [
-      "Synthetic variable"
+      "temperature"
     ],
     "dependent": [
-      "Synthetic outcome"
+      "conversion",
+      "selectivity"
     ],
     "controls": [
-      "Synthetic control"
+      "flow rate",
+      "catalyst batch"
     ]
   },
   "steps": [
     {
       "id": "S1",
-      "action": "Synthetic step",
+      "action": "temperature sweep",
       "parameters": {
-        "temperature": "350 C"
+        "temperature": "300-360 C"
       },
       "duration": "2 h",
-      "materials": "Synthetic material"
+      "materials": "catalyst batch B1"
     }
   ],
   "parameters": [
     {
       "name": "temperature",
-      "value": "350",
+      "value": "300-360",
       "unit": "C",
       "basis": "synthetic.md P1"
     }
   ],
   "risks": [
     {
-      "risk": "Synthetic risk",
+      "risk": "flow-rate drift",
       "impact": "medium",
-      "mitigation": "Synthetic mitigation"
+      "mitigation": "hold flow constant and log it"
     }
   ],
   "confirmation_items": [
-    "Synthetic item to confirm"
+    "confirm the flow controller calibration"
   ],
   "evidence": [
     {
       "path": "synthetic.md",
       "locator": "P1",
-      "quote": "synthetic source sentence"
+      "quote": "conversion increases from 40% to 62%"
     }
   ],
   "uncertainties": [],
-  "observations": [
+  "trends": [
     {
-      "id": "O1",
-      "statement": "Synthetic observation",
-      "value": 92,
-      "unit": "%",
+      "id": "T1",
+      "metric": "conversion",
+      "direction": "up",
+      "interval": "runs 1-4",
+      "statement": "conversion rises from 40% to 62% as temperature increases",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
-        "quote": "synthetic source sentence"
+        "quote": "conversion increases from 40% to 62%"
+      }
+    },
+    {
+      "id": "T2",
+      "metric": "selectivity",
+      "direction": "flat",
+      "interval": "runs 1-4",
+      "statement": "selectivity stays between 88% and 92%",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P2",
+        "quote": "selectivity stays between 88% and 92%"
+      }
+    }
+  ],
+  "observations": [
+    {
+      "id": "O1",
+      "statement": "conversion is 62% in run 4",
+      "value": 62,
+      "unit": "%",
+      "run_id": "run-4",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "conversion increases from 40% to 62%"
+      }
+    },
+    {
+      "id": "O2",
+      "statement": "selectivity is 91% in run 4",
+      "value": 91,
+      "unit": "%",
+      "run_id": "run-4",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P2",
+        "quote": "selectivity stays between 88% and 92%"
       }
     }
   ],
   "interpretations": [
     {
       "id": "I1",
-      "statement": "Synthetic interpretation",
+      "statement": "conversion is higher at higher temperature",
       "type": "inference",
       "strength": "suggestive",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
-        "quote": "synthetic source sentence"
+        "quote": "conversion increases from 40% to 62%"
+      }
+    },
+    {
+      "id": "I2",
+      "statement": "higher temperature causes the conversion increase",
+      "type": "causal_hypothesis",
+      "strength": "suggestive",
+      "support": [
+        "T1: conversion rises with temperature",
+        "O1: run-4 conversion is 62%"
+      ],
+      "exclusion": [
+        "flow rate was not held constant in run 4",
+        "catalyst deactivation was not measured"
+      ],
+      "confounders": [
+        "flow rate",
+        "catalyst batch"
+      ],
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "conversion increases from 40% to 62%"
       }
     }
   ],
   "alternative_explanations": [
     {
-      "explanation": "Synthetic alternative",
-      "status": "not_excluded"
+      "explanation": "flow-rate drift rather than temperature",
+      "status": "not_excluded",
+      "test": "hold flow constant"
+    },
+    {
+      "explanation": "catalyst batch difference",
+      "status": "untested",
+      "test": "repeat with the same batch"
     }
   ],
   "anomalies": [
     {
+      "id": "A1",
       "observation_id": "O1",
-      "anomaly": "synthetic",
-      "action": "repeat"
+      "value": 62,
+      "run_id": "run-4",
+      "threshold": "mean + 3 sd of runs 1-3",
+      "method": "robust z-score",
+      "severity": "high",
+      "action": "repeat run 4 with flow logged",
+      "rationale": "run-4 exceeds the threshold",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "conversion increases from 40% to 62%"
+      }
+    }
+  ],
+  "recheck_steps": [
+    {
+      "id": "R1",
+      "action": "re-read the run-4 raw file and verify the flow rate",
+      "observation_id": "O1",
+      "expected": "flow rate matches runs 1-3",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "conversion increases from 40% to 62%"
+      }
     }
   ],
   "next_experiments": [
     {
-      "experiment": "synthetic follow-up",
-      "purpose": "test alternative"
+      "id": "E1",
+      "experiment": "temperature sweep with flow held constant",
+      "purpose": "separate temperature from flow confounder",
+      "observation_id": "O1",
+      "interpretation_id": "I2",
+      "expected_outcome": "conversion rises at constant flow",
+      "decision_rule": "positive slope with p<0.05",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "conversion increases from 40% to 62%"
+      }
     }
   ]
 }
