@@ -1,6 +1,6 @@
 ---
 name: analysis-data-cleaning-skill
-description: 科研数据清洗与处理：数据字典、缺失/异常/重复处理、清洗规则与快照。交付清洗表、质量报告、规则日志与原始快照，保留来源/定位与不确定性，并生成含官方 reading/writing 字段的 result.json。analysis skill with a source-bound work file, evidence checks and an honest result envelope. Use for 科研数据清洗与处理、data-cleaning、analysis、证据绑定、结果复核.
+description: 科研数据清洗与处理：按数据字典与清洗工单真实执行缺失/删失/异常/单位换算/近似重复去重，输出可逆规则日志、字段级质量报告、原始快照 SHA-256 与计数闭合的清洗表。Deterministic reversible cleaning pipeline with missing-code vs zero separation, below_lod censoring, logged unit factors, keep-first dedupe, retained+flagged outliers and raw-dropped=cleaned closure. Use for 科研数据清洗、data-cleaning、缺失值、异常值、重复记录、单位转换、质量报告.
 ---
 
 # 科研数据清洗与处理（analysis track · data-cleaning）
@@ -38,7 +38,8 @@ mkdir -p /app/work /app/output
 
 | 文件 | 作用 |
 |---|---|
-| `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
+| `scripts/run_case.py` | Skill 入口：prepare / finalize / run / inspect |
+| `scripts/clean_data.py` | **本题核心清洗器**：解析字典/工单，真实清洗 CSV，输出快照、清洗表、质量报告、规则日志并回填 work 文件 |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
@@ -65,115 +66,50 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
 
-### 第 2 步：写 `work/analysis-plan.json`（约 60% 预算）
+### 第 2 步：真实执行清洗（约 60% 预算）
 
-按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`cleaned_table`, `cleaning_rules`, `quality_report`, `rule_log`, `original_snapshot`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+先读 `work/materials.json` 里的 `measurements.csv`、`data-dictionary.md` 和
+`cleaning-workorder.md`。清洗器会解析字典与工单中的规则（缺失码、below_lod、
+有效范围、单位等式、去重键），然后**真实改写数据**：
 
-```json
-{
-  "case_id": "SYNTH-ANALYSIS",
-  "mode": "data-cleaning",
-  "summary": "Synthetic example only.",
-  "analysis": {
-    "question": "Synthetic question",
-    "method": "Synthetic method",
-    "assumptions": [
-      "Synthetic assumption"
-    ],
-    "diagnostics": [
-      "Synthetic diagnostic"
-    ],
-    "steps": [
-      "Synthetic step"
-    ]
-  },
-  "results": [
-    {
-      "id": "R001",
-      "metric": "selectivity",
-      "value": 92,
-      "unit": "%",
-      "source": "synthetic.md",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
-  "figures": [
-    {
-      "path": "figures/synthetic.svg",
-      "source": "results",
-      "data_source": "output/results.csv",
-      "units": {
-        "x": "s",
-        "y": "%"
-      }
-    }
-  ],
-  "code": "work/analysis.py",
-  "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
-  ],
-  "uncertainties": [],
-  "data_dictionary": [
-    {
-      "column": "synthetic_col",
-      "type": "number",
-      "unit": "",
-      "missing_rule": "synthetic"
-    }
-  ],
-  "cleaning_rules": [
-    {
-      "id": "CR1",
-      "rule": "synthetic rule",
-      "before": 1,
-      "after": 1,
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
-  "cleaned_table": "output/cleaned-table.csv",
-  "rule_log": "output/rule-log.json",
-  "quality_report": [
-    {
-      "field": "synthetic_col",
-      "issue": "missing",
-      "count": 1,
-      "action": "documented"
-    }
-  ],
-  "original_snapshot": "output/raw-snapshot.csv",
-  "closure": {
-    "raw_rows": 1,
-    "dropped": 0,
-    "cleaned_rows": 1
-  }
-}
+```bash
+python3 "$SKILL_DIR/scripts/clean_data.py"   --input /input --work /app/work --output /app/output --install-code
 ```
 
-同时写以下产物：
+`--install-code` 会把清洗器复制为 `work/analysis.py` 与
+`output/cleaning-code.py`；finalize 会再次真实执行 `work/analysis.py` 并把
+stdout/stderr 写入 `output/execution.log`。
 
-- `output/analysis-report.md`
-- `output/cleaned-table.csv`
-- `output/quality-report.json`
-- `output/rule-log.json`
-- `output/raw-snapshot.csv`
+清洗器固定执行以下步骤，并把每一步写成可复核字段：
 
-- `output/analysis-report.md` 是主交付物，必须真实存在且非空。
-- 所有 `quote` 必须能在对应 `path` 的材料中逐字（允许空白折叠/省略号分段）
-  找到；找不到的写入 `uncertainties`，不要改写成“大意”。
-- 不静默改数据。
+1. **原始快照**：先逐字节复制输入 CSV 到 `output/raw-snapshot.csv`，计算
+   输入 SHA-256 与快照 SHA-256，`identical` 必须是 `true`；
+2. **缺失 vs 真值 0**：`-999`、空白、`NA/n/a/null/NaN` 等按缺失处理；
+   **不填补**；`status=below_lod` 标记为删失（`_censored=true`），不当作
+   数值 0 参与统计；
+3. **单位归一**：按字典/工单等式换算到 mg/L（如 `1 ug/mL equals 1 mg/L`），
+   在 `_conversion_factor` 与 `rule-log.json` 记录系数；未知单位不猜，
+   置空并记 `unit_unknown`；
+4. **近似重复**：按工单键（如 `sample_id + assay_date + replicate`）在
+   去空格/大小写归一后识别重复，**保留第一行**，每个被丢弃行写入
+   `output/quality-report.json` 的 `duplicates` 与 `dropped` 计数；
+5. **异常值**：按有效范围（如 0.0–500.0 mg/L）判定，**保留并标记**
+   `_outlier=true`，不静默盖帽；同时在报告中列出源行、原值和归一值；
+6. **计数闭合**：`raw_rows - dropped = cleaned_rows` 必须成立，否则
+   `results.json` 与报告中显式写出 `closed=false` 和差异，不掩盖；
+7. **字段级质量报告**：每个字段/问题给出 `field/issue/count/action`；
+8. **数字一致性**：`analysis-report.md` 由 `results.json` 同次生成，
+   报告中的行数、缺失数、below_lod、异常值、换算数都来自同一份字典。
+
+清洗表 `output/cleaned-table.csv` 保留原始列，并追加以下可核对列：
+`_source_row`、`_sample_id_canonical`、`_date_iso`、
+`_concentration_mg_l`、`_unit_canonical`、`_conversion_factor`、
+`_missing`、`_missing_reason`、`_censored`、`_outlier`。原始值不被覆盖，
+下游可用 `_concentration_mg_l` 做统计。
+
+需要针对具体案例调整列名/键/范围时，修改
+`work/cleaning-config.json`（可选）或在 `scripts/clean_data.py` 顶部的
+推断规则中调整；不要手改 `cleaned-table.csv` 的数字，改规则后重跑。
 
 ### 第 3 步：finalize（约 30% 预算）
 
@@ -184,13 +120,20 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/analysis-plan.json`（或 JSON 主产物），检查必填字段 `cleaned_table`, `cleaning_rules`, `quality_report`, `rule_log`, `original_snapshot`, `evidence`；
+1. 读取 `work/analysis-plan.json`，检查必填字段 `cleaned_table`,
+   `cleaning_rules`, `quality_report`, `rule_log`, `original_snapshot`,
+   `closure`, `data_dictionary`, `evidence`；`closure` 必须满足
+   `raw_rows - dropped = cleaned_rows`；
 2. 逐条核验 evidence 的 path/locator/quote；
-3. 登记 `output/analysis-report.md` 与 `output/cleaned-table.csv`, `output/quality-report.json`, `output/rule-log.json`, `output/raw-snapshot.csv` 的真实文件；
-4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
-   stdout/stderr 写入 `output/execution.log`；失败不伪造结果；
+3. 登记 `output/analysis-report.md` 与 `output/cleaned-table.csv`,
+   `output/quality-report.json`, `output/rule-log.json`,
+   `output/raw-snapshot.csv` 的真实文件；
+4. 若存在 `work/analysis.py`（清洗器 `--install-code` 会写入），会再次
+   真实执行并把 stdout/stderr 写入 `output/execution.log`；失败不伪造结果；
 5. 写 `output/result.json`，含 `status/result/claims/uncertainties`
-   与 `deliverable/preserved_facts/evidence_map/change_log`。
+   与 `deliverable/preserved_facts/evidence_map/change_log`；契约键
+   `cleaned_table/quality_report/rule_log/original_snapshot/uncertainties`
+   由工作文件同名键覆盖。
 
 `status` 取 `completed|partial|input_error`。有缺字段、证据
 不匹配、主产物缺失或执行失败时用 `partial`。
@@ -222,10 +165,10 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/analysis-report.md` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `cleaned_table`, `cleaning_rules`, `quality_report`, `rule_log`, `original_snapshot`, `evidence` 齐全 |
-| G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
-| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | 规则可复跑；原始快照保留；清洗前后计数闭合；异常不静默 |
+| G2 | 必填字段 | `cleaned_table`, `cleaning_rules`, `quality_report`, `rule_log`, `original_snapshot`, `closure`, `data_dictionary`, `evidence` 齐全且非空 |
+| G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查；locator 指向真实行 |
+| G4 | 边界 | 未知单位、非数值、below_lod、超范围值均显式记录，未解决项写入 `uncertainties` |
+| G5 | 专项 | 原值未覆盖；原始快照哈希与输入一致；`raw_rows - dropped = cleaned_rows`；规则/换算系数可逆可复跑；报告数字与 `results.json` 同源 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
 
@@ -252,107 +195,47 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | 代码执行失败 | 保留 `execution.log` 与失败原因；不伪造输出 |
 | 权限/接口/格式错误 | 写 `uncertainty` 与已完成范围；建议人工接管 |
 
-## 最小示例（synthetic，不是正式答案）
+## 最小调用示例（synthetic，不是正式答案）
+
+完整可运行示例在 `examples/synthetic-case/`（8 行合成表，含 -999、空白、
+below_lod、ug/mL、超范围值和近似重复）。复现命令：
+
+```bash
+CASE="$SKILL_DIR/examples/synthetic-case/input"
+WORK=/tmp/p4-clean-work; OUT=/tmp/p4-clean-out
+rm -rf "$WORK" "$OUT"; mkdir -p "$WORK" "$OUT"
+python3 "$SKILL_DIR/scripts/run_case.py" prepare --input "$CASE" --work "$WORK" --output "$OUT"
+python3 "$SKILL_DIR/scripts/clean_data.py" --input "$CASE" --work "$WORK" --output "$OUT" --install-code
+python3 "$SKILL_DIR/scripts/run_case.py" finalize --input "$CASE" --work "$WORK" --output "$OUT"
+```
+
+示意输出（synthetic 数字仅用于说明接口，不是正式案例答案）：
 
 ```json
 {
-  "case_id": "SYNTH-ANALYSIS",
-  "mode": "data-cleaning",
-  "summary": "Synthetic example only.",
-  "analysis": {
-    "question": "Synthetic question",
-    "method": "Synthetic method",
-    "assumptions": [
-      "Synthetic assumption"
-    ],
-    "diagnostics": [
-      "Synthetic diagnostic"
-    ],
-    "steps": [
-      "Synthetic step"
-    ]
-  },
-  "results": [
-    {
-      "id": "R001",
-      "metric": "selectivity",
-      "value": 92,
-      "unit": "%",
-      "source": "synthetic.md",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
-  "figures": [
-    {
-      "path": "figures/synthetic.svg",
-      "source": "results",
-      "data_source": "output/results.csv",
-      "units": {
-        "x": "s",
-        "y": "%"
-      }
-    }
-  ],
-  "code": "work/analysis.py",
-  "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
-  ],
-  "uncertainties": [],
-  "data_dictionary": [
-    {
-      "column": "synthetic_col",
-      "type": "number",
-      "unit": "",
-      "missing_rule": "synthetic"
-    }
-  ],
-  "cleaning_rules": [
-    {
-      "id": "CR1",
-      "rule": "synthetic rule",
-      "before": 1,
-      "after": 1,
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
-  "cleaned_table": "output/cleaned-table.csv",
-  "rule_log": "output/rule-log.json",
-  "quality_report": [
-    {
-      "field": "synthetic_col",
-      "issue": "missing",
-      "count": 1,
-      "action": "documented"
-    }
-  ],
-  "original_snapshot": "output/raw-snapshot.csv",
-  "closure": {
-    "raw_rows": 1,
-    "dropped": 0,
-    "cleaned_rows": 1
-  }
+  "status": "ok",
+  "counts": {"raw_rows": 8, "dropped": 1, "cleaned_rows": 7,
+             "missing": 2, "below_lod": 1, "outlier": 1,
+             "converted": 2, "invalid": 0, "unit_unknown": 0},
+  "closure": {"raw_rows": 8, "dropped": 1, "cleaned_rows": 7, "closed": true},
+  "snapshot_sha256": "<64 hex chars>",
+  "artifacts": ["output/analysis-report.md", "output/cleaned-table.csv",
+                "output/quality-report.json", "output/rule-log.json",
+                "output/raw-snapshot.csv"]
 }
 ```
 
-示例只说明接口，不冒充正式案例结果；不要复制其中的实体或数值。
+`examples/synthetic-input.json` 只是 work 字段片段示意（不是可执行答案）；
+`examples/synthetic-case/` 才是完整输入→命令→产物链路。示例中的实体与数值
+不得复制到正式案例。
 
 ## 版本与限制
 
-- 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
-  证据/字段/产物审计。
-- 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；
-  不伪造在线查询结果。
-- 证据校验是逐字匹配启发式，不能替代语义蕴含判断。
-- 示例是 synthetic 接口样例，不是正式案例答案。
+- 版本 `1.1.0`：单入口 + `clean_data.py` 真实清洗器 + 共享引擎；模型负责
+  确认字段语义与边界，脚本负责规则执行、计数闭合、快照与报告一致性。
+- 清洗器不联网、不填补、不覆盖原始值；未知单位/非数值不会被猜测。
+- 规则从 `data-dictionary.md` / `cleaning-workorder.md` 解析；若案例措辞
+  超出解析范围，先看 `work/cleaning-config.json` 或在脚本顶部补齐映射，
+  再重跑，不要手改输出数字。
+- 证据校验是逐字匹配启发式，不能替代语义判断。
+- `examples/synthetic-case/` 是 synthetic 可运行示例，不是正式案例答案。

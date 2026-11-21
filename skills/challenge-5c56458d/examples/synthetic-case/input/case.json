@@ -1,0 +1,10 @@
+{
+  "case_id": "SYN-DB-EXAMPLE",
+  "output_contract": {
+    "sql_text": "rerunnable query",
+    "result_table": "group-level rows with counts",
+    "field_mapping": "schema and dictionary mapping",
+    "empty_result_handling": "explicit empty-group statement",
+    "snapshot_version": "database or csv snapshot and hash"
+  }
+}

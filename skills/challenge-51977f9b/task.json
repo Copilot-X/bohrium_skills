@@ -17,7 +17,12 @@
     "protocol",
     "screening",
     "quality_appraisal",
+    "subquestions",
+    "coverage",
+    "conflict_check",
+    "synthesis",
     "findings",
+    "gap_analysis",
     "evidence"
   ],
   "focus": "系统综述协议、检索/纳排、质量评价与证据综合",
@@ -45,7 +50,11 @@
     "gap_analysis": [],
     "protocol": {},
     "screening": {},
-    "quality_appraisal": []
+    "quality_appraisal": [],
+    "subquestions": [],
+    "coverage": {},
+    "conflict_check": {},
+    "synthesis": {}
   },
   "example": {
     "case_id": "SYNTH-RESEARCH",
@@ -138,17 +147,24 @@
   },
   "schema_properties": {
     "question": "研究问题与范围",
-    "findings": "结论、来源与证据组",
+    "findings": "结论、来源、证据与证据强度",
     "references": "引用条目与标识符",
-    "gap_analysis": "研究空白及其证据基础",
+    "gap_analysis": "研究空白、证据基础与排除检索遗漏的理由",
     "evidence": "path+locator+quote 的逐字证据",
     "uncertainties": "冲突、空白、未覆盖范围",
-    "protocol": "task-specific field required by this sub-challenge",
-    "screening": "task-specific field required by this sub-challenge",
-    "quality_appraisal": "task-specific field required by this sub-challenge"
+    "protocol": "version/search_string/databases/fields/date/limits/executed(+coverage_note)",
+    "screening": "PRISMA 计数 + 逐条 decision/reason/stage/evidence",
+    "quality_appraisal": "record_id/tool/domains/judgement/evidence/effect_on_conclusion",
+    "subquestions": "问题拆解：每个子问题 status + findings/evidence",
+    "coverage": "六面覆盖：question_breakdown/search_coverage/evidence_chain/conflicting_evidence/synthesis/gaps",
+    "conflict_check": "checked + items（可空，但必须显式检查）",
+    "synthesis": "conclusions：statement/records/evidence/strength/limitations"
   },
   "mode_metrics": [
-    "筛选计数闭合（identified-duplicates=screened; screened-excluded=included）。",
-    "质量评价有工具/维度/判断/依据；综合结论引用等级；未执行检索显著标注。"
+    "PRISMA 闭合：identified-duplicates=screened；screened-excluded=included；full_text/included 不越界。",
+    "逐条筛选覆盖输入全部记录；include/exclude/duplicate 与输入字段可复算；排除必须有理由码。",
+    "质量评价逐条含工具/维度/判断/证据，并写 effect_on_conclusion；每个 included 记录恰好一次。",
+    "六面覆盖齐全；conflict_check 即使无冲突也要显式 checked=true。",
+    "检索式必须含布尔逻辑/字段/数据库/日期/语言限制；未联网时 executed=false + coverage_note。"
   ]
 }

@@ -42,6 +42,7 @@ mkdir -p /app/work /app/output
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
+| `scripts/audit_work.py` | **预检闸门**：校验引用方向/逐跳路径、身份合并、关联依据、未知方向与输入覆盖 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/search-plan.json` 的字段契约 |
 | `references/search-rules.md` | 引文追踪 的可执行规则与失败模式 |
@@ -68,7 +69,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 ### 第 2 步：写 `work/search-plan.json`（约 60% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`seeds`, `edges`, `paths`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+`queries`, `candidates`, `tracking_scope`, `seeds`, `edges`, `paths`,
+`identity_groups`, `related_works`, `direction_unknown`, `evidence`，
+并为每条关键判断/候选/步骤绑定 `evidence`：
 
 ```json
 {
@@ -80,10 +83,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
     {
       "id": "Q1",
       "round": 1,
-      "query": "synthetic query",
-      "source": "provided corpus",
-      "purpose": "recall",
-      "stop_condition": "no new eligible records in 2 rounds"
+      "type": "supplied_export",
+      "query": "retained citation graph supplied in input/citations.md",
+      "source": "citations.md",
+      "purpose": "provenance; no live query was run",
+      "stop_condition": "all supplied citation records classified"
     }
   ],
   "candidates": [
@@ -104,6 +108,63 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
         "path": "synthetic.md",
         "locator": "P1",
         "quote": "synthetic source sentence"
+      }
+    },
+    {
+      "id": "C002",
+      "title": "Synthetic Citing Work",
+      "authors": "L. Okafor",
+      "year": "2022",
+      "venue": "Synthetic Replication Letters",
+      "doi": "10.0000/synth.002",
+      "relevance": "follow_up",
+      "rank": 1,
+      "score": 1.0,
+      "dedupe_key": "doi:10.0000/synth.002",
+      "merged_from": [],
+      "reason": "Cites the seed and improves the method.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P2",
+        "quote": "synthetic citing sentence"
+      }
+    },
+    {
+      "id": "C003",
+      "title": "Synthetic Parallel Work",
+      "authors": "M. Chen",
+      "year": "2021",
+      "venue": "SYNTHCONF",
+      "doi": "10.0000/synth.003",
+      "relevance": "parallel",
+      "rank": 2,
+      "score": 0.8,
+      "dedupe_key": "doi:10.0000/synth.003",
+      "merged_from": [],
+      "reason": "Shares references with the seed but does not cite it.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P3",
+        "quote": "synthetic parallel sentence"
+      }
+    },
+    {
+      "id": "C004",
+      "title": "Synthetic Direction-Unknown Record",
+      "authors": "Q. Zhang",
+      "year": "2021",
+      "venue": "Synthetic Other Journal",
+      "doi": "",
+      "relevance": "unresolved",
+      "rank": null,
+      "score": null,
+      "dedupe_key": "title:direction unknown",
+      "merged_from": [],
+      "reason": "The supplied list does not state citation direction.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P4",
+        "quote": "synthetic unknown-direction sentence"
       }
     }
   ],
@@ -155,6 +216,15 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
       }
     }
   ],
+  "tracking_scope": {
+    "levels": 2,
+    "stop_condition": "stop when no new record has a source-backed citation edge",
+    "budget": "synthetic: 10 records",
+    "sources": [
+      "citations.md",
+      "seed.md"
+    ]
+  },
   "edges": [
     {
       "id": "E1",
@@ -162,6 +232,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
       "to": "C002",
       "direction": "forward",
       "hop": 1,
+      "basis": "C002 cites the seed (C001)",
       "source": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -179,20 +250,27 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
       "edges": [
         "E1"
       ],
-      "relation": "cites"
+      "relation": "cites",
+      "direct": true
     }
   ],
   "identity_groups": [
     {
-      "keep": "C001",
-      "merge": [],
-      "basis": "doi:10.0000/synth.001"
+      "canonical_id": "C001",
+      "members": [
+        "C001"
+      ],
+      "merged": false,
+      "basis": "single supplied record; doi:10.0000/synth.001",
+      "version_basis": "",
+      "keep_separate_reason": ""
     }
   ],
   "related_works": [
     {
-      "id": "C002",
-      "reason": "synthetic only",
+      "id": "C003",
+      "relation": "bibliographic_coupling",
+      "basis": "shares two references with the seed but does not cite it",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -200,7 +278,17 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
       }
     }
   ],
-  "direction_unknown": []
+  "direction_unknown": {
+    "checked": true,
+    "items": [
+      {
+        "id": "C004",
+        "reason": "the supplied list does not state whether it cites the seed",
+        "source": "synthetic.md"
+      }
+    ],
+    "policy": "undetermined records are excluded from directed paths"
+  }
 }
 ```
 
@@ -216,6 +304,78 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   找到；找不到的写入 `uncertainties`，不要改写成“大意”。
 - 方向不明标 undetermined，不猜。
 
+#### 2.1 引用边与方向（硬要求）
+
+统一约定：`from` 是路径当前节点，`to` 是下一跳；`direction` 描述
+`to` 相对 `from` 的关系：
+
+| direction | 含义 | 例 |
+|---|---|---|
+| `forward` | `to` 引用 `from`（走向施引文献） | 种子 → 后续改进 |
+| `backward` | `from` 引用 `to`（走向参考文献） | 种子 → 方法出处 |
+| 未知 | 不建有向边，放入 `direction_unknown` | 列表未说明是否引用 |
+
+每条 edge 必须含 `from/to/direction/hop/source/basis`；`source` 的
+path+locator+quote 必须指向输入中的原句。输入 note 明确写
+“seed cites this work”时方向必须是 backward；写“this paper cites the
+seed”时必须是 forward。矛盾时预检失败。
+
+#### 2.2 路径逐跳可回指（硬要求）
+
+- `paths.nodes` 与 `paths.edges` 长度满足 `len(nodes)=len(edges)+1`；
+- 第 i 条边必须真实连接 `nodes[i] -> nodes[i+1]`，且按 edge 的
+  `from->to` 顺序遍历；反向遍历要拆成另一条边或明确改写；
+- `direct` 标志与 hop 数一致（1 跳=直接引用，>1=间接可达）；
+- 每条 path 写 `relation`（cites/cited_by/mixed）与 `basis`；
+- 没有边证据的“最短路径”不能写。
+
+#### 2.3 身份合并（硬要求）
+
+`identity_groups` 每组含：
+
+- `canonical_id` 与 `members`（含 canonical）；
+- `merged`（true/false）与 `basis`（匹配字段：DOI、标题、作者、年份）；
+- 合并版本时写 `version_basis`（预印本/会议版/期刊版的 DOI、arXiv、
+  年份、标题与作者对应关系）；
+- 同标题不同作者/不同研究问题：`merged=false` +
+  `keep_separate_reason`，禁止合并。
+
+每个输入记录恰好出现在一个身份组中（单条记录也建组）。
+
+#### 2.4 关联文献与未知方向（硬要求）
+
+- `related_works` 每条含 `id/relation/basis/evidence`；
+  `relation ∈ {bibliographic_coupling, co_citation, shared_dataset,
+  shared_author, topic, method_lineage}`；不能写 `cites/cited_by`，
+  也不能把已进入引用边的记录伪装成“平行工作”。
+- 关联依据必须能回指输入（共享参考文献、共享数据集、同作者/机构等）。
+- `direction_unknown` 是对象：
+  `{"checked": true, "items": [...], "policy": "..."}`；
+  每项含 `id/reason/source`。输入明确说方向未知的记录必须在此列出；
+  这些记录不得进入有向 `paths`。
+
+#### 2.5 覆盖与停止（硬要求）
+
+- `tracking_scope` 写 `levels/stop_condition/budget/sources`；
+  至少覆盖 1 层前向 + 1 层后向（输入同时提供两类记录时）。
+- 输入中的每条引用记录必须被以下之一覆盖：candidate、edge 端点、
+  identity_group 成员、related_works、direction_unknown；静默遗漏会被
+  预检发现。
+- 种子无引文记录时：`edges=[]` 允许，但必须写
+  `direction_unknown.checked=true` 与 `uncertainties` 说明“无引文记录”，
+  不能伪造边。
+
+#### 2.6 运行预检（必做，通过后才可 finalize）
+
+```bash
+python3 "$SKILL_DIR/scripts/audit_work.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+预检会校验方向语义、路径逐跳连接、身份合并/拆分、关联依据、未知方向、
+输入记录覆盖与逐字证据。退出码必须为 `0`；有 `problems` 先修工作文件，
+不要 finalize。
+
 ### 第 3 步：finalize（约 30% 预算）
 
 ```bash
@@ -225,7 +385,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/search-plan.json`（或 JSON 主产物），检查必填字段 `seeds`, `edges`, `paths`, `evidence`；
+1. 读取 `work/search-plan.json`（或 JSON 主产物），检查必填字段 `queries`, `candidates`, `tracking_scope`, `seeds`, `edges`, `paths`, `identity_groups`, `related_works`, `direction_unknown`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
 3. 登记 `output/search-results.json` 与 `output/candidates.csv`, `output/search-log.json`, `output/evidence.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
@@ -263,10 +423,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/search-results.json` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `seeds`, `edges`, `paths`, `evidence` 齐全 |
-| G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
-| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | 每条引用边有方向与来源；路径逐跳可回指；预印本/正式版合并有依据 |
+| G2 | 必填字段 | `queries`, `candidates`, `tracking_scope`, `seeds`, `edges`, `paths`, `identity_groups`, `related_works`, `direction_unknown`, `evidence` 齐全且子字段非空壳 |
+| G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查；种子/记录元数据与输入一致 |
+| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties`；未知方向单列 |
+| G5 | 专项 | 每条引用边有方向与来源；路径逐跳可回指；版本合并/同名拆分有依据；关联文献非引用边 |
+| G8 | 预检 | `scripts/audit_work.py` 退出码 0，`output/quality-audit.json` 存在 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
 
@@ -305,10 +466,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
     {
       "id": "Q1",
       "round": 1,
-      "query": "synthetic query",
-      "source": "provided corpus",
-      "purpose": "recall",
-      "stop_condition": "no new eligible records in 2 rounds"
+      "type": "supplied_export",
+      "query": "retained citation graph supplied in input/citations.md",
+      "source": "citations.md",
+      "purpose": "provenance; no live query was run",
+      "stop_condition": "all supplied citation records classified"
     }
   ],
   "candidates": [
@@ -329,6 +491,63 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
         "path": "synthetic.md",
         "locator": "P1",
         "quote": "synthetic source sentence"
+      }
+    },
+    {
+      "id": "C002",
+      "title": "Synthetic Citing Work",
+      "authors": "L. Okafor",
+      "year": "2022",
+      "venue": "Synthetic Replication Letters",
+      "doi": "10.0000/synth.002",
+      "relevance": "follow_up",
+      "rank": 1,
+      "score": 1.0,
+      "dedupe_key": "doi:10.0000/synth.002",
+      "merged_from": [],
+      "reason": "Cites the seed and improves the method.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P2",
+        "quote": "synthetic citing sentence"
+      }
+    },
+    {
+      "id": "C003",
+      "title": "Synthetic Parallel Work",
+      "authors": "M. Chen",
+      "year": "2021",
+      "venue": "SYNTHCONF",
+      "doi": "10.0000/synth.003",
+      "relevance": "parallel",
+      "rank": 2,
+      "score": 0.8,
+      "dedupe_key": "doi:10.0000/synth.003",
+      "merged_from": [],
+      "reason": "Shares references with the seed but does not cite it.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P3",
+        "quote": "synthetic parallel sentence"
+      }
+    },
+    {
+      "id": "C004",
+      "title": "Synthetic Direction-Unknown Record",
+      "authors": "Q. Zhang",
+      "year": "2021",
+      "venue": "Synthetic Other Journal",
+      "doi": "",
+      "relevance": "unresolved",
+      "rank": null,
+      "score": null,
+      "dedupe_key": "title:direction unknown",
+      "merged_from": [],
+      "reason": "The supplied list does not state citation direction.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P4",
+        "quote": "synthetic unknown-direction sentence"
       }
     }
   ],
@@ -380,6 +599,15 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
       }
     }
   ],
+  "tracking_scope": {
+    "levels": 2,
+    "stop_condition": "stop when no new record has a source-backed citation edge",
+    "budget": "synthetic: 10 records",
+    "sources": [
+      "citations.md",
+      "seed.md"
+    ]
+  },
   "edges": [
     {
       "id": "E1",
@@ -387,6 +615,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
       "to": "C002",
       "direction": "forward",
       "hop": 1,
+      "basis": "C002 cites the seed (C001)",
       "source": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -404,20 +633,27 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
       "edges": [
         "E1"
       ],
-      "relation": "cites"
+      "relation": "cites",
+      "direct": true
     }
   ],
   "identity_groups": [
     {
-      "keep": "C001",
-      "merge": [],
-      "basis": "doi:10.0000/synth.001"
+      "canonical_id": "C001",
+      "members": [
+        "C001"
+      ],
+      "merged": false,
+      "basis": "single supplied record; doi:10.0000/synth.001",
+      "version_basis": "",
+      "keep_separate_reason": ""
     }
   ],
   "related_works": [
     {
-      "id": "C002",
-      "reason": "synthetic only",
+      "id": "C003",
+      "relation": "bibliographic_coupling",
+      "basis": "shares two references with the seed but does not cite it",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -425,7 +661,17 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
       }
     }
   ],
-  "direction_unknown": []
+  "direction_unknown": {
+    "checked": true,
+    "items": [
+      {
+        "id": "C004",
+        "reason": "the supplied list does not state whether it cites the seed",
+        "source": "synthetic.md"
+      }
+    ],
+    "policy": "undetermined records are excluded from directed paths"
+  }
 }
 ```
 
@@ -433,8 +679,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
-- 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
-  证据/字段/产物审计。
+- 版本 `1.1.0`：单入口 + 共享引擎 + `fam_tracks`；新增
+  `scripts/audit_work.py` 校验方向语义、路径逐跳、身份合并、关联依据与
+  未知方向；模型写内容，脚本只做审计。
 - 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；
   不伪造在线查询结果。
 - 证据校验是逐字匹配启发式，不能替代语义蕴含判断。

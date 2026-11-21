@@ -27,6 +27,18 @@ task.md 要求“知识库问答、检索增强、引用定位与拒答边界”
   `scripts/parsers.py` 会提取文本、JSON 数据与 CSV 行；无文字层 PDF
   尝试 OCR，失败如实记录。
 - 可选：已有工作文件、术语表、数据字典、候选列表、查询日志。
+- 本版实际可能在 `/input` 给出一个**真实文件库**：多目录文件、改名副本（alias）、
+  行政版本说明（supersedes / 修订 / 作废）、元数据与权限记录，以及一组问题或
+  workorder。先按实际文件处理，不按文件名猜内容。
+
+```bash
+python3 "$SKILL_DIR/scripts/build_library_index.py" --input /input \
+  --out /app/work/library-index-build.json --json
+```
+
+索引给出 `path/sha256/version_token/version_family/sections/blocks[]`、
+`duplicate_groups`、`version_groups`、`notes[]`（alias/版本说明）与 `unreadable`。
+引用定位用 `page`（PDF）或 `section + line`（文本），不能只给文件名。
 
 ```bash
 export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md 2>/dev/null | head -n 1)")"
@@ -45,6 +57,8 @@ mkdir -p /app/work /app/output
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/library-plan.json` 的字段契约 |
 | `references/library-rules.md` | 知识库问答 的可执行规则与失败模式 |
+| `scripts/build_library_index.py` | **问答前必跑**：路径/版本/章节/行号/别名/重复/不可读索引 |
+| `scripts/check_kb_answers.py` | **finalize 前必跑**：逐句引用支持、拒答、冲突、版本与契约检查 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
 ## 工作流
@@ -68,7 +82,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 ### 第 2 步：写 `work/library-plan.json`（约 60% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`answers`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+`questions`, `items`, `answers`, `retrieval`, `evidence`，并为每条关键判断/候选/
+步骤绑定 `evidence`。先用 `library-index-build.json` 定位文件与段落，再回读原文
+摘 quote；不要只凭文件名或索引摘要回答：
 
 ```json
 {
@@ -154,16 +170,69 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 }
 ```
 
+### 第 2b 步：逐句引用、拒答与冲突（本题得分核心）
+
+1. **逐句引用且支持该句**：`answered` 的每个 sentence 至少一条 citation；
+   citation 的 quote 必须包含该句的数字与关键实体（如 OD600、ZX-99、pH 7.4）。
+   **逐字存在但与句子无关的引用不算支持**；找不到支持证据的句子删除或改为
+   `insufficient_evidence`。
+2. **无证据拒答**：`status: "insufficient_evidence" | "refused"`，`sentences: []`，
+   `missing_evidence[]` 写缺什么（具体指标/实体/文件），并给已检索范围
+   `retrieval_scope`；不得用“没有找到相关描述”一句带过，也不得补造。
+3. **冲突并列**：`status: "conflict"`，至少两句、两个不同 path（或明确版本），
+   `conflict.sources[]` ≥2，`resolution` 写“未解决/以某版本为准/需人工确认”及依据。
+   **不得为了给出单一答案而丢掉一方**。
+4. **版本与副本**：同一 `version_family` 的多个版本不当作独立证据；引用时写
+   `version`，并在 `items[].status` 标 `current|superseded|duplicate`，
+   `duplicate_of`/`superseded_by` 给路径。冲突涉及版本差异时说明版本关系。
+5. **文件层覆盖**：`items[]` 覆盖输入文件类型、元数据、目录层级、重复文件、
+   版本差异、权限与来源六个维度；无文本层/损坏/加密/无权限进
+   `unreadable[]`/`uncertainties[]`，不写成“知识库没有”。
+
+回答与检索记录示例（synthetic）：
+
+```json
+{
+  "questions": [{"id": "Q1", "text": "original buffer pH?"}, {"id": "Q3", "text": "OD600 for ZX-99?"}],
+  "answers": [
+    {"id": "Q1", "question": "What buffer pH was used in the original protocol?",
+     "status": "answered",
+     "sentences": [{"text": "The original protocol used 20 mM Tris-HCl at pH 7.4.",
+                    "citations": [{"path": "kb/paper_a.md", "version": "v1",
+                                   "locator": "L3", "quote": "The running buffer was 20 mM Tris-HCl at pH 7.4."}],
+                    "support": "direct"}],
+     "missing_evidence": [], "conflict": []},
+    {"id": "Q3", "question": "What was the OD600 for strain ZX-99?",
+     "status": "insufficient_evidence", "sentences": [],
+     "missing_evidence": ["OD600 for strain ZX-99", "any document mentioning ZX-99"],
+     "retrieval_scope": "all 9 documents; 0 matches for ZX-99 or OD600",
+     "conflict": []}
+  ],
+  "retrieval": [{"answer_id": "Q1", "path": "kb/paper_a.md", "locator": "L3",
+                 "snippet": "The running buffer was 20 mM Tris-HCl at pH 7.4.", "version": "v1"}]
+}
+```
+
 同时写以下产物：
 
-- `output/library-results.json`
-- `output/library-index.json`
-- `output/operations.log.json`
+- `output/library-results.json`（主交付物，必须真实存在且非空）
+- `output/library-index.json`（文件/版本/别名/重复索引）
+- `output/operations.log.json`（retrieval/answer/refusal/recovery 操作及结果）
+- `output/results/operation_evidence.json`（检索与引用证据）
+- `output/results/failure_recovery.json`（不可读/权限/版本冲突/拒答处理）
+- 若 `output_contract` 还有其他键，一律写 `output/results/<key>.json`（或 `.csv/.md`），
+  **不要只写在 output 根目录**。
 
-- `output/library-results.json` 是主交付物，必须真实存在且非空。
-- 所有 `quote` 必须能在对应 `path` 的材料中逐字（允许空白折叠/省略号分段）
-  找到；找不到的写入 `uncertainties`，不要改写成“大意”。
-- 无证据拒答；引用必须支持该句。
+### 第 2c 步：自查（finalize 前必跑）
+
+```bash
+python3 "$SKILL_DIR/scripts/check_kb_answers.py" --input /input \
+  --work /app/work --output /app/output --json
+```
+
+`ok:false` 时逐条修：问题漏答、句子无引用、引用与句子实体/数值不匹配、
+拒答缺 missing_evidence、冲突少于两源、同族版本当独立证据、quote 非逐字、
+契约产物缺失。修不了的在 `uncertainties` 写清并降级 `partial`。
 
 ### 第 3 步：finalize（约 30% 预算）
 
@@ -176,7 +245,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 1. 读取 `work/library-plan.json`（或 JSON 主产物），检查必填字段 `answers`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
-3. 登记 `output/library-results.json` 与 `output/library-index.json`, `output/operations.log.json` 的真实文件；
+3. 登记 `output/library-results.json` 与 `output/library-index.json`, `output/operations.log.json`，
+   以及 `output/results/` 下所有契约产物；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
    stdout/stderr 写入 `output/execution.log`；失败不伪造结果；
 5. 写 `output/result.json`，含 `status/result/claims/uncertainties`
@@ -202,8 +272,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 `cleaned_table`、`quality_report`、`rule_log`、`original_snapshot`），必须：
 
 1. 在 `result.json` 顶层保留原键名；
-2. 优先写同名产物 `output/<field>.json/.csv/.md`，或把对应 canonical
-   字段/artifact 路径填入该键；
+2. 写同名产物到 **`output/results/<field>.json`**（或 `.csv/.md`）；`output/results/`
+   会被 finalize 自动登记。根目录只放主产物与 `result.json`；
 3. finalize 会检查 `contract_coverage`，未覆盖的键会降级 `partial` 并写入
    `uncertainties`；不要只写 `status/result/claims` 而忽略原契约字段。
 
@@ -215,9 +285,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | G2 | 必填字段 | `answers`, `evidence` 齐全 |
 | G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
 | G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | 答案每句有来源；无证据时拒答；冲突材料并列 |
-| G6 | 产物 | 声明的每个 artifact 路径真实存在 |
+| G5 | 专项 | 答案每句有引用，且引用含该句数字/实体；无证据拒答；冲突≥2源 |
+| G5b | 版本 | 同族版本/副本不当作独立证据；引用带 version |
+| G6 | 产物 | 声明的每个 artifact 路径真实存在；契约键在 output/results/ 有产物 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+| G8 | 自查 | `check_kb_answers.py` 返回 `ok:true` |
 
 ## 评分维度对照
 
@@ -237,10 +309,14 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | 只有摘要/部分材料 | 只交付可确认部分；正文标“基于摘要”；`status=partial` |
 | 证据 quote 找不到 | 回到原文重摘；无法逐字时删除该证据或标 `uncertainty` |
 | 候选/文献重复 | 用 DOI/标题+年份合并；保留合并依据 |
-| 空结果/无命中 | 明确写“未检索到/未命中”，不把空白写成排除 |
+| 空结果/无命中 | `insufficient_evidence` + `missing_evidence` + `retrieval_scope` |
 | 数字/统计不一致 | 以数据文件为准；报告与结果文件对齐 |
 | 代码执行失败 | 保留 `execution.log` 与失败原因；不伪造输出 |
-| 权限/接口/格式错误 | 写 `uncertainty` 与已完成范围；建议人工接管 |
+| 权限/接口/格式错误 | 写 `unreadable[]`/`uncertainty` 与已完成范围；建议人工接管 |
+| 重名/改名文件 | sha256 判重 + alias 来源；副本写 `duplicate_of`，不当独立证据 |
+| 版本冲突 | `status=conflict` 或引用带 version 并说明 current/superseded |
+| 扫描件无文本层 | 尝试 OCR；失败进 `unreadable[]`，不写成“知识库没有” |
+| 问题不在知识库内 | 拒答并写缺什么；不得用相近主题的句子冒充答案 |
 
 ## 最小示例（synthetic，不是正式答案）
 

@@ -30,7 +30,12 @@ description: 文献结论与数据提取：按 /input/target-fields.json 的 fie
 | 文件 | 何时用 | 准确命令 |
 |---|---|---|
 | `references/data-extraction-playbook.md` | 开始定字段、抽取数值、处理表格/缺失/冲突前 | 先读；按字段表、五元组、状态词表、失败模式执行 |
+| `references/00-protocol.md` | 第一次运行、确认目录/预算/工具 | 按其中路径与预算安排步骤 |
+| `references/01-evidence.md` | 选 quote、定 locator、区分 reported/inferred | 每个值按该规则绑证据 |
+| `references/02-reading.md` | 判断问题类型与缺口型回答 | 缺口必须 `not_reported`/`insufficient_evidence` |
+| `references/08-quality-gates.md` | 交付前总检 | 与本文件质量闸门一起执行 |
 | `templates/extraction-schema.json` | 写 `/app/output/result.json` 骨架时 | 复制结构，替换 `REPLACE_WITH_*`；逐 `field_id` 填写 |
+| `templates/result_envelope.json` | 官方 reading 信封 | 补齐 status/result/claims/uncertainties |
 | `scripts/extract_tables.py` | 输入含 Markdown 表格、CSV/TSV 或需要表格候选索引时 | `python3 {SKILL_DIR}/scripts/extract_tables.py --input /input --out /app/work/tables.json --json` |
 | `scripts/check_extraction.py` | 每次写盘后、交付前 | `python3 {SKILL_DIR}/scripts/check_extraction.py --result /app/output/result.json --input /input --json --out /app/work/extraction_check.json` |
 | `scripts/check_extraction.py`（自测模式） | 首次使用或修改校验器后 | `python3 {SKILL_DIR}/scripts/check_extraction.py --self-test --json` |
@@ -95,7 +100,11 @@ python3 {SKILL_DIR}/scripts/extract_tables.py --input /input --out /app/work/tab
 ## 官方输出契约（必须补齐）
 
 官方 `example-input` 的 `output_contract` 要求顶层字段：`status`、`result`、`claims`、`uncertainties`（status 取 answered|partial|insufficient_evidence|input_error）。
-题目原有字段全部保留；交付前运行：
+实际案例可能在 `/input/case.json` 的 `output_contract` 中给出额外或改名的键：**先读实际
+键名并原样保留**，本契约只是超集。`claims[]` 至少覆盖每个 `reported` 与 `source_conflict`
+字段，每条含 `claim_id/kind/evidence/source_id/location`；`kind` 取
+`reported|derived|inferred|not_reported`，`location` 用
+`doc_id + paragraph_id/table_id/figure_id + quote`。题目原有字段全部保留；交付前运行：
 
 ```bash
 python3 {SKILL_DIR}/scripts/emit_official.py \
@@ -391,6 +400,8 @@ python3 {SKILL_DIR}/scripts/emit_official.py \
 - [ ] `missing[]` 覆盖全部缺失项（含单位/条件缺失）
 - [ ] 冲突项保留 ≥2 个候选与来源，未静默择一
 - [ ] `summary` 计数与 `complete_rate` 和实际一致
+- [ ] 官方契约键（按 `/input/case.json` 实际键名）齐全，`claims[]` 覆盖每个
+      `reported`/`source_conflict` 字段且含 source_id + location
 - [ ] `check_extraction.py` 与 `validate_result.py --check-quotes` 通过
 - [ ] 无编造数值、无未记录的单位换算、无材料外结论
 

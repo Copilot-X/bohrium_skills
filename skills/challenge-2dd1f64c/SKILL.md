@@ -42,6 +42,7 @@ mkdir -p /app/work /app/output
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
+| `scripts/audit_work.py` | **预检闸门**：校验 label/层一致性、rank/score/tie_break、k 与 ranked_keep、版本合并、元数据一致与逐字证据 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/search-plan.json` 的字段契约 |
 | `references/search-rules.md` | 文献筛选与排序 的可执行规则与失败模式 |
@@ -68,7 +69,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 ### 第 2 步：写 `work/search-plan.json`（约 60% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`candidates`, `evidence`, `metrics`, `screening`，并为每条关键判断/候选/步骤绑定 `evidence`：
+`queries`, `candidates`, `decision_rules`, `ranked_keep`, `metrics`,
+`screening`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
 
 ```json
 {
@@ -80,10 +82,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
     {
       "id": "Q1",
       "round": 1,
-      "query": "synthetic query",
-      "source": "provided corpus",
-      "purpose": "recall",
-      "stop_condition": "no new eligible records in 2 rounds"
+      "type": "provided_candidate_set",
+      "query": "candidate set supplied in input/candidates.csv",
+      "source": "candidates.csv",
+      "purpose": "provenance; no live query was run",
+      "stop_condition": "all supplied candidates screened"
     }
   ],
   "candidates": [
@@ -99,10 +102,13 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
       "rank": 1,
       "score": 1.0,
       "confidence": 0.9,
-      "tie_break": "title",
+      "tie_break": "candidate_id",
       "duplicates": [],
+      "version_group": "VG1",
+      "merged_from": [],
+      "version_basis": "",
       "escalated_to_human": false,
-      "reason": "synthetic only",
+      "reason": "synthetic only; matches rule R1",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -110,13 +116,39 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
       }
     }
   ],
+  "decision_rules": [
+    {
+      "id": "R1",
+      "priority": 1,
+      "condition": "population/outcome match and abstract reports the target metric",
+      "decision": "keep"
+    },
+    {
+      "id": "R2",
+      "priority": 2,
+      "condition": "topic match but no target metric or insufficient abstract",
+      "decision": "maybe"
+    },
+    {
+      "id": "R3",
+      "priority": 3,
+      "condition": "wrong population/outcome/study type",
+      "decision": "exclude"
+    }
+  ],
+  "ranked_keep": [
+    "C001"
+  ],
   "metrics": {
     "k": 10,
+    "ranked_keep": [
+      "C001"
+    ],
     "precision_at_k": 1.0,
     "ndcg_at_k": 1.0,
     "recall_at_k": 1.0,
     "metadata_accuracy": 1.0,
-    "definition": "synthetic values; replace with measured values"
+    "definition": "synthetic values; replace with measured values; effective_k=min(k, candidate_count)"
   },
   "screening": {
     "keep": [
@@ -125,7 +157,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
     "maybe": [],
     "exclude": [],
     "criteria": [
-      "synthetic criterion"
+      "R1: target population+outcome",
+      "R2: insufficient evidence",
+      "R3: wrong population/outcome/study type"
     ],
     "escalated": []
   },
@@ -165,6 +199,56 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   找到；找不到的写入 `uncertainties`，不要改写成“大意”。
 - 输入是候选集时不要编造 queries。
 
+#### 2.1 标签、排序与分数（硬要求）
+
+1. **全覆盖**：`candidates` 必须与输入候选集一一对应，每个 `candidate_id`
+   恰好一次；不能漏掉噪声项，也不能新增输入中不存在的文献。
+2. **三层标签**：`label ∈ {keep, maybe, exclude}`；`screening.keep/maybe/exclude`
+   是 ID 列表，必须与 label **双向一致**，同一 ID 只能出现在一层。
+3. **规则可复算**：`decision_rules` 每条含 `id/priority/condition/decision`；
+   每个候选的 `criteria_hits` 引用命中的规则 ID，`exclude` 还要写
+   `exclusion_rule`。label 必须能由最高优先级命中规则解释。
+4. **rank**：只有 keep 有 rank，且必须是连续 `1..n`，无重复；maybe/exclude
+   的 `rank` 为 `null`。
+5. **score**：keep 的 score 随 rank 非增；同分时必须有 `tie_break`
+   （`candidate_id`/`title`/`year` 等确定性字段），且 tie_break 顺序与
+   rank 一致；禁止随机或模型主观平局。
+6. **k 与 ranked_keep**：`ranked_keep` 是按 rank 排序的前
+   `min(k, keep 数)` 个 ID；`metrics.k` 为整数；keep 数小于 k 时写
+   `k_shortfall_note`。`Precision@k`、`Recall@k` 必须能由 label 与
+   `ranked_keep` 复算。
+
+#### 2.2 版本、重复与缺失元数据（硬要求）
+
+- 预印本/会议版/期刊版：同标题同作者时合并到正式版，保留
+  `merged_from` 与被合并记录的 `version_basis`（标题、作者、年份、
+  DOI/arXiv 对应关系）；不能当成两篇分别排序。
+- 同标题不同作者/不同研究问题：`keep_separate_reason`，禁止合并。
+- 重复导出：`duplicates`/`merged_from` 记录来源，避免重复计数。
+- 缺摘要、缺年份、缺 DOI：默认 `maybe` + `escalated_to_human=true`；
+  不能仅因元数据缺失判 `exclude`。
+
+#### 2.3 逐条理由与证据（硬要求）
+
+每个候选必须有：
+
+- `reason`：命中/未命中的具体条件（引用规则 ID 与摘要要点）；
+- `evidence`：path+locator+quote，逐字来自该候选的标题/摘要行；
+- 元数据（title/authors/year/venue/doi）必须与输入逐字段一致，禁止编造
+  DOI 或改题名。
+
+#### 2.4 运行预检（必做，通过后才可 finalize）
+
+```bash
+python3 "$SKILL_DIR/scripts/audit_work.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+预检会从输入候选集复算：候选覆盖、label 与三层一致性、rank 连续性、
+score 单调性、tie_break、`ranked_keep` 与 top-k、Precision@k、版本合并、
+缺失元数据升级、元数据逐字段一致与逐字证据。退出码必须为 `0`；有
+`problems` 先修工作文件，不要 finalize。
+
 ### 第 3 步：finalize（约 30% 预算）
 
 ```bash
@@ -174,7 +258,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/search-plan.json`（或 JSON 主产物），检查必填字段 `candidates`, `evidence`, `metrics`, `screening`；
+1. 读取 `work/search-plan.json`（或 JSON 主产物），检查必填字段 `queries`, `candidates`, `decision_rules`, `ranked_keep`, `metrics`, `screening`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
 3. 登记 `output/search-results.json` 与 `output/candidates.csv`, `output/search-log.json`, `output/evidence.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
@@ -212,10 +296,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/search-results.json` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `candidates`, `evidence`, `metrics`, `screening` 齐全 |
-| G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
-| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | 保留/待定/排除各有判据；排序可解释；关键文献在前；冲突升级人工 |
+| G2 | 必填字段 | `queries`, `candidates`, `decision_rules`, `ranked_keep`, `metrics`, `screening`, `evidence` 齐全且子字段非空壳 |
+| G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查；元数据与输入一致 |
+| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties`；缺失元数据升级人工 |
+| G5 | 专项 | label 与三层双向一致；rank 连续、score 单调、tie_break 确定；k 与 ranked_keep 对齐；版本合并有依据 |
+| G8 | 预检 | `scripts/audit_work.py` 退出码 0，`output/quality-audit.json` 存在 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
 
@@ -254,10 +339,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
     {
       "id": "Q1",
       "round": 1,
-      "query": "synthetic query",
-      "source": "provided corpus",
-      "purpose": "recall",
-      "stop_condition": "no new eligible records in 2 rounds"
+      "type": "provided_candidate_set",
+      "query": "candidate set supplied in input/candidates.csv",
+      "source": "candidates.csv",
+      "purpose": "provenance; no live query was run",
+      "stop_condition": "all supplied candidates screened"
     }
   ],
   "candidates": [
@@ -273,10 +359,13 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
       "rank": 1,
       "score": 1.0,
       "confidence": 0.9,
-      "tie_break": "title",
+      "tie_break": "candidate_id",
       "duplicates": [],
+      "version_group": "VG1",
+      "merged_from": [],
+      "version_basis": "",
       "escalated_to_human": false,
-      "reason": "synthetic only",
+      "reason": "synthetic only; matches rule R1",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -284,13 +373,39 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
       }
     }
   ],
+  "decision_rules": [
+    {
+      "id": "R1",
+      "priority": 1,
+      "condition": "population/outcome match and abstract reports the target metric",
+      "decision": "keep"
+    },
+    {
+      "id": "R2",
+      "priority": 2,
+      "condition": "topic match but no target metric or insufficient abstract",
+      "decision": "maybe"
+    },
+    {
+      "id": "R3",
+      "priority": 3,
+      "condition": "wrong population/outcome/study type",
+      "decision": "exclude"
+    }
+  ],
+  "ranked_keep": [
+    "C001"
+  ],
   "metrics": {
     "k": 10,
+    "ranked_keep": [
+      "C001"
+    ],
     "precision_at_k": 1.0,
     "ndcg_at_k": 1.0,
     "recall_at_k": 1.0,
     "metadata_accuracy": 1.0,
-    "definition": "synthetic values; replace with measured values"
+    "definition": "synthetic values; replace with measured values; effective_k=min(k, candidate_count)"
   },
   "screening": {
     "keep": [
@@ -299,7 +414,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
     "maybe": [],
     "exclude": [],
     "criteria": [
-      "synthetic criterion"
+      "R1: target population+outcome",
+      "R2: insufficient evidence",
+      "R3: wrong population/outcome/study type"
     ],
     "escalated": []
   },
@@ -331,8 +448,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
-- 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
-  证据/字段/产物审计。
+- 版本 `1.1.0`：单入口 + 共享引擎 + `fam_tracks`；新增
+  `scripts/audit_work.py` 复算 label/rank/score/tie_break/k 并校验版本
+  合并与逐字证据；模型写内容，脚本只做审计。
 - 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；
   不伪造在线查询结果。
 - 证据校验是逐字匹配启发式，不能替代语义蕴含判断。

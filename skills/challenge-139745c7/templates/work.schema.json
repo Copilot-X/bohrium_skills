@@ -69,19 +69,26 @@
       }
     },
     "no_result": {
-      "type": "boolean",
-      "description": "task-specific field required by this sub-challenge"
+      "type": ["boolean", "object"],
+      "description": "true or {is_no_result, reason, searched_scope}; must be explicit when zero hits"
     },
     "unreadable": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "扫描件/损坏/加密/无权限文件及原因",
       "items": {
         "type": "object"
       }
     },
     "version_conflict": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "同族版本：current/superseded/basis",
+      "items": {
+        "type": "object"
+      }
+    },
+    "queries": {
+      "type": "array",
+      "description": "检索式与用途/轮次",
       "items": {
         "type": "object"
       }

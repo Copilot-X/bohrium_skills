@@ -42,6 +42,7 @@ mkdir -p /app/work /app/output
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
+| `scripts/audit_work.py` | **预检闸门**：复算 PRISMA 计数与逐条 decision，校验协议可执行性、质量评价证据与六面覆盖 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/research-plan.json` 的字段契约 |
 | `references/research-rules.md` | 系统综述 的可执行规则与失败模式 |
@@ -68,7 +69,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 ### 第 2 步：写 `work/research-plan.json`（约 60% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`protocol`, `screening`, `quality_appraisal`, `findings`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+`protocol`, `screening`, `quality_appraisal`, `subquestions`, `coverage`,
+`conflict_check`, `synthesis`, `findings`, `gap_analysis`, `evidence`，
+并为每条关键判断/候选/步骤绑定 `evidence`：
 
 ```json
 {
@@ -103,7 +106,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   "gap_analysis": [
     {
       "gap": "Synthetic gap",
-      "basis": "synthetic.md P1"
+      "basis": "synthetic.md P1",
+      "why_not_omission": "The protocol terms were checked across every supplied record; no eligible study was hidden by the export."
     }
   ],
   "evidence": [
@@ -116,12 +120,18 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   "uncertainties": [],
   "protocol": {
     "version": "v1",
-    "search_string": "synthetic",
+    "search_string": "(\"synthetic term A\" OR \"synthetic term B\") AND synthetic outcome",
     "databases": [
       "SyntheticDB"
     ],
+    "fields": [
+      "title",
+      "abstract"
+    ],
     "date": "2026-01-01",
-    "limits": "synthetic only"
+    "limits": "2020-2026; English; supplied export only",
+    "executed": false,
+    "coverage_note": "Synthetic export only; no live database search was run."
   },
   "screening": {
     "identified": 1,
@@ -149,16 +159,88 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
       "record_id": "R001",
       "tool": "synthetic tool",
       "domains": [
-        "design"
+        "design",
+        "reporting"
       ],
       "judgement": "low_risk",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
         "quote": "synthetic source sentence"
+      },
+      "effect_on_conclusion": "Synthetic low-risk judgement keeps this record in the main synthesis; it does not upgrade a single-study result to high certainty."
+    }
+  ],
+  "subquestions": [
+    {
+      "id": "SQ1",
+      "question": "Synthetic sub-question on effect direction",
+      "status": "answered",
+      "records": [
+        "R001"
+      ],
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
       }
     }
-  ]
+  ],
+  "coverage": {
+    "question_breakdown": {
+      "status": "covered",
+      "items": [
+        "SQ1"
+      ]
+    },
+    "search_coverage": {
+      "status": "partial",
+      "evidence": "Synthetic export only; protocol.executed=false."
+    },
+    "evidence_chain": {
+      "status": "covered",
+      "items": [
+        "F001"
+      ]
+    },
+    "conflicting_evidence": {
+      "status": "covered",
+      "items": [],
+      "note": "Synthetic example has no conflicting study; the check is explicit."
+    },
+    "synthesis": {
+      "status": "covered",
+      "items": [
+        "C1"
+      ]
+    },
+    "gaps": {
+      "status": "covered",
+      "items": [
+        "G1"
+      ]
+    }
+  },
+  "conflict_check": {
+    "checked": true,
+    "items": [],
+    "summary": "Synthetic example: no conflicting effect estimates in the supplied records."
+  },
+  "synthesis": {
+    "conclusions": [
+      {
+        "id": "C1",
+        "statement": "Synthetic conclusion bounded to one record.",
+        "records": [
+          "R001"
+        ],
+        "strength": "low",
+        "limitations": [
+          "Synthetic only; single record"
+        ]
+      }
+    ]
+  }
 }
 ```
 
@@ -173,6 +255,72 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   找到；找不到的写入 `uncertainties`，不要改写成“大意”。
 - 计数闭合；排除有理由码。
 
+#### 2.1 检索协议必须可执行（硬要求）
+
+`protocol` 必须含：
+
+| 字段 | 要求 | 不可接受 |
+|---|---|---|
+| `version` | 版本号或日期戳 | 空、`v1` 之外无内容 |
+| `search_string` | 至少两个概念块 + 布尔逻辑（AND/OR/NOT）+ 括号 | 单个关键词串 |
+| `databases` | 数据库/导出源列表 | `[]` 或 `"database"` 占位 |
+| `fields` | title/abstract/full text 等检索字段 | 省略 |
+| `date` | `YYYY-MM-DD` 实际检索/导出日期 | 空、模糊日期 |
+| `limits` | 时间、语言、文献类型限制 | 空 |
+| `executed` | `true`（实际检索）或 `false`（只读导出） | 省略 |
+| `coverage_note` | `executed=false` 时说明覆盖边界 | 缺 |
+
+#### 2.2 筛选记录（硬要求）
+
+- `screening` 计数必须闭合：
+  `identified - duplicates = screened`；`screened - excluded = included`；
+  `included <= full_text <= screened`。
+- `screening.records` 必须**逐条覆盖输入记录**，每条一行，含
+  `record_id/stage/decision/reason/evidence`；`decision ∈ {include, exclude, duplicate}`。
+- 重复记录判 `duplicate`，并写 `duplicate_of`；排除必须写理由码或
+  `reason_code`，与协议条款对应。
+- 最终 `include` 集必须与输入字段（人群、结局、全文可得、研究类型）可复算；
+  不一致时要么改判，要么在 `uncertainties` 说明人工裁定。
+
+#### 2.3 质量评价（硬要求）
+
+每个 `included` 记录恰好一条 `quality_appraisal`，含：
+
+- `record_id`、`tool`（RCT 用 RoB 2/Cochrane，观察性用 ROBINS-I 等）、
+  `domains`（至少一个维度）；
+- `judgement ∈ {low_risk, some_concerns, high_risk}`；
+- `evidence`（path+locator+quote，指向质量评价材料的具体行）；
+- `effect_on_conclusion`：该等级如何影响综合结论（降级、排除、敏感性分析）。
+
+禁止只写“质量较高/较低”而无维度与原文依据。
+
+#### 2.4 六面覆盖、冲突与综合（硬要求）
+
+`coverage` 必须逐项给出 `question_breakdown`, `search_coverage`,
+`evidence_chain`, `conflicting_evidence`, `synthesis`, `gaps` 六个键；
+每项 `status ∈ {covered, partial, not_covered, not_applicable}`，
+`covered` 时必须有 `items/evidence/locator`。
+
+- `subquestions`：研究问题拆成可回答子问题，每个有 `status` 与证据。
+- `conflict_check`：即使没有冲突也要写 `{"checked": true, "items": []}`；
+  有冲突时逐条写两种结论、各自记录与裁决依据。
+- `synthesis.conclusions`：每条含 `statement/records/evidence/strength/limitations`；
+  `strength` 由质量评价推出，不能高于最弱关键证据。
+- `gap_analysis`：每条含 `basis` 与 `why_not_omission`（排除检索遗漏）。
+
+#### 2.5 运行预检（必做，通过后才可 finalize）
+
+```bash
+python3 "$SKILL_DIR/scripts/audit_work.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+- 退出码必须为 `0`；报告写入 `output/quality-audit.json`。
+- 预检会从输入 CSV 复算 PRISMA 计数与逐条 decision，检查每个 included
+  记录是否有质量评价，以及六面覆盖是否齐全有效。
+- 有 `problems` 时先修工作文件；`warnings` 能补证据就补，不能补写
+  `uncertainties`。
+
 ### 第 3 步：finalize（约 30% 预算）
 
 ```bash
@@ -182,7 +330,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/research-plan.json`（或 JSON 主产物），检查必填字段 `protocol`, `screening`, `quality_appraisal`, `findings`, `evidence`；
+1. 读取 `work/research-plan.json`（或 JSON 主产物），检查必填字段 `protocol`, `screening`, `quality_appraisal`, `subquestions`, `coverage`, `conflict_check`, `synthesis`, `findings`, `gap_analysis`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
 3. 登记 `output/research-report.md` 与 `output/evidence-matrix.json`, `output/references.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
@@ -220,10 +368,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/research-report.md` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `protocol`, `screening`, `quality_appraisal`, `findings`, `evidence` 齐全 |
+| G2 | 必填字段 | `protocol`, `screening`, `quality_appraisal`, `subquestions`, `coverage`, `conflict_check`, `synthesis`, `findings`, `gap_analysis`, `evidence` 齐全且子字段非空壳 |
 | G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
-| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | PRISMA 式计数闭合；纳排理由可查；质量评价有依据 |
+| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties`；检索未执行明确标注 |
+| G5 | 专项 | PRISMA 计数闭合；逐条 decision 可复算；质量评价逐条有工具/维度/判断/依据；六面覆盖齐全 |
+| G8 | 预检 | `scripts/audit_work.py` 退出码 0，`output/quality-audit.json` 存在 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
 
@@ -285,7 +434,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "gap_analysis": [
     {
       "gap": "Synthetic gap",
-      "basis": "synthetic.md P1"
+      "basis": "synthetic.md P1",
+      "why_not_omission": "The protocol terms were checked across every supplied record; no eligible study was hidden by the export."
     }
   ],
   "evidence": [
@@ -298,12 +448,18 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "uncertainties": [],
   "protocol": {
     "version": "v1",
-    "search_string": "synthetic",
+    "search_string": "(\"synthetic term A\" OR \"synthetic term B\") AND synthetic outcome",
     "databases": [
       "SyntheticDB"
     ],
+    "fields": [
+      "title",
+      "abstract"
+    ],
     "date": "2026-01-01",
-    "limits": "synthetic only"
+    "limits": "2020-2026; English; supplied export only",
+    "executed": false,
+    "coverage_note": "Synthetic export only; no live database search was run."
   },
   "screening": {
     "identified": 1,
@@ -331,16 +487,88 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
       "record_id": "R001",
       "tool": "synthetic tool",
       "domains": [
-        "design"
+        "design",
+        "reporting"
       ],
       "judgement": "low_risk",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
         "quote": "synthetic source sentence"
+      },
+      "effect_on_conclusion": "Synthetic low-risk judgement keeps this record in the main synthesis; it does not upgrade a single-study result to high certainty."
+    }
+  ],
+  "subquestions": [
+    {
+      "id": "SQ1",
+      "question": "Synthetic sub-question on effect direction",
+      "status": "answered",
+      "records": [
+        "R001"
+      ],
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
       }
     }
-  ]
+  ],
+  "coverage": {
+    "question_breakdown": {
+      "status": "covered",
+      "items": [
+        "SQ1"
+      ]
+    },
+    "search_coverage": {
+      "status": "partial",
+      "evidence": "Synthetic export only; protocol.executed=false."
+    },
+    "evidence_chain": {
+      "status": "covered",
+      "items": [
+        "F001"
+      ]
+    },
+    "conflicting_evidence": {
+      "status": "covered",
+      "items": [],
+      "note": "Synthetic example has no conflicting study; the check is explicit."
+    },
+    "synthesis": {
+      "status": "covered",
+      "items": [
+        "C1"
+      ]
+    },
+    "gaps": {
+      "status": "covered",
+      "items": [
+        "G1"
+      ]
+    }
+  },
+  "conflict_check": {
+    "checked": true,
+    "items": [],
+    "summary": "Synthetic example: no conflicting effect estimates in the supplied records."
+  },
+  "synthesis": {
+    "conclusions": [
+      {
+        "id": "C1",
+        "statement": "Synthetic conclusion bounded to one record.",
+        "records": [
+          "R001"
+        ],
+        "strength": "low",
+        "limitations": [
+          "Synthetic only; single record"
+        ]
+      }
+    ]
+  }
 }
 ```
 
@@ -348,8 +576,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
-- 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
-  证据/字段/产物审计。
+- 版本 `1.1.0`：单入口 + 共享引擎 + `fam_tracks`；新增
+  `scripts/audit_work.py` 复算 PRISMA/逐条 decision 并校验质量评价与
+  六面覆盖；模型写内容，脚本只做审计。
 - 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；
   不伪造在线查询结果。
 - 证据校验是逐字匹配启发式，不能替代语义蕴含判断。

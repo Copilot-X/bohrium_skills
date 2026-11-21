@@ -18,7 +18,10 @@
     "year_counts",
     "topic_counts",
     "representative_rule",
+    "representatives",
+    "data_quality",
     "findings",
+    "gap_analysis",
     "evidence"
   ],
   "focus": "时间趋势、主题演化、研究前沿与证据边界",
@@ -48,7 +51,11 @@
     "year_counts": [],
     "topic_counts": [],
     "representative_rule": "",
-    "representatives": []
+    "representatives": [],
+    "data_quality": {},
+    "topic_mapping": {},
+    "stages": [],
+    "search_scope": ""
   },
   "example": {
     "case_id": "SYNTH-RESEARCH",
@@ -124,19 +131,26 @@
   },
   "schema_properties": {
     "question": "研究问题与范围",
-    "findings": "结论、来源与证据组",
+    "findings": "结论、来源与证据组；每条必须标 evidence_type",
     "references": "引用条目与标识符",
-    "gap_analysis": "研究空白及其证据基础",
+    "gap_analysis": "研究空白、证据基础与排除检索遗漏的理由",
     "evidence": "path+locator+quote 的逐字证据",
     "uncertainties": "冲突、空白、未覆盖范围",
-    "time_window": "task-specific field required by this sub-challenge",
-    "year_counts": "task-specific field required by this sub-challenge",
-    "topic_counts": "task-specific field required by this sub-challenge",
-    "representative_rule": "task-specific field required by this sub-challenge",
-    "representatives": "task-specific field required by this sub-challenge"
+    "time_window": "start/end/as_of（或 coverage_note），可含 stages",
+    "year_counts": "逐年 count + denominator；缺年份单独一行",
+    "topic_counts": "主题 count + denominator（去重后唯一记录数）",
+    "representative_rule": "阶段/角色/首创性/被引的组合规则，不能只按被引排序",
+    "representatives": "record_id/role/reason，覆盖每个阶段",
+    "data_quality": "rows/duplicates/unique/dated/missing_year 与 duplicates_removed",
+    "topic_mapping": "原始主题词到规范主题的归并表（术语漂移处理）",
+    "stages": "阶段划分 name/start/end 及依据",
+    "search_scope": "语料来源、时间截面与检索边界"
   },
   "mode_metrics": [
-    "趋势/计数可复算；窗口与分母明确；代表作规则允许低被引首创工作。",
-    "每个趋势结论标 evidence_type(count/co-occurrence/qualitative)，禁止共现推因果。"
+    "年度/主题计数必须能从输入 CSV 复算：sum(year_counts)=dated、sum(topic_counts)=unique；分母明确。",
+    "去重、缺年份、2025 类不完整末年必须单列并进入 uncertainties；不能静默丢弃。",
+    "每条趋势结论必须有 evidence_type=count/co-occurrence/qualitative/inference；count 或 co-occurrence 不得写因果措辞。",
+    "代表作规则须含阶段/角色/首创工作条件；representatives 覆盖每个阶段，并解释低被引首创工作。",
+    "每个研究空白必须有 basis 与 excluded_alternative（为何不是检索遗漏）。"
   ]
 }

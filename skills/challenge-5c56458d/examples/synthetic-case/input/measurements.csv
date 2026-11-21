@@ -1,0 +1,4 @@
+sample_id,group_name,value,replicate
+S1,A,1.5,1
+S2,A,2.5,1
+S3,B,-999,1

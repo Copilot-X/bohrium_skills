@@ -1,0 +1,14 @@
+{
+  "case_id": "SYN-A0E-001",
+  "output_contract": {
+    "cleaned_table": "path to the cleaned CSV",
+    "quality_report": "field-level issue list with actions and counts",
+    "rule_log": "machine-readable rules with before/after counts",
+    "original_snapshot": "unchanged raw snapshot and sha256",
+    "uncertainties": "unresolved items"
+  },
+  "constraints": {
+    "no_imputation": true,
+    "reversible_unit_conversion": true
+  }
+}

@@ -5,69 +5,134 @@
   "required": [
     "case_id",
     "summary",
+    "queries",
     "candidates",
-    "evidence",
+    "decision_rules",
+    "ranked_keep",
     "metrics",
-    "screening"
+    "screening",
+    "evidence"
   ],
   "properties": {
-    "case_id": {
-      "type": "string",
-      "description": "task-specific field"
-    },
-    "mode": {
-      "type": "string",
-      "description": "task-specific field"
-    },
-    "summary": {
-      "type": "string",
-      "description": "task-specific field"
-    },
-    "question": {
-      "type": "string",
-      "description": "task-specific field"
-    },
+    "case_id": {"type": "string"},
+    "mode": {"const": "screening-ranking"},
+    "summary": {"type": "string", "minLength": 40},
+    "question": {"type": "string"},
     "queries": {
       "type": "array",
-      "description": "检索式、来源与目的；每条可复跑",
+      "minItems": 1,
+      "description": "候选集输入时写 provided_candidate_set 来源；禁止编造检索式",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "type", "query", "source", "purpose"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {"enum": ["live_search", "provided_candidate_set", "export"]},
+          "query": {"type": "string"},
+          "source": {"type": "string"},
+          "purpose": {"type": "string"},
+          "stop_condition": {"type": "string"}
+        }
+      }
+    },
+    "decision_rules": {
+      "type": "array",
+      "minItems": 1,
+      "description": "label 必须能由最高优先级命中规则复算",
+      "items": {
+        "type": "object",
+        "required": ["id", "priority", "condition", "decision"],
+        "properties": {
+          "id": {"type": "string"},
+          "priority": {"type": "integer", "minimum": 1},
+          "condition": {"type": "string", "minLength": 8},
+          "decision": {"enum": ["keep", "maybe", "exclude"]}
+        }
       }
     },
     "candidates": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "minItems": 1,
+      "description": "与输入候选集一一对应；每个 candidate_id 恰好一次",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "title", "label", "rank", "score", "tie_break",
+                     "criteria_hits", "reason", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "title": {"type": "string"},
+          "authors": {"type": "string"},
+          "year": {"type": ["integer", "string", "null"]},
+          "venue": {"type": "string"},
+          "doi": {"type": ["string", "null"]},
+          "abstract": {"type": "string"},
+          "label": {"enum": ["keep", "maybe", "exclude"]},
+          "criteria_hits": {
+            "type": "array",
+            "items": {"type": ["string", "object"]}
+          },
+          "exclusion_rule": {"type": "string"},
+          "rank": {"type": ["integer", "null"], "minimum": 1},
+          "score": {"type": ["number", "null"]},
+          "confidence": {"type": ["number", "null"]},
+          "tie_break": {"type": "string"},
+          "duplicates": {"type": "array", "items": {"type": "string"}},
+          "version_group": {"type": "string"},
+          "merged_from": {"type": "array", "items": {"type": "string"}},
+          "version_basis": {"type": "string"},
+          "keep_separate_reason": {"type": "string"},
+          "escalated_to_human": {"type": "boolean"},
+          "escalation_reason": {"type": "string"},
+          "reason": {"type": "string", "minLength": 8},
+          "evidence": {"$ref": "#/$defs/evidence"}
+        }
       }
+    },
+    "ranked_keep": {
+      "type": "array",
+      "description": "按 rank 排列的前 min(k, keep 数) 个 ID",
+      "items": {"type": "string"}
     },
     "metrics": {
       "type": "object",
-      "description": "k、Precision@k、nDCG@k、Recall@k、元数据准确率及计算口径"
+      "required": ["k", "precision_at_k", "ndcg_at_k", "recall_at_k",
+                   "metadata_accuracy", "definition"],
+      "properties": {
+        "k": {"type": "integer", "minimum": 1},
+        "ranked_keep": {"type": "array", "items": {"type": "string"}},
+        "precision_at_k": {"type": "number", "minimum": 0, "maximum": 1},
+        "ndcg_at_k": {"type": "number", "minimum": 0, "maximum": 1},
+        "recall_at_k": {"type": "number", "minimum": 0, "maximum": 1},
+        "metadata_accuracy": {"type": "number", "minimum": 0, "maximum": 1},
+        "k_shortfall_note": {"type": "string"},
+        "definition": {"type": "string", "minLength": 10}
+      }
     },
     "screening": {
       "type": "object",
-      "description": "task-specific field required by this sub-challenge"
-    },
-    "findings": {
-      "type": "array",
-      "description": "关键发现及证据",
-      "items": {
-        "type": "object"
+      "required": ["keep", "maybe", "exclude", "criteria"],
+      "description": "三层 ID 列表与 candidate.label 双向一致",
+      "properties": {
+        "keep": {"type": "array", "items": {"type": "string"}},
+        "maybe": {"type": "array", "items": {"type": "string"}},
+        "exclude": {"type": "array", "items": {"type": "string"}},
+        "criteria": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "escalated": {"type": "array", "items": {"type": "string"}},
+        "source": {"type": "string"}
       }
     },
+    "findings": {"type": "array", "items": {"type": "object"}},
+    "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+    "uncertainties": {"type": "array", "items": {"type": "object"}}
+  },
+  "$defs": {
     "evidence": {
-      "type": "array",
-      "description": "path+locator+quote 的逐字证据",
-      "items": {
-        "type": "object"
-      }
-    },
-    "uncertainties": {
-      "type": "array",
-      "description": "空结果、冲突、权限、缺失元数据",
-      "items": {
-        "type": "object"
+      "type": "object",
+      "required": ["path", "locator", "quote"],
+      "properties": {
+        "path": {"type": "string"},
+        "locator": {"type": "string"},
+        "quote": {"type": "string", "minLength": 8}
       }
     }
   }

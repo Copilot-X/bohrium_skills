@@ -43,3 +43,21 @@
 - 图表：轴/单位/图例/数据来源齐全；导出 SVG/PNG 与数据文件一致。
 - 代码/查询：真实执行，保留 `execution.log` 或查询语句；失败不伪造结果。
 - 查询可复跑；结果与问题对应；权限/空结果明确；字段映射可核对。
+
+## 7. 本题执行器协议（db_query.py）
+
+- 先 `--inspect` 读取真实 schema；SQLite 快照直接只读打开，纯 CSV 会载入
+  `work/csv-snapshot.sqlite`（列类型按样本推断），表名取文件 stem 的小写
+  蛇形形式。
+- SQL 写在 `work/query.sql`，只允许单条 SELECT/WITH/EXPLAIN；拒绝
+  INSERT/UPDATE/DELETE/DDL/PRAGMA/ATTACH 和多语句。
+- 执行器输出并回填：
+  - `query`、`sql_sha256`、`snapshot{path,sha256,bytes,sqlite_version,read_only}`
+  - `schema_mapping`：字典行 → 真实 `table.column`，带原文 quote 与 `L<n>`
+  - `row_count_check{expected,actual,ok,source}`
+  - `empty_result{is_empty,missing_groups,statement}`：按输出列与基表同名列
+    的已登记组比对，空组显式列出
+  - `join_checks`：共享键每键最大行数与聚合缓解标志
+  - `permissions`、`results`、`evidence`
+- 报告/结果数字只来自 `output/results.json`；不得手填别的一套。
+- SQL 报错时写 `status=query_error` + 可用表/列提示，修正后重跑；不伪造结果。

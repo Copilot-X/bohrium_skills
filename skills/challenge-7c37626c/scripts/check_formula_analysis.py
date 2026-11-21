@@ -260,6 +260,49 @@ def self_test():
     return validate(result, input_data)
 
 
+def missing_formula_branch(result):
+    """Honest C02-style branch: no formula representation was provided.
+
+    The task explicitly allows partial/insufficient_evidence when the snapshot
+    has no formula representation or reproducible raw data.  That branch is
+    only accepted when the absence itself is documented; it is not a way to
+    skip formulas that are actually present.
+    """
+    status = str(result.get("status") or "").lower()
+    absence = result.get("formula_absence")
+    if status not in ("partial", "insufficient_evidence", "input_error"):
+        return None
+    if not isinstance(absence, dict) or absence.get("found") is not False:
+        return None
+    reason = absence.get("reason") or absence.get("missing_reason")
+    evidence = (absence.get("evidence") or absence.get("search_scope")
+                or absence.get("locator"))
+    if not reason or not evidence:
+        return "formula_absence with found=false needs reason and evidence/search_scope"
+    return "ok"
+
+
+def check_formula_sources(result, problems, warnings, checks):
+    formulas = result.get("formulas") or []
+    modes = {"deterministic", "vlm", "xml_mathml", "pdf_text", "ocr", "unreadable"}
+    for formula in formulas:
+        if not isinstance(formula, dict):
+            continue
+        eq = formula.get("eq_id") or formula.get("id") or "?"
+        source = formula.get("source") if isinstance(formula.get("source"), dict) else {}
+        mode = formula.get("transcription_mode")
+        if mode is not None and mode not in modes:
+            warnings.append("formula %s has unknown transcription_mode %s" % (eq, mode))
+        if mode in ("xml_mathml", "deterministic"):
+            if not (source.get("xml_id") or source.get("formula_id")
+                    or source.get("artifact_path") or source.get("paragraph_id")):
+                problems.append("formula %s is %s but source lacks xml_id/formula_id/"
+                                "artifact_path" % (eq, mode))
+        if formula.get("ambiguous") and not formula.get("alternative_readings"):
+            problems.append("formula %s is ambiguous but lists no alternative_readings" % eq)
+    checks["formula_sources_checked"] = len(formulas)
+
+
 def validate(result, input_data):
     problems, warnings, checks = [], [], {}
     if not isinstance(result, dict):
@@ -267,7 +310,16 @@ def validate(result, input_data):
                 "warnings": [], "checks": {}}
     if not result.get("case_id"):
         problems.append("result missing case_id")
-    ids = check_formulas(result, problems, warnings, checks)
+    branch = missing_formula_branch(result)
+    if branch == "ok":
+        ids = set()
+        checks["formula_absence"] = True
+        warnings.append("accepted missing-formula branch; status=%s" % result.get("status"))
+    else:
+        if branch:
+            problems.append(branch)
+        ids = check_formulas(result, problems, warnings, checks)
+        check_formula_sources(result, problems, warnings, checks)
     check_derivation(result, ids, problems, warnings, checks)
     check_numeric(result, problems, warnings, checks)
     check_input_coverage(result, input_data, problems, warnings, checks)

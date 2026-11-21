@@ -18,6 +18,30 @@
 
 答案每句有来源；无证据时拒答；冲突材料并列。
 
+### 3.1 逐句引用
+
+- 每个 answered sentence 至少一条 citation，citation 的 quote 必须包含该句的
+  数值与关键实体；只逐字存在但主题无关的句子不构成支持。
+- `support` 标 `direct|partial|conflict`；`partial` 要在句中说明限定。
+- 引用给 `path + version + page/section/line + quote`，不接受只有文件名。
+
+### 3.2 拒答
+
+- 知识库无依据：`status=insufficient_evidence`，`sentences:[]`，
+  `missing_evidence[]` 写缺的指标/实体/文件，`retrieval_scope` 写检索范围。
+- 文件存在但读不出（扫描件/加密/损坏/无权限）与“知识库没有”分开记录。
+
+### 3.3 冲突
+
+- 至少两个不同来源或明确版本，各自带引用；`conflict.sources[]` ≥2。
+- `resolution` 明确未解决/以某版本为准/需人工确认；不得静默择一。
+- 若冲突来自版本差异，先说明 current/superseded，再回答当前版。
+
+### 3.4 版本与副本
+
+- 同一内容的副本（sha256 相同）只算一条证据，其余标 `duplicate_of`。
+- 同族 v1/v2/revised：引用必须带 version；不同版本不当作相互印证的独立来源。
+
 ## 4. 产物
 
 - 主产物必须非空、可编辑、可复核；

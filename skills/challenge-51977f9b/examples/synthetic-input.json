@@ -1,16 +1,179 @@
 {
   "case_id": "SYNTH-RESEARCH",
   "mode": "systematic-review",
-  "summary": "Synthetic example only.",
-  "question": "Synthetic research question",
+  "summary": "Synthetic example only: one included record, one duplicate, one excluded record; counts and quality appraisal illustrate the required structure, not a real review.",
+  "question": "Synthetic review question about a synthetic intervention and a synthetic outcome",
+  "protocol": {
+    "version": "v1-2026-01-01",
+    "search_string": "(\"synthetic intervention\" OR \"synthetic alternative\") AND synthetic outcome AND (adult OR adults)",
+    "databases": [
+      "SyntheticDB",
+      "SyntheticTRIALS"
+    ],
+    "fields": [
+      "title",
+      "abstract"
+    ],
+    "date": "2026-01-01",
+    "limits": "2020-2026; English; randomized trials and comparative cohorts",
+    "executed": false,
+    "coverage_note": "Supplied synthetic export only; no live database search was run.",
+    "reason_codes": {
+      "DUP": "duplicate export of an included record",
+      "POP": "wrong population",
+      "OUT": "wrong outcome",
+      "TYPE": "wrong study type"
+    }
+  },
+  "screening": {
+    "identified": 3,
+    "duplicates": 1,
+    "screened": 2,
+    "excluded": 1,
+    "full_text": 2,
+    "included": 1,
+    "records": [
+      {
+        "record_id": "R001",
+        "stage": "full_text",
+        "decision": "include",
+        "reason": "Synthetic record meets population, intervention and outcome criteria.",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
+      },
+      {
+        "record_id": "R002",
+        "stage": "title_abstract",
+        "decision": "duplicate",
+        "reason": "Synthetic duplicate export.",
+        "reason_code": "DUP",
+        "duplicate_of": "R001"
+      },
+      {
+        "record_id": "R003",
+        "stage": "title_abstract",
+        "decision": "exclude",
+        "reason": "Synthetic wrong population.",
+        "reason_code": "POP"
+      }
+    ]
+  },
+  "quality_appraisal": [
+    {
+      "record_id": "R001",
+      "tool": "Synthetic risk-of-bias tool",
+      "domains": [
+        "sequence_generation",
+        "allocation_concealment",
+        "blinding",
+        "attrition"
+      ],
+      "judgement": "low_risk",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      },
+      "effect_on_conclusion": "Low risk keeps the record in the primary synthesis; the single-record evidence still limits certainty to low."
+    }
+  ],
+  "subquestions": [
+    {
+      "id": "SQ1",
+      "question": "Synthetic question on the direction of the synthetic effect",
+      "status": "answered",
+      "records": [
+        "R001"
+      ],
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
+    },
+    {
+      "id": "SQ2",
+      "question": "Synthetic question on subgroup effects",
+      "status": "not_answered",
+      "records": []
+    }
+  ],
+  "coverage": {
+    "question_breakdown": {
+      "status": "covered",
+      "items": [
+        "SQ1",
+        "SQ2"
+      ]
+    },
+    "search_coverage": {
+      "status": "partial",
+      "evidence": "Supplied export only; protocol.executed=false."
+    },
+    "evidence_chain": {
+      "status": "covered",
+      "items": [
+        "F001"
+      ]
+    },
+    "conflicting_evidence": {
+      "status": "not_applicable",
+      "items": [],
+      "note": "One included record; no pair of conflicting estimates exists."
+    },
+    "synthesis": {
+      "status": "covered",
+      "items": [
+        "C1"
+      ]
+    },
+    "gaps": {
+      "status": "covered",
+      "items": [
+        "G1"
+      ]
+    }
+  },
+  "conflict_check": {
+    "checked": true,
+    "items": [],
+    "summary": "Synthetic example: no conflicting effect estimates in the supplied records."
+  },
+  "synthesis": {
+    "conclusions": [
+      {
+        "id": "C1",
+        "statement": "Synthetic conclusion bounded to one low-risk record; no subgroup claim.",
+        "records": [
+          "R001"
+        ],
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        },
+        "strength": "low",
+        "limitations": [
+          "Single record",
+          "Synthetic only"
+        ]
+      }
+    ]
+  },
   "findings": [
     {
       "id": "F001",
-      "statement": "Synthetic finding",
+      "statement": "Synthetic finding: one included record reports the synthetic outcome.",
       "sources": [
         "synthetic.md"
       ],
-      "limitations": [],
+      "limitations": [
+        "Synthetic only"
+      ],
+      "strength": "low",
       "evidence": [
         {
           "path": "synthetic.md",
@@ -20,17 +183,18 @@
       ]
     }
   ],
-  "references": [
-    {
-      "key": "ref1",
-      "title": "Synthetic reference",
-      "doi": null
-    }
-  ],
   "gap_analysis": [
     {
-      "gap": "Synthetic gap",
-      "basis": "synthetic.md P1"
+      "gap": "No synthetic subgroup evidence.",
+      "basis": "R001; SQ2 not answered",
+      "why_not_omission": "The protocol terms were checked across every supplied record; no subgroup study was hidden by the export."
+    }
+  ],
+  "references": [
+    {
+      "key": "R001",
+      "title": "Synthetic reference one",
+      "doi": "10.0000/synth.r001"
     }
   ],
   "evidence": [
@@ -40,50 +204,12 @@
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": [],
-  "protocol": {
-    "version": "v1",
-    "search_string": "synthetic",
-    "databases": [
-      "SyntheticDB"
-    ],
-    "date": "2026-01-01",
-    "limits": "synthetic only"
-  },
-  "screening": {
-    "identified": 1,
-    "duplicates": 0,
-    "screened": 1,
-    "excluded": 0,
-    "full_text": 1,
-    "included": 1,
-    "records": [
-      {
-        "record_id": "R001",
-        "stage": "title_abstract",
-        "decision": "include",
-        "reason": "synthetic",
-        "evidence": {
-          "path": "synthetic.md",
-          "locator": "P1",
-          "quote": "synthetic source sentence"
-        }
-      }
-    ]
-  },
-  "quality_appraisal": [
+  "uncertainties": [
     {
-      "record_id": "R001",
-      "tool": "synthetic tool",
-      "domains": [
-        "design"
-      ],
-      "judgement": "low_risk",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
+      "item": "search coverage",
+      "reason": "Only a supplied export was available.",
+      "impact": "Eligibility and recall cannot be verified.",
+      "action": "Re-run the protocol against the named databases."
     }
   ]
 }

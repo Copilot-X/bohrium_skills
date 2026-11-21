@@ -1,62 +1,88 @@
 {
-  "case_id": "SYNTH-ANALYSIS",
+  "_note": "Synthetic work-file fragment only. It is NOT a formal answer and NOT runnable by itself. See examples/synthetic-case/ for the complete input -> command -> output example.",
+  "case_id": "SYN-DB-EXAMPLE",
   "mode": "database-query",
-  "summary": "Synthetic example only.",
+  "summary": "Synthetic example: count usable rows per registered group and flag the empty group.",
   "analysis": {
-    "question": "Synthetic question",
-    "method": "Synthetic method",
-    "assumptions": [
-      "Synthetic assumption"
+    "question": "For every registered group, count usable measurements after excluding value = -999.",
+    "method": "Read-only SQL on the recorded snapshot; group coverage checked against measurements.group_name."
+  },
+  "query": "SELECT group_name, COUNT(*) AS n_rows FROM measurements WHERE value <> -999 GROUP BY group_name ORDER BY group_name;",
+  "sql_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "snapshot": {
+    "path": "measurements.csv (loaded into work/csv-snapshot.sqlite)",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "bytes": 78,
+    "read_only": true
+  },
+  "schema_mapping": {
+    "measurements.group_name": {
+      "dictionary_field": "measurements.group_name",
+      "dictionary_description": "group label; every registered group must be returned",
+      "source": "data-dictionary.md",
+      "locator": "L3",
+      "quote": "- measurements.group_name: group label; every registered group must be returned.",
+      "schema_table": "measurements",
+      "schema_column": "group_name",
+      "exists_in_schema": true,
+      "appears_in_query": true,
+      "appears_in_result": true
+    }
+  },
+  "row_count_check": {
+    "expected": 1,
+    "actual": 1,
+    "ok": true,
+    "source": "command_line"
+  },
+  "empty_result": {
+    "is_empty": false,
+    "missing_groups": [
+      "B"
     ],
-    "diagnostics": [
-      "Synthetic diagnostic"
-    ],
-    "steps": [
-      "Synthetic step"
-    ]
+    "statement": "Registered group B has no row after excluding value = -999; reported as an empty group."
+  },
+  "permissions": {
+    "status": "read_only",
+    "write_allowed": false,
+    "notes": "Synthetic only"
   },
   "results": [
     {
       "id": "R001",
-      "metric": "synthetic_metric",
+      "metric": "result_row_count",
       "value": 1,
       "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
+        "path": "query-request.md",
+        "locator": "L3",
+        "quote": "For every group in measurements, return the number of rows after excluding"
       }
     }
   ],
-  "figures": [
-    {
-      "path": "figures/synthetic.svg",
-      "source": "results",
-      "data_source": "output/results.csv",
-      "units": {
-        "x": "s",
-        "y": "%"
-      }
-    }
-  ],
-  "code": "work/analysis.py",
   "evidence": [
     {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
+      "path": "data-dictionary.md",
+      "locator": "L3",
+      "quote": "- measurements.group_name: group label; every registered group must be returned."
     }
   ],
   "uncertainties": [],
-  "query": "SELECT * FROM synthetic",
-  "schema_mapping": {
-    "synthetic_col": "synthetic_col"
+  "sql_text": "SELECT group_name, COUNT(*) AS n_rows FROM measurements WHERE value <> -999 GROUP BY group_name ORDER BY group_name;",
+  "result_table": "output/result-table.csv",
+  "field_mapping": {
+    "measurements.group_name": {
+      "dictionary_field": "measurements.group_name",
+      "dictionary_description": "group label; every registered group must be returned",
+      "source": "data-dictionary.md",
+      "locator": "L3",
+      "quote": "- measurements.group_name: group label; every registered group must be returned.",
+      "schema_table": "measurements",
+      "schema_column": "group_name",
+      "exists_in_schema": true,
+      "appears_in_query": true,
+      "appears_in_result": true
+    }
   },
-  "permissions": {
-    "status": "ok",
-    "notes": "synthetic only"
-  },
-  "empty_result": {
-    "is_empty": false,
-    "reason": ""
-  }
+  "empty_result_handling": "Registered group B has no row after excluding value = -999; reported as an empty group.",
+  "snapshot_version": "SYN-2026-11-21"
 }

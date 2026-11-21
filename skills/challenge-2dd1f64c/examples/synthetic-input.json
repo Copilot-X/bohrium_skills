@@ -1,80 +1,210 @@
 {
   "case_id": "SYNTH-SEARCH",
   "mode": "screening-ranking",
-  "summary": "Synthetic example only.",
-  "question": "Synthetic research question",
+  "summary": "Synthetic example only: four supplied candidates, one version pair merged, one low-information record escalated; values illustrate the interface, not a real screening result.",
+  "question": "Synthetic screening question with a defined population, intervention and outcome",
   "queries": [
     {
       "id": "Q1",
-      "round": 1,
-      "query": "synthetic query",
-      "source": "provided corpus",
-      "purpose": "recall",
-      "stop_condition": "no new eligible records in 2 rounds"
+      "type": "provided_candidate_set",
+      "query": "candidate set supplied in input/candidates.csv",
+      "source": "candidates.csv",
+      "purpose": "provenance; no live query was run",
+      "stop_condition": "all supplied candidates screened"
+    }
+  ],
+  "decision_rules": [
+    {
+      "id": "R1",
+      "priority": 1,
+      "condition": "adult population, target outcome and a reported effect",
+      "decision": "keep"
+    },
+    {
+      "id": "R2",
+      "priority": 2,
+      "condition": "topic match but target outcome missing or abstract insufficient",
+      "decision": "maybe"
+    },
+    {
+      "id": "R3",
+      "priority": 3,
+      "condition": "wrong population, wrong outcome or wrong study type",
+      "decision": "exclude"
     }
   ],
   "candidates": [
     {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "year": "2026",
-      "doi": "10.0000/synth.001",
+      "id": "C1",
+      "title": "Synthetic Adult Screening Study",
+      "authors": "Rivera A",
+      "year": 2024,
+      "venue": "Synthetic Methods Journal",
+      "doi": "10.9999/synth.2024.001",
       "label": "keep",
       "criteria_hits": [
-        "P1"
+        "R1"
       ],
       "rank": 1,
-      "score": 1.0,
+      "score": 0.9,
       "confidence": 0.9,
-      "tie_break": "title",
+      "tie_break": "candidate_id",
       "duplicates": [],
+      "version_group": "VG1",
+      "merged_from": [
+        "C2"
+      ],
+      "version_basis": "Same title/authors; C2 is the 2023 arXiv preprint, C1 the 2024 journal version (DOI 10.9999/synth.2024.001).",
       "escalated_to_human": false,
-      "reason": "synthetic only",
+      "reason": "Matches R1: synthetic adult population and target outcome reported.",
       "evidence": {
         "path": "synthetic.md",
-        "locator": "P1",
+        "locator": "row C1",
+        "quote": "synthetic source sentence"
+      }
+    },
+    {
+      "id": "C2",
+      "title": "Synthetic Adult Screening Study",
+      "authors": "Rivera A",
+      "year": 2023,
+      "venue": "arXiv preprint",
+      "doi": "",
+      "label": "exclude",
+      "criteria_hits": [
+        "R3"
+      ],
+      "exclusion_rule": "R3",
+      "rank": null,
+      "score": null,
+      "tie_break": "",
+      "duplicates": [],
+      "version_group": "VG1",
+      "merged_from": [],
+      "version_basis": "Preprint merged into C1; not an independent study.",
+      "escalated_to_human": false,
+      "reason": "Version duplicate of C1, merged rather than counted twice.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "row C2",
+        "quote": "synthetic source sentence"
+      }
+    },
+    {
+      "id": "C3",
+      "title": "Synthetic Screening Without Target Outcome",
+      "authors": "Okafor L",
+      "year": 2022,
+      "venue": "Synthetic Conference",
+      "doi": "10.9999/synth.2022.031",
+      "label": "maybe",
+      "criteria_hits": [
+        "R2"
+      ],
+      "rank": null,
+      "score": null,
+      "tie_break": "",
+      "duplicates": [],
+      "version_group": "",
+      "merged_from": [],
+      "version_basis": "",
+      "escalated_to_human": true,
+      "escalation_reason": "Target outcome not reported in the abstract; full text needed.",
+      "reason": "Matches R2: topic match but target outcome missing.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "row C3",
+        "quote": "synthetic source sentence"
+      }
+    },
+    {
+      "id": "C4",
+      "title": "Synthetic Pediatric Screening Pilot",
+      "authors": "Novak P",
+      "year": 2023,
+      "venue": "Synthetic Pediatrics",
+      "doi": "10.9999/synth.2023.044",
+      "label": "exclude",
+      "criteria_hits": [
+        "R3"
+      ],
+      "exclusion_rule": "R3",
+      "rank": null,
+      "score": null,
+      "tie_break": "",
+      "duplicates": [],
+      "version_group": "",
+      "merged_from": [],
+      "version_basis": "",
+      "escalated_to_human": false,
+      "reason": "Wrong population: pediatric pilot, not the adult target population.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "row C4",
         "quote": "synthetic source sentence"
       }
     }
   ],
+  "ranked_keep": [
+    "C1"
+  ],
   "metrics": {
-    "k": 10,
-    "precision_at_k": 1.0,
-    "ndcg_at_k": 1.0,
+    "k": 2,
+    "ranked_keep": [
+      "C1"
+    ],
+    "precision_at_k": 0.5,
+    "ndcg_at_k": 0.5,
     "recall_at_k": 1.0,
     "metadata_accuracy": 1.0,
-    "definition": "synthetic values; replace with measured values"
+    "k_shortfall_note": "Only one keep candidate exists; effective_k=min(2,4)=2.",
+    "definition": "Binary relevance; effective_k=min(k,candidate_count); precision denominator=effective_k; recall denominator=keep count."
   },
   "screening": {
     "keep": [
-      "C001"
+      "C1"
     ],
-    "maybe": [],
-    "exclude": [],
+    "maybe": [
+      "C3"
+    ],
+    "exclude": [
+      "C2",
+      "C4"
+    ],
     "criteria": [
-      "synthetic criterion"
+      "R1: adult population + target outcome",
+      "R2: insufficient abstract/outcome",
+      "R3: wrong population/outcome/study type"
     ],
-    "escalated": []
+    "escalated": [
+      "C3"
+    ],
+    "source": "candidates.csv"
   },
   "findings": [
     {
       "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P1",
-          "quote": "synthetic source sentence"
-        }
-      ]
+      "statement": "Synthetic finding: one adult study is retained and one version duplicate is merged.",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "rows C1-C2",
+        "quote": "synthetic source sentence"
+      }
     }
   ],
   "evidence": [
     {
       "path": "synthetic.md",
-      "locator": "P1",
+      "locator": "row C1",
       "quote": "synthetic source sentence"
     }
   ],
-  "uncertainties": []
+  "uncertainties": [
+    {
+      "item": "C3 outcome",
+      "reason": "The abstract does not report the target outcome.",
+      "impact": "It stays in maybe and cannot be counted as keep.",
+      "action": "Check the full text or ask a human reviewer."
+    }
+  ]
 }

@@ -1,0 +1,9 @@
+sample_id,assay_date,concentration,unit,replicate,status
+S001,2026-01-02,12.5,mg/L,1,measured
+s001 ,2026-01-02,12.5,mg/L,1,measured
+S002,2026-01-03,-999,mg/L,1,missing
+S003,2026-01-04,,mg/L,1,missing
+S004,2026-01-05,0,ug/mL,1,below_lod
+S005,2026-01-06,750,mg/L,1,measured
+S006,2026-01-07,250,ug/mL,2,measured
+S007,2026-01-08,88.5,mg/L,2,measured

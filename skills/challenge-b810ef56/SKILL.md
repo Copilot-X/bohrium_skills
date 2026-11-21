@@ -1,164 +1,247 @@
 ---
 name: evidence-driven-writer
-description: 文献证据驱动写作：先建来源白名单与 claim 台账，再逐句写作并把每个句子映射到具体段落、图或数据；无依据的句子删除或标为作者推理。Write or rewrite prose with every claim bound to a passage, figure or dataset, producing text.md and claim-evidence.json. Use for 证据驱动写作、文献综述段落、可溯源改写、引用支撑写作。
+description: 文献证据驱动写作：模型先写出完整可评阅的 text.md，再由唯一入口把核心断言绑定到可定位来源（source_id/locator/quote），生成 claim-evidence.json 与含官方四字段 deliverable/preserved_facts/evidence_map/change_log 的 result.json；数字、引用与 quote 均可回查，不支持的句子删除或标 marked_as_reasoning。Evidence-driven writing with source locators, verbatim quote checks and citation audits. Use for 证据驱动写作、文献综述、可溯源改写、引用支撑写作、evidence-grounded writing.
 ---
 
 # 文献证据驱动写作（Evidence-Driven Writer）
 
-## 用途与触发
+## 触发与适用
 
-task.md 出现"每条论断要有出处""不得超出材料""依据文献写作"等要求时使用。
-与 `academic-manuscript-writer` 的区别：本题的核心产物是**论断-证据映射**，文本是映射的投影。
+task.md 出现“每条论断要有出处”“不得超出材料”“依据文献写作”“保留引用和数字”，
+或需要写综述/摘要/讨论段、把草稿改成可溯源版本、交付完整正文 + 论断-证据映射 +
+引用审计时使用；也用于区分观测/拟合/模型/作者解释、处理相关与因果、证据强度、
+冲突结论和材料缺口。不适用：纯创意写作、无需来源的文案、材料缺失仍要求编造。
 
-## 输入
+本题在赛题中的完整名称是“文献证据驱动写作：学术写作：完成产物，也保留来源”。
+三个固定案例的共同评分点是：交付完整可评阅正文（完成产物），同时让每个事实、
+数字、引用和判断都能回到输入材料（保留来源）；不得超出材料补写，材料不足、
+冲突或需要人工确认时明确标注。
 
-- `/input/task.md`：写作目标、允许使用的材料范围、引用格式、篇幅
-- `/input/case.json`：`case_id`、`source_scope`、`output_contract`
-- 材料：文献全文/摘要、数据表、图、笔记、已有草稿
+## 核心原则
 
-## 执行步骤
+1. **正文是主交付物，`text.md` 必须由模型亲自写完整**。本 Skill 不生成抽取式
+   保底稿，也不会把拼接材料冒充 completed。
+2. 证据表是正文的投影：先有正文，再由入口重建 claim/evidence，而不是先写 JSON
+   台账、再倒推正文。
+3. 数字、单位、条件、样本量、引用编号和 quote 都要能回查到具体 `path + locator`。
+4. 没有任何来源支持的句子：含数字的删除；不含数字的仅保留并标
+   `marked_as_reasoning`，不得计入证据链。
+5. 官方字段 `deliverable` / `preserved_facts` / `evidence_map` / `change_log`
+   一律由入口从真实文件和真实台账生成。
 
-1. **划定证据边界**：把 task.md 允许引用的材料列成白名单
-   `/app/work/source-whitelist.json`。白名单外的内容一律不得作为事实来源。
-2. **抽取断言**：从材料中抽出可支撑写作的原子断言，写入
-   `/app/work/claims.json`：
-   ```json
-   {"claims": [
-     {"claim_id": "C01", "text": "催化剂 A 在 350 °C 的选择性为 92%",
-      "type": "quantitative", "value": "92", "unit": "%", "condition": "350 °C, 1 bar",
-      "source": {"path": "materials/paper1.pdf", "locator": "p.4, Fig.2a"},
-      "quote": "…", "strength": "reported|derived|inferred",
-      "limits": "仅在本研究条件下"}]}
-   ```
-3. **写前先配**：为目标文本的每个句子分配 claim id。配不上的句子只有两种归宿：
-   删除，或标记为 `author_reasoning` 并说明它不声称事实。
-4. **起草**：按 claim 写句，保持原文的限定词（"可能""在…条件下""相关"）。
-   不得把 `inferred` 写成 `reported`，不得去掉原文的样本量与方法限定。
-5. **反向核验**：逐句回读，检查
-   - 每个数字与 `quote` 一致
-   - 引文确实支撑该句（不是"同主题"而是"同断言"）
-   - 没有把两篇文献的结论拼接成第三篇没说过的话
-6. **生成产物**：`text.md`、`claim-evidence.json`、`result.json`。
+## 输入与输出
 
-## 输出契约
+- 输入：`/input/task.md`（约束以此为准）、`/input/case.json`（`case_id`、
+  `task_instruction`、`output_contract`、可选的 `sources` 提示）、`/input/` 下
+  的材料。以实际读到的文件内容为准，不按文件名猜内容。
+- 工作区：`/app/work`；交付到 `/app/output`：
+
+| 输出 | 内容 |
+|---|---|
+| `text.md` | 完整、可编辑、可评阅的主稿（模型写） |
+| `claim-evidence.json` | sources / claims / sentences / number_index / citation_index / 审计 |
+| `citation-audit.json` | 未知编号、缺条目、孤儿、顺序、句内绑定 |
+| `quote-audit.json` | 每条 quote 的逐字/空白折叠/省略号分段核对 |
+| `result.json` | 官方四字段 + 状态、覆盖、不确定性、修改记录 |
+
+## 路径解析（先做）
+
+```bash
+export SKILL_DIR="$(dirname "$(find /skills -maxdepth 3 -name SKILL.md 2>/dev/null | head -n 1)")"
+[ -f "$SKILL_DIR/SKILL.md" ] || export SKILL_DIR="/skills/weekly-skill"
+mkdir -p /app/work /app/output
+```
+
+后续命令一律使用 `"$SKILL_DIR/..."`。
+
+## 工作流（正文优先）
+
+### 第 1 步：prepare（约 10% 预算）
+
+```bash
+python3 "$SKILL_DIR/scripts/main.py" prepare \
+  --input /input --work /app/work --output /app/output
+```
+
+入口依次调用 `scripts/inventory.py`（扫描 `/input`，记录路径、sha256、角色、
+可读性；Markdown/TXT/JSON/CSV/DOCX 用 stdlib，PDF 依赖运行时 `pdftotext`）和
+`scripts/extract_sources.py`（生成 `work/sources.json`：`source_id`、`path`、
+`kind`、`scope`、`title`、**`citation_number`**、`text_path`、带行号/页码的
+`units[]`）。缺 DOI/年份/作者时只记缺口，不编造。
+
+若此时还没有 `text.md`，入口写 `status=partial` 的 `result.json` 并正常退出，
+提示继续写稿；**不会**生成替代正文。
+
+### 第 2 步：写完整 `text.md`（约 60% 预算，最重要）
+
+打开 `work/sources.json`，按其中分配的 `citation_number` 写
+`/app/output/text.md`：
+
+- 覆盖 task.md 的每个章节/问题，达到目标篇幅、体裁和受众要求；
+- 每个关键数字、单位、条件、样本量、比较对象都能回指某个 source unit；
+  材料没有的数字不写，材料不足写“现有材料未报告……”；
+- 引用写成 `[n]`，`n` 必须是 `work/sources.json` 里的 `citation_number`，
+  并放在支撑该句的位置；文末条目可由入口补齐；
+- 相关不写因果，单篇小实验不写领域共识，摘要不写“全文表明”；
+- 冲突结论并列呈现各自条件，不取平均、不选边；
+- 推断用“可能/提示/尚不能排除/may/suggest”等限定语。
+
+写正文时直接引用原文措辞（尤其中英文数字与条件），便于后续逐字核对。
+
+### 第 3 步：finalize（约 30% 预算）
+
+```bash
+python3 "$SKILL_DIR/scripts/main.py" finalize \
+  --input /input --work /app/work --output /app/output \
+  --draft /app/output/text.md
+```
+
+入口会：
+
+1. 为正文引用但缺条目的来源补 `[n]` 材料定位条目（只写标题/路径，不编造作者、
+   期刊或 DOI）；
+2. 用 `scripts/claims.py` 重新分句并绑定 `source_id + locator + quote`；含数字且
+   无来源的句子删除，不含数字且无来源的句子保留但标 `marked_as_reasoning`；
+3. 用 `scripts/citecheck.py` 写 `citation-audit.json`，用
+   `scripts/verify_quotes.py` 写 `quote-audit.json`；
+4. 用 `scripts/build_result.py` 写 `work/evidence-map.json`、
+   `output/claim-evidence.json` 和 `output/result.json`，并校验所有 artifact 路径。
+
+`run` 等价于 `prepare + finalize`，适合一次跑完：
+
+```bash
+python3 "$SKILL_DIR/scripts/main.py" run \
+  --input /input --work /app/work --output /app/output
+```
+
+## 支持文件（相对 `$SKILL_DIR`）
+
+| 文件 | 何时用 | 用法 |
+|---|---|---|
+| `scripts/main.py` | 唯一入口 | `prepare` / `finalize` / `run`，只做编排 |
+| `scripts/evidence_kit.py` | 任务专用共享库 | 被其余脚本 `import`；提供解码、分句、引用/数字解析、概念匹配、DOCX/PDF 抽取 |
+| `scripts/inventory.py` | 读输入 | 可单跑：`--input /input --work /app/work` |
+| `scripts/extract_sources.py` | 来源台账与 locator | 可单跑：读 `work/inventory.json`，写 `work/sources.json` |
+| `scripts/claims.py` | 断言拆分/证据绑定 | 通常由入口调用；也可 `--work --output --text` 单跑 |
+| `scripts/citecheck.py` | 引用审计 | 由入口调用；也可 `--work --output` 单跑 |
+| `scripts/verify_quotes.py` | quote 逐字核对 | 由入口调用；也可 `--work --input --output` 单跑 |
+| `scripts/build_result.py` | 官方字段投影 | 由入口调用；也可 `--work --output --input` 单跑 |
+| `references/claim-splitting.md` | 断言如何拆、证据如何分层 | 写正文前和复核 `claims[]` 时按节查阅 |
+| `references/hedging-language.md` | 相关 vs 因果、证据强度与限定语 | 决定动词强度和结论边界时查阅 |
+| `references/self-check.md` | 交付前逐项复核 | finalize 后按清单核对，不整段抄进正文 |
+
+## 官方输出契约
+
+`result.json` 保留输入字段，并保证以下顶层字段真实：
 
 ```json
 {
-  "case_id": "…",
+  "case_id": "与输入一致",
   "task_family": "evidence-driven-writing",
-  "status": "completed|partial",
-  "text": {"path": "text.md", "language": "zh|en", "word_count": 0, "genre": "review|paragraph|abstract"},
-  "artifacts": [
-    {"role": "editable", "path": "text.md", "format": "markdown"},
-    {"role": "evidence", "path": "claim-evidence.json", "format": "json"}
-  ],
-  "sentences": [
-    {"sentence_id": "S01", "text": "…", "claims": ["C01"],
-     "support": "direct|partial|none", "note": "…"}
-  ],
-  "unsupported": [
-    {"sentence": "…", "reason": "白名单材料无对应断言", "action": "deleted|marked_as_reasoning"}
-  ],
-  "coverage": {"sentences": 0, "fully_supported": 0, "partially_supported": 0, "unsupported": 0},
-  "uncertainty": [{"item": "…", "reason": "…", "impact": "…"}],
-  "change_log": [{"step": 1, "action": "…", "evidence": "…"}]
+  "status": "completed|partial|input_error",
+  "deliverable": {"path": "text.md", "format": "markdown", "language": "zh",
+                  "word_count": 0, "genre": "review", "sections": []},
+  "preserved_facts": [{"fact_id": "C01", "text": "…", "value": "92",
+    "unit": "%", "condition": "350 °C; 1 bar",
+    "source": {"path": "materials/paper.md", "locator": "L12"},
+    "citation_numbers": [1], "in_draft": true}],
+  "evidence_map": [{"claim_id": "C01", "status": "supported",
+    "evidence": [{"source_id": "SRC01", "source": {"path": "materials/paper.md",
+      "locator": "L12"}, "quote": "…", "supports": "direct"}]}],
+  "change_log": [{"step": 1, "action": "claims_built", "reason": "…", "evidence": "…"}],
+  "uncertainty": [], "output_contract": {}, "contract_coverage": []
 }
 ```
 
-## 证据强度分级
+规则：
 
-| 级别 | 含义 | 写作要求 |
-|---|---|---|
-| `reported` | 材料明写 | 可直接陈述，保留条件 |
-| `derived` | 由材料数值计算 | 给出算式，标注"计算得" |
-| `inferred` | 推理得出的解释 | 必须用限定语（"提示""可能"） |
-| `background` | 领域常识、无需引用 | 仅限不涉及具体数据与优先权的句子 |
+- `deliverable.path` 必须指向真实 `text.md`；`artifacts[]` 每个路径必须存在；
+- `preserved_facts` 覆盖正文关键数字、单位、条件、样本量与引用编号，逐条带
+  source `path + locator`；
+- `evidence_map` 每条 evidence 必须有 `source.path + locator + quote`；
+- `change_log` 只记录真实发生的动作（inventory、绑定、删除/标记、补条目、审计）；
+- `status=completed` 要求没有 unsupported、citation error、quote error；否则用
+  `partial` 并在 `uncertainty` 写原因、影响和下一步；
+- `input_error` 表示没有可读材料：`deliverable=null`，不生成正文、不编造引用；
+- `output_contract` 原样复制；`contract_coverage` 逐字段说明是否满足。
 
-## 规则
+## 命令与退出码
 
-1. 一句话多证据时，`claims` 列全部；任一证据不支持即降级为 `partial`。
-2. 转述保留限定词；删掉"significant""proves""demonstrates"等未经检验的强度词。
-3. 不同文献结论冲突时，并列呈现并注明各自条件，不取平均、不选边。
-4. 引用编号与文末一一对应；`quote` 必须是原文片段（允许省略号），不得改写。
-5. 材料里没有的数字，即使"显然合理"也不能写。
+- `prepare` / `finalize` / `run` 在 partial 或 input_error 时**仍写
+  `result.json` 并 exit 0**；只有完全无法启动（参数错误、安装不可用）才 exit 2。
+- `citecheck` / `verify_quotes` 发现问题只影响 `status` 与 `uncertainty`，不阻塞
+  主稿和 `result.json` 落盘。
+
+### 失败回归（提交前必跑）
+
+```bash
+# 正向：prepare -> 写 text.md -> finalize，必须 completed 且有四字段
+python3 "$SKILL_DIR/scripts/main.py" prepare  --input /input --work /app/work --output /app/output
+# ... 模型写 /app/output/text.md ...
+python3 "$SKILL_DIR/scripts/main.py" finalize --input /input --work /app/work --output /app/output
+
+# 边界：空输入 / 坏 case.json，必须 exit 0 并写出 result.json
+python3 "$SKILL_DIR/scripts/main.py" run --input /empty --work /app/work \
+  --output /app/output
+```
+
+预期：空输入为 `status=input_error`、`deliverable=null`；有材料但未写
+`text.md` 为 `status=partial`；两种情况 `deliverable` / `preserved_facts` /
+`evidence_map` / `change_log` 四个键都存在，且不编造正文或引用。
 
 ## 异常处理
 
 | 情况 | 处理 |
 |---|---|
-| 只有摘要没有全文 | 只写摘要能支撑的内容，标注"基于摘要" |
-| 文献结论互相矛盾 | 并列 + 条件对比，`conflict` 记录 |
-| 写作目标要求超出材料 | 该段标 `not_supported`，在 `unsupported` 说明 |
-| 引文跨页/跨段 | 定位到起止页，`quote` 用省略号连接 |
-| PDF 无法提取文本 | OCR 后标注识别风险，关键数字人工复核 |
+| 材料只有摘要 | 只写摘要能支撑的内容；正文标“基于摘要”；不写“全文表明” |
+| 材料为空或路径缺失 | `status=input_error`、`deliverable=null`、不生成正文、不编造 |
+| 文献结论冲突 | 正文并列 + 条件对比；人工登记 `conflicts[]`；不取平均、不选边 |
+| task.md 要求超出材料 | 该部分写缺口，进入 `unsupported[]` / `uncertainty`；不用常识补全 |
+| PDF/Office 无法抽取 | 记录 `readable=false`；用运行时 PDF/OCR 工具；关键数字人工复核 |
+| 引用编号错乱/quote 非逐字 | 按审计报告重编号、改回原文或删句，改动写入 `change_log` |
+| 句子无来源且含数字 | 删除；不含数字则保留并标 `marked_as_reasoning` |
+| 入口内部异常 | 先保留已落盘文件，写 `status=partial` 的 `result.json`；重跑 finalize |
+
+## 最小调用示例（示意，不是正式答案）
+
+输入形状（由平台提供，此处仅示意）：
+
+```json
+{"case_id": "CASE-X", "task_instruction": "根据材料写 400 字综述",
+ "output_contract": {"deliverable": "…", "preserved_facts": "…",
+                     "evidence_map": "…", "change_log": "…"}}
+```
+
+```bash
+python3 "$SKILL_DIR/scripts/main.py" prepare \
+  --input /input --work /app/work --output /app/output
+# 读完 /app/work/sources.json 后，模型写 /app/output/text.md
+python3 "$SKILL_DIR/scripts/main.py" finalize \
+  --input /input --work /app/work --output /app/output \
+  --draft /app/output/text.md
+```
+
+示意输出（字段级别，数值随案例变化）：`status=completed`；
+`deliverable.path=text.md`；`preserved_facts[]` 含数字与 `source.locator`；
+`evidence_map[]` 含 `quote + supports`；`citation-audit.json` 与
+`quote-audit.json` 的 `ok=true`。示例只说明接口，不冒充正式案例结果。
 
 ## 自检
 
-- [ ] 每个句子都有 `support` 判定
-- [ ] 所有数字可回查到 `quote`
-- [ ] `inferred` 句都带限定语
-- [ ] 引用编号与文末一致
-- [ ] `unsupported` 里的句子确实已删除或标记
+- [ ] `text.md` 是模型写的完整正文；不是提纲、不是抽取式拼接；
+- [ ] `result.json` 可解析、`case_id` 正确、官方四字段齐全且路径真实；
+- [ ] `claim-evidence.json` 至少覆盖核心断言，每条 claim 有 evidence；
+- [ ] 关键数字/单位/条件/引用可回查；`number_index` 中 `found=false` 为 0；
+- [ ] `citation-audit` 无 unknown / missing entry；`quote-audit` 无 not_found；
+- [ ] 不支持句已删除或标 `marked_as_reasoning`；
+- [ ] 缺口/冲突/未解决问题写入 `uncertainty`。
 
-## 快速路径（预算内）
+## 版本与限制
 
-1. **0–2 分钟**：读 task.md/case.json，划出允许引用的材料白名单。
-2. **2–7 分钟**：先抽 5–8 条核心 claim，写出第一段并落盘 `text.md` 骨架。
-3. **7–13 分钟**：逐句配 claim，补齐引用，处理不支持句。
-4. **最后 2 分钟**：做反向核验（数字/引文/强度），写 `unsupported`。
-
-## 方法增强（融合参考实践）
-
-- **来源白名单**：白名单外的内容一律不得作为事实来源；领域常识也只能用于不涉及具体数据与优先权的句子。
-- **claim 台账**：每条 claim 记 `text / type / value / unit / condition / source / quote / strength / limits`。
-- **句子-claim 映射**：为目标文本每个句子分配 claim id；配不上的句子只有删除或标 `author_reasoning` 两种归宿。
-- **证据强度**：`reported`（明写）> `derived`（计算）> `inferred`（推理）；推断必须用“提示/可能”等限定语。
-- **反向核验**：逐句回读，确认引文支撑的是“同断言”而非“同主题”；数字与 quote 逐字一致。
-- **冲突并列**：不同文献结论冲突时并列呈现各自条件，不取平均、不选边。
-
-### 定向方法增强
-
-- **来自 Claim Verifier**：先把草稿拆成原子 claim（一句多断言要拆开）；每条给 `verified / weak / conflicting / not_found` 四态之一与 0–1 置信度；超过默认条数分批核验，不抽样冒充全量。
-- **来自 Claim Verifier**：对易变事实设置时效窗口；`strict_mode` 下 `weak` 与 `conflicting` 一律不得作为定论。
-- **来自 Find Paper References**：建 12 字段引文审核表——正文位置、原句、显示编号、对应条目、首次出现顺序、重复出现位置、编号状态、真实性状态、完整性状态、原句支持度、问题、处理建议。
-- **来自 Find Paper References**：显式检测缺号/跳号/孤儿条目、正文未引用条目、重复引用、虚假或撤稿文献、元数据不符、引用不支持原句、引用距离过远；候选文献的英文标题必须逐字完整保留，不得缩写、翻译或改写成主题标签。
-- **两篇合取后的改造**：`claim-evidence.json` 增加 `confidence` 与 `citation_audit[]`；标题字段只放原文标题，相关性评价另设字段，避免“标题即结论”。
-
-## 质量闸门
-
-| # | 检查 | 通过标准 | 不通过时 |
-|---|---|---|---|
-| G1 | 句子覆盖 | 每个句子有 `support` 判定 | 补判定；无依据句删除或标记 |
-| G2 | 数字 | 每个数字可回查到 quote | 补 quote 或删除数字 |
-| G3 | 强度 | `inferred` 句带限定语，未冒充 reported | 降级措辞 |
-| G4 | 引用 | 正文引用与文末一一对应 | 修编号；孤儿引用删除 |
-| G5 | 不支持句 | `unsupported` 中的句子已删除或标记 | 逐条核对，不留悬空 |
-| G6 | 结构 | `case_id`、`text`、`sentences`、`coverage` 齐全 | 先修 JSON 再补内容 |
-
-## 常见失败模式
-
-| 失败模式 | 识别信号 | 修复 |
-|---|---|---|
-| 听起来合理但无出处 | 句子没有 claim id | 删除或补来源；不能补则标 author_reasoning |
-| 引用不支持该句 | 引文主题相关但断言不同 | 换引文或改写句子 |
-| 强度拔高 | “可能”写成“证明” | 恢复限定语 |
-| 拼接两篇文献 | 结论是第三篇没说过的话 | 拆句，分别挂来源 |
-| 丢失条件 | 省略样本量/温度/剂量 | 补回条件，不剥离语境 |
-| quote 被改写 | 引文与原文措辞不同 | 改回逐字摘录 |
-
-## 交付清单
-
-- [ ] `/app/output/result.json` 含 `case_id`、`text`、`sentences[]`、`unsupported[]`、`coverage`
-- [ ] `text.md` 与 `claim-evidence.json` 真实存在
-- [ ] 每个句子有 `support` 判定
-- [ ] 所有数字可回查 quote
-- [ ] `inferred` 句均带限定语
-- [ ] 引用编号与文末一致
-- [ ] 不支持句已删除或明确标记
-
-## 最小示例（示例）
-
-输入：2 篇文献 + 写作要求"写一段 150 词的进展综述"。
-输出：`text.md` 6 句，`sentences` 6 条（5 direct、1 partial），
-`unsupported` 1 条（要求中提到的机制文献未提供，已删除）；
-`claim-evidence.json` 含 7 条 claim，每条带页码与原文 quote。
+- 版本：`0.14.0`（最小包、单入口、模型写正文、证据/引用引擎只做校验与投影）。
+- 脚本 stdlib-only、无网络；PDF 抽取依赖运行时 `pdftotext`，不可用则只记缺口。
+- 证据绑定基于引文编号、数字和双语关键词/概念重叠，可审计但不等于语义蕴含；
+  quote 存在也不自动证明 claim 正确，必须人工回读。
+- `conflicts[]` 不做自动语义判定；冲突证据需人工登记。
+- 任何脚本/路径/模板失败都不阻塞主稿与 `result.json` 落盘；审计结论写入
+  `uncertainty`，不伪造通过记录。

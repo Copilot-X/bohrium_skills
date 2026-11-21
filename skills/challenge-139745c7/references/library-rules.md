@@ -18,6 +18,33 @@
 
 每条结果有路径和命中片段；排序可解释；无结果说明。
 
+### 3.1 硬过滤
+
+- `filters.must` 是硬约束：每个 accepted item 必须有可核验的满足证据
+  （`filter_matches` 或 metadata 字段）；不得因为结果太少而放宽。
+- `filters.must_not` 命中项必须 `rank:null` 且 `excluded_by` 写明条件；
+  `kept+excluded` 必须等于候选总数。
+- 条件无法满足时 `no_result` 显式，给 `reason` 与 `searched_scope`。
+
+### 3.2 章节定位
+
+- PDF：`page` 是物理页；若材料给出印刷页码，同时写 `printed_page` 与
+  `page_offset`，不得把印刷页直接当物理页。
+- 文本/Word：`section_id`（标题）或 `section_label` + `line`，并给命中句。
+- 双栏/跨页表格：`locator` 写栏/页范围；quote 用同页原文，不跨栏拼接。
+
+### 3.3 版本与副本
+
+- 同一内容的副本（sha256 相同）只算一条证据，其余标 `duplicate_of`。
+- 同一文档的 v1/v2/revised：当前版作为 ranked hit；旧版进
+  `version_conflict[]`，写 `current/superseded/basis`。
+- 行政版本说明（supersedes / 作废 / 已取代）是版本判据，不是内容答案。
+
+### 3.4 别名与权限
+
+- alias / 又名 / 曾用名必须带来源定位；用别名命中时同时给原文件名。
+- 无权限、加密、损坏、无文本层分别记录，不得混写成“无结果”。
+
 ## 4. 产物
 
 - 主产物必须非空、可编辑、可复核；

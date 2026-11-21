@@ -42,6 +42,7 @@ mkdir -p /app/work /app/output
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
+| `scripts/audit_work.py` | **预检闸门**：从输入 CSV 复算年度/主题/去重计数，校验代表作、evidence_type、空白依据与逐字证据 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/research-plan.json` 的字段契约 |
 | `references/research-rules.md` | 趋势分析 的可执行规则与失败模式 |
@@ -68,7 +69,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 ### 第 2 步：写 `work/research-plan.json`（约 60% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。至少包含
-`time_window`, `year_counts`, `topic_counts`, `representative_rule`, `findings`, `evidence`，并为每条关键判断/候选/步骤绑定 `evidence`：
+`time_window`, `year_counts`, `topic_counts`, `representative_rule`,
+`representatives`, `data_quality`, `findings`, `gap_analysis`, `evidence`，
+并为每条关键判断/候选/步骤绑定 `evidence`：
 
 ```json
 {
@@ -79,11 +82,12 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   "findings": [
     {
       "id": "F001",
-      "statement": "Synthetic finding",
+      "statement": "Synthetic finding reported as a count, not a causal claim.",
       "sources": [
         "synthetic.md"
       ],
       "limitations": [],
+      "evidence_type": "count",
       "evidence": [
         {
           "path": "synthetic.md",
@@ -103,7 +107,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   "gap_analysis": [
     {
       "gap": "Synthetic gap",
-      "basis": "synthetic.md P1"
+      "basis": "synthetic.md P1",
+      "excluded_alternative": "Synthetic search checked the same terms in the supplied corpus; the gap is not a retrieval omission."
     }
   ],
   "evidence": [
@@ -117,8 +122,37 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   "time_window": {
     "start": "2020",
     "end": "2026",
-    "timezone": "UTC"
+    "as_of": "2026-01-01",
+    "coverage_note": "Synthetic cutoff; latest year may be incomplete.",
+    "stages": [
+      {
+        "name": "early",
+        "start": 2020,
+        "end": 2022
+      },
+      {
+        "name": "recent",
+        "start": 2023,
+        "end": 2026
+      }
+    ]
   },
+  "data_quality": {
+    "denominator": {
+      "rows": 1,
+      "duplicates": 0,
+      "unique": 1,
+      "dated": 1,
+      "missing_year": 0
+    },
+    "duplicates_removed": [],
+    "missing_year_ids": [],
+    "dedupe_key": "doi, else normalized title+year"
+  },
+  "topic_mapping": {
+    "synthetic topic": "synthetic topic"
+  },
+  "search_scope": "Synthetic supplied corpus only; no live search.",
   "year_counts": [
     {
       "year": 2026,
@@ -133,7 +167,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
       "denominator": 1
     }
   ],
-  "representative_rule": "synthetic rule; allow low-citation first reports",
+  "representative_rule": "stage coverage + first-method role + citation impact; allow low-citation first reports",
   "representatives": [
     {
       "topic": "synthetic topic",
@@ -156,6 +190,63 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
   找到；找不到的写入 `uncertainties`，不要改写成“大意”。
 - 共现不等于因果；窗口与分母明确。
 
+#### 2.1 必须算对的计数口径（硬要求）
+
+1. **先冻结分母**：`data_quality.denominator` 记录 `rows`（输入总行）、
+   `duplicates`（重复导出）、`unique`（去重后）、`dated`（有年份）、
+   `missing_year`（缺年份）；`rows - duplicates = unique`，
+   `dated + missing_year = unique`。
+2. **去重**：优先 DOI，其次规范化标题+年份；显式重复行写入
+   `data_quality.duplicates_removed`，保留被合并 ID 与依据。
+3. **年度计数**：`sum(year_counts[数字年份].count) = dated`；
+   每个数字年份的 `denominator = dated`；缺年份单独写
+   `{"year": "missing", "count": N, "denominator": unique}`，不能丢弃。
+   若最后一年索引未完成，写 `time_window.incomplete_last_year=true`
+   并在报告与 `uncertainties` 中说明。
+4. **主题计数**：先写 `topic_mapping`（原始词→规范主题），再统计去重后的
+   `unique` 记录；每个主题 `denominator = unique`，且
+   `sum(topic_counts.count) = unique`（多标签时在 `topic_rule` 说明）。
+5. **小幅波动不是拐点**：只有连续多年方向一致或计数差异超过语料噪声时
+   才写“上升/下降”；否则写“在该小样本内未见稳定趋势”。
+
+#### 2.2 代表作与空白（硬要求）
+
+- `representatives` 每条含 `record_id/role/reason`，并覆盖
+  `time_window.stages` 的每个阶段；没有显式 stages 时至少覆盖最早与最晚年份。
+- `representative_rule` 必须写明“阶段覆盖 + 角色（首创/方法/基准/综述）+
+  被引”的组合，不能只写“按被引排序”。
+- 输入备注含 `first/首创` 的低被引工作必须入选，或在该条 `reason` 之外
+  用 `representative_exclusions` 说明为何不选。
+- `gap_analysis` 每条含 `gap/basis` 与 `excluded_alternative`
+  （为何不是检索遗漏：同义词已检索、数据库覆盖、时间范围等）。
+
+#### 2.3 结论的证据类型（硬要求）
+
+每条 `findings` 必须有 `evidence_type`：
+
+| 值 | 可支持的表述 | 禁止 |
+|---|---|---|
+| `count` | “2020 年 3 篇，2021 年 2 篇” | “X 导致了 Y” |
+| `co-occurrence` | “两主题在同一批文献中出现” | 任何因果措辞 |
+| `qualitative` | 原文明确陈述的机制/边界 | 把单篇观点扩展为领域结论 |
+| `inference` | 明确标注为推断，并写限制 | 当成已被数据证实 |
+
+报告必须单列“共现不等于因果”的边界段；`count`/`co-occurrence` 结论出现
+“导致/推动/due to/led to”等措辞时预检会失败。
+
+### 第 2.5 步：运行预检（必做，通过后才可 finalize）
+
+```bash
+python3 "$SKILL_DIR/scripts/audit_work.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+- 退出码必须为 `0`；报告写入 `output/quality-audit.json`。
+- 有 `problems` 时按提示回到第 2 步修工作文件，**不要**直接 finalize。
+- `warnings` 要逐条判断：能补证据就补，不能补就写入 `uncertainties`。
+- 预检会独立复算 `sum(year_counts)=dated`、逐年/逐主题计数、
+  `rows-duplicates=unique`、代表作阶段覆盖、`evidence_type` 与因果措辞。
+
 ### 第 3 步：finalize（约 30% 预算）
 
 ```bash
@@ -165,7 +256,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 入口会：
 
-1. 读取 `work/research-plan.json`（或 JSON 主产物），检查必填字段 `time_window`, `year_counts`, `topic_counts`, `representative_rule`, `findings`, `evidence`；
+1. 读取 `work/research-plan.json`（或 JSON 主产物），检查必填字段 `time_window`, `year_counts`, `topic_counts`, `representative_rule`, `representatives`, `data_quality`, `findings`, `gap_analysis`, `evidence`；
 2. 逐条核验 evidence 的 path/locator/quote；
 3. 登记 `output/research-report.md` 与 `output/evidence-matrix.json`, `output/references.json` 的真实文件；
 4. 分析类任务若存在 `work/analysis.py`，会真实执行并把
@@ -203,10 +294,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 主产物 | `output/research-report.md` 存在、非空、与任务口径一致 |
-| G2 | 必填字段 | `time_window`, `year_counts`, `topic_counts`, `representative_rule`, `findings`, `evidence` 齐全 |
+| G2 | 必填字段 | `time_window`, `year_counts`, `topic_counts`, `representative_rule`, `representatives`, `data_quality`, `findings`, `gap_analysis`, `evidence` 齐全且子字段非空壳 |
 | G3 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
-| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties` |
-| G5 | 专项 | 趋势基于可核对的时间/数量；不把共现当因果；窗口明确 |
+| G4 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties`；缺年份/末年不完整单列 |
+| G5 | 专项 | 年度/主题计数可由输入复算；代表作覆盖各阶段；`evidence_type` 齐全；不把共现当因果 |
+| G8 | 预检 | `scripts/audit_work.py` 退出码 0，`output/quality-audit.json` 存在 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
 
@@ -244,11 +336,12 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "findings": [
     {
       "id": "F001",
-      "statement": "Synthetic finding",
+      "statement": "Synthetic finding reported as a count, not a causal claim.",
       "sources": [
         "synthetic.md"
       ],
       "limitations": [],
+      "evidence_type": "count",
       "evidence": [
         {
           "path": "synthetic.md",
@@ -268,7 +361,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "gap_analysis": [
     {
       "gap": "Synthetic gap",
-      "basis": "synthetic.md P1"
+      "basis": "synthetic.md P1",
+      "excluded_alternative": "Synthetic search checked the same terms in the supplied corpus; the gap is not a retrieval omission."
     }
   ],
   "evidence": [
@@ -282,8 +376,37 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   "time_window": {
     "start": "2020",
     "end": "2026",
-    "timezone": "UTC"
+    "as_of": "2026-01-01",
+    "coverage_note": "Synthetic cutoff; latest year may be incomplete.",
+    "stages": [
+      {
+        "name": "early",
+        "start": 2020,
+        "end": 2022
+      },
+      {
+        "name": "recent",
+        "start": 2023,
+        "end": 2026
+      }
+    ]
   },
+  "data_quality": {
+    "denominator": {
+      "rows": 1,
+      "duplicates": 0,
+      "unique": 1,
+      "dated": 1,
+      "missing_year": 0
+    },
+    "duplicates_removed": [],
+    "missing_year_ids": [],
+    "dedupe_key": "doi, else normalized title+year"
+  },
+  "topic_mapping": {
+    "synthetic topic": "synthetic topic"
+  },
+  "search_scope": "Synthetic supplied corpus only; no live search.",
   "year_counts": [
     {
       "year": 2026,
@@ -298,7 +421,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
       "denominator": 1
     }
   ],
-  "representative_rule": "synthetic rule; allow low-citation first reports",
+  "representative_rule": "stage coverage + first-method role + citation impact; allow low-citation first reports",
   "representatives": [
     {
       "topic": "synthetic topic",
@@ -314,8 +437,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
-- 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
-  证据/字段/产物审计。
+- 版本 `1.1.0`：单入口 + 共享引擎 + `fam_tracks`；新增
+  `scripts/audit_work.py` 复算年度/主题/去重计数并校验代表作与
+  `evidence_type`；模型写内容，脚本只做审计，不生成科学结论。
 - 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；
   不伪造在线查询结果。
 - 证据校验是逐字匹配启发式，不能替代语义蕴含判断。

@@ -8,74 +8,200 @@
     "protocol",
     "screening",
     "quality_appraisal",
+    "subquestions",
+    "coverage",
+    "conflict_check",
+    "synthesis",
     "findings",
+    "gap_analysis",
     "evidence"
   ],
   "properties": {
-    "case_id": {
-      "type": "string",
-      "description": "task-specific field"
+    "case_id": {"type": "string"},
+    "mode": {"const": "systematic-review"},
+    "summary": {"type": "string", "minLength": 40},
+    "question": {"type": "string"},
+    "protocol": {
+      "type": "object",
+      "required": ["version", "search_string", "databases", "fields", "date", "limits", "executed"],
+      "properties": {
+        "version": {"type": "string"},
+        "search_string": {
+          "type": "string",
+          "minLength": 12,
+          "description": "概念块 + 布尔逻辑 + 括号；不能是单个关键词"
+        },
+        "databases": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "fields": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "date": {"type": "string", "description": "YYYY-MM-DD 实际检索/导出日期"},
+        "limits": {"type": "string", "description": "时间、语言、文献类型限制"},
+        "executed": {"type": "boolean"},
+        "coverage_note": {"type": "string", "description": "executed=false 时必填"},
+        "reason_codes": {
+          "type": "object",
+          "description": "排除理由码字典；screening.reason_code 必须来自这里",
+          "additionalProperties": {"type": "string"}
+        }
+      }
     },
-    "mode": {
-      "type": "string",
-      "description": "task-specific field"
+    "screening": {
+      "type": "object",
+      "required": ["identified", "duplicates", "screened", "excluded", "full_text", "included", "records"],
+      "description": "identified-duplicates=screened; screened-excluded=included",
+      "properties": {
+        "identified": {"type": "integer", "minimum": 0},
+        "duplicates": {"type": "integer", "minimum": 0},
+        "screened": {"type": "integer", "minimum": 0},
+        "excluded": {"type": "integer", "minimum": 0},
+        "full_text": {"type": "integer", "minimum": 0},
+        "included": {"type": "integer", "minimum": 0},
+        "records": {
+          "type": "array",
+          "minItems": 1,
+          "description": "逐条覆盖输入记录，每条一行",
+          "items": {
+            "type": "object",
+            "required": ["record_id", "stage", "decision", "reason"],
+            "properties": {
+              "record_id": {"type": "string"},
+              "stage": {"enum": ["title_abstract", "full_text"]},
+              "decision": {"enum": ["include", "exclude", "duplicate"]},
+              "reason": {"type": "string", "minLength": 4},
+              "reason_code": {"type": "string"},
+              "duplicate_of": {"type": "string"},
+              "evidence": {"$ref": "#/$defs/evidence"}
+            }
+          }
+        }
+      }
     },
-    "summary": {
-      "type": "string",
-      "description": "task-specific field"
+    "quality_appraisal": {
+      "type": "array",
+      "minItems": 1,
+      "description": "每个 included 记录恰好一条",
+      "items": {
+        "type": "object",
+        "required": ["record_id", "tool", "domains", "judgement", "evidence", "effect_on_conclusion"],
+        "properties": {
+          "record_id": {"type": "string"},
+          "tool": {"type": "string"},
+          "domains": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+          "judgement": {"enum": ["low_risk", "some_concerns", "high_risk"]},
+          "evidence": {"$ref": "#/$defs/evidence"},
+          "effect_on_conclusion": {"type": "string", "minLength": 10}
+        }
+      }
     },
-    "question": {
-      "type": "string",
-      "description": "研究问题与范围"
+    "subquestions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "question", "status"],
+        "properties": {
+          "id": {"type": "string"},
+          "question": {"type": "string"},
+          "status": {"enum": ["answered", "partial", "not_answered"]},
+          "records": {"type": "array", "items": {"type": "string"}},
+          "evidence": {"$ref": "#/$defs/evidence"}
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "required": ["question_breakdown", "search_coverage", "evidence_chain",
+                   "conflicting_evidence", "synthesis", "gaps"],
+      "description": "六面覆盖；每面 status + items/evidence",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {
+          "status": {"enum": ["covered", "partial", "not_covered", "not_applicable"]},
+          "items": {"type": "array"},
+          "evidence": {},
+          "locator": {"type": "string"},
+          "note": {"type": "string"}
+        }
+      }
+    },
+    "conflict_check": {
+      "type": "object",
+      "required": ["checked", "items"],
+      "properties": {
+        "checked": {"type": "boolean"},
+        "items": {
+          "type": "array",
+          "description": "无冲突时可为空，但 checked 必须为 true",
+          "items": {
+            "type": "object",
+            "required": ["claim_a", "claim_b", "basis"]
+          }
+        },
+        "summary": {"type": "string"}
+      }
+    },
+    "synthesis": {
+      "type": "object",
+      "required": ["conclusions"],
+      "properties": {
+        "conclusions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "statement", "records", "strength", "limitations"],
+            "properties": {
+              "id": {"type": "string"},
+              "statement": {"type": "string"},
+              "records": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+              "evidence": {"$ref": "#/$defs/evidence"},
+              "strength": {"enum": ["high", "moderate", "low", "very_low"]},
+              "limitations": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        }
+      }
     },
     "findings": {
       "type": "array",
-      "description": "结论、来源与证据组",
+      "minItems": 1,
       "items": {
-        "type": "object"
-      }
-    },
-    "references": {
-      "type": "array",
-      "description": "引用条目与标识符",
-      "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "statement", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "statement": {"type": "string"},
+          "sources": {"type": "array", "items": {"type": "string"}},
+          "strength": {"type": "string"},
+          "evidence": {"$ref": "#/$defs/evidence"}
+        }
       }
     },
     "gap_analysis": {
       "type": "array",
-      "description": "研究空白及其证据基础",
+      "minItems": 1,
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["gap", "basis", "why_not_omission"],
+        "properties": {
+          "gap": {"type": "string"},
+          "basis": {"type": "string"},
+          "why_not_omission": {"type": "string"}
+        }
       }
     },
+    "references": {"type": "array", "items": {"type": "object"}},
+    "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+    "uncertainties": {"type": "array", "items": {"type": "object"}}
+  },
+  "$defs": {
     "evidence": {
-      "type": "array",
-      "description": "path+locator+quote 的逐字证据",
-      "items": {
-        "type": "object"
-      }
-    },
-    "uncertainties": {
-      "type": "array",
-      "description": "冲突、空白、未覆盖范围",
-      "items": {
-        "type": "object"
-      }
-    },
-    "protocol": {
       "type": "object",
-      "description": "task-specific field required by this sub-challenge"
-    },
-    "screening": {
-      "type": "object",
-      "description": "task-specific field required by this sub-challenge"
-    },
-    "quality_appraisal": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
+      "required": ["path", "locator", "quote"],
+      "properties": {
+        "path": {"type": "string"},
+        "locator": {"type": "string"},
+        "quote": {"type": "string", "minLength": 8}
       }
     }
   }

@@ -15,10 +15,13 @@
     "output/evidence.json"
   ],
   "required_fields": [
+    "queries",
     "candidates",
-    "evidence",
+    "decision_rules",
+    "ranked_keep",
     "metrics",
-    "screening"
+    "screening",
+    "evidence"
   ],
   "focus": "相关性判断、分层标签、稳定排序与逐条解释",
   "checks": "保留/待定/排除各有判据；排序可解释；关键文献在前；冲突升级人工",
@@ -42,7 +45,9 @@
     "uncertainties": [],
     "artifacts": [],
     "metrics": {},
-    "screening": {}
+    "screening": {},
+    "decision_rules": [],
+    "ranked_keep": []
   },
   "example": {
     "case_id": "SYNTH-SEARCH",
@@ -125,17 +130,21 @@
     "uncertainties": []
   },
   "schema_properties": {
-    "queries": "检索式、来源与目的；每条可复跑",
-    "candidates": "task-specific field required by this sub-challenge",
+    "queries": "检索/候选集来源与目的；候选集输入时写 provided_candidate_set，禁止编造检索式",
+    "candidates": "id/title/authors/year/venue/doi/label/criteria_hits/rank/score/tie_break/reason/evidence；版本合并写 merged_from+version_basis",
+    "decision_rules": "rule_id/priority/condition/decision；label 必须能由规则复算",
+    "ranked_keep": "按 rank 排列的前 k 个 keep id；长度=min(k, keep 数)，不足写 k_shortfall_note",
     "metrics": "k、Precision@k、nDCG@k、Recall@k、元数据准确率及计算口径",
-    "screening": "task-specific field required by this sub-challenge",
+    "screening": "keep/maybe/exclude 三层 + criteria + escalated；与 candidate.label 双向一致",
     "findings": "关键发现及证据",
     "evidence": "path+locator+quote 的逐字证据",
-    "uncertainties": "空结果、冲突、权限、缺失元数据"
+    "uncertainties": "空结果、冲突、权限、缺失元数据、人工升级"
   },
   "mode_metrics": [
-    "标签一致率、nDCG@k、待定区规模、逐条理由可复核；keep/maybe/exclude 各有判据。",
-    "rank/score/tie_break 必须稳定；重复记录用 dedupe_key 合并并保留 merged_from。",
-    "输入是候选集时不要编造 queries；query 来源写在 screening.source。"
+    "candidate.label 与 screening.keep/maybe/exclude 双向一致；每个输入候选恰好一层。",
+    "keep 的 rank 连续 1..n 且 score 随 rank 非增；同分必须有 tie_break，且 tie_break 顺序与 rank 一致。",
+    "ranked_keep 与 top-k 一致；Precision@k/Recall@k 可由 label 复算；k 大于候选数时说明。",
+    "版本/重复记录必须 merged_from + version_basis，或 keep_separate_reason；缺摘要/缺年份升级人工，不能仅因此排除。",
+    "每条保留/待定/排除有 criteria_hits 或 exclusion_rule 与逐字 evidence；元数据与输入逐字段一致。"
   ]
 }

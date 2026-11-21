@@ -1,72 +1,168 @@
 {
   "case_id": "SYNTH-RESEARCH",
   "mode": "trend-analysis",
-  "summary": "Synthetic example only.",
-  "question": "Synthetic research question",
-  "findings": [
-    {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "sources": [
-        "synthetic.md"
-      ],
-      "limitations": [],
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P1",
-          "quote": "synthetic source sentence"
-        }
-      ]
-    }
-  ],
-  "references": [
-    {
-      "key": "ref1",
-      "title": "Synthetic reference",
-      "doi": null
-    }
-  ],
-  "gap_analysis": [
-    {
-      "gap": "Synthetic gap",
-      "basis": "synthetic.md P1"
-    }
-  ],
-  "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
-  ],
-  "uncertainties": [],
+  "summary": "Synthetic example only: 2 dated records in 2020-2021 plus 1 duplicate and 1 missing-year record; the counts illustrate the required denominator, not a real trend.",
+  "question": "Synthetic research question about one method family over time",
   "time_window": {
-    "start": "2020",
-    "end": "2026",
-    "timezone": "UTC"
+    "start": 2020,
+    "end": 2026,
+    "as_of": "2026-01-01",
+    "coverage_note": "Synthetic cutoff; the final year may be incomplete.",
+    "incomplete_last_year": true,
+    "stages": [
+      {
+        "name": "early",
+        "start": 2020,
+        "end": 2021
+      },
+      {
+        "name": "later",
+        "start": 2022,
+        "end": 2026
+      }
+    ]
   },
+  "data_quality": {
+    "denominator": {
+      "rows": 4,
+      "duplicates": 1,
+      "unique": 3,
+      "dated": 2,
+      "missing_year": 1
+    },
+    "duplicates_removed": [
+      {
+        "id": "S04",
+        "duplicate_of": "S02",
+        "basis": "notes: duplicate of S02"
+      }
+    ],
+    "missing_year_ids": [
+      "S03"
+    ],
+    "dedupe_key": "doi, else normalized title+year"
+  },
+  "topic_mapping": {
+    "synthetic topic": "synthetic topic"
+  },
+  "search_scope": "Synthetic supplied export only; no live search.",
   "year_counts": [
     {
-      "year": 2026,
+      "year": 2020,
       "count": 1,
-      "denominator": 1
+      "denominator": 2
+    },
+    {
+      "year": 2021,
+      "count": 1,
+      "denominator": 2
+    },
+    {
+      "year": "missing",
+      "count": 1,
+      "denominator": 3
     }
   ],
   "topic_counts": [
     {
       "topic": "synthetic topic",
-      "count": 1,
-      "denominator": 1
+      "count": 3,
+      "denominator": 3
     }
   ],
-  "representative_rule": "synthetic rule; allow low-citation first reports",
+  "representative_rule": "stage coverage + first-method role + citation impact; allow low-citation first reports",
   "representatives": [
     {
+      "record_id": "S01",
       "topic": "synthetic topic",
-      "record_id": "R001",
+      "stage": "early",
       "role": "first_report",
-      "reason": "synthetic only"
+      "reason": "Synthetic first method report for the early stage."
+    },
+    {
+      "record_id": "S02",
+      "topic": "synthetic topic",
+      "stage": "later",
+      "role": "method",
+      "reason": "Synthetic later-stage method representative."
+    }
+  ],
+  "findings": [
+    {
+      "id": "F001",
+      "statement": "Synthetic count finding: one dated record in 2020 and one in 2021.",
+      "sources": [
+        "synthetic.csv"
+      ],
+      "limitations": [
+        "Synthetic only"
+      ],
+      "evidence_type": "count",
+      "evidence": [
+        {
+          "path": "synthetic.csv",
+          "locator": "rows S01-S02",
+          "quote": "synthetic 2020 2021 records"
+        }
+      ]
+    },
+    {
+      "id": "F002",
+      "statement": "The two topics co-occur in the supplied export; this is descriptive and does not show that one caused the other.",
+      "sources": [
+        "synthetic.csv"
+      ],
+      "limitations": [
+        "Co-occurrence only"
+      ],
+      "evidence_type": "co-occurrence",
+      "evidence": [
+        {
+          "path": "synthetic.csv",
+          "locator": "row S02",
+          "quote": "synthetic co-occurrence note"
+        }
+      ]
+    }
+  ],
+  "gap_analysis": [
+    {
+      "gap": "No synthetic validation study in the supplied corpus.",
+      "basis": "Synthetic rows S01-S03",
+      "excluded_alternative": "The same terms were checked across all supplied rows; the gap is not a retrieval omission."
+    }
+  ],
+  "references": [
+    {
+      "key": "S01",
+      "title": "Synthetic reference one",
+      "doi": "10.0000/synth.001"
+    },
+    {
+      "key": "S02",
+      "title": "Synthetic reference two",
+      "doi": "10.0000/synth.002"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "synthetic.csv",
+      "locator": "row S02",
+      "quote": "synthetic co-occurrence note"
+    }
+  ],
+  "uncertainties": [
+    {
+      "item": "incomplete final year",
+      "reason": "Synthetic cutoff precedes indexing completion.",
+      "impact": "The last year count is a lower bound.",
+      "action": "Re-run with a later dated export."
+    },
+    {
+      "item": "missing year",
+      "reason": "S03 has no year in the export.",
+      "impact": "Year counts use 2 of 3 unique records.",
+      "action": "Resolve the year or keep it in the missing-year row."
     }
   ]
 }

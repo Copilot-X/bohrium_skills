@@ -6,91 +6,196 @@
     "case_id",
     "summary",
     "time_window",
+    "data_quality",
     "year_counts",
     "topic_counts",
     "representative_rule",
+    "representatives",
     "findings",
+    "gap_analysis",
     "evidence"
   ],
   "properties": {
     "case_id": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "必须等于 /input/case.json 的 case_id"
     },
     "mode": {
-      "type": "string",
-      "description": "task-specific field"
+      "const": "trend-analysis"
     },
     "summary": {
       "type": "string",
-      "description": "task-specific field"
+      "minLength": 40,
+      "description": "趋势主结论 + 数据口径 + 一个明确的边界"
     },
     "question": {
       "type": "string",
       "description": "研究问题与范围"
     },
+    "time_window": {
+      "type": "object",
+      "required": ["start", "end"],
+      "description": "时间窗；必须写 as_of 或 coverage_note",
+      "properties": {
+        "start": {"type": "integer"},
+        "end": {"type": "integer"},
+        "as_of": {"type": "string"},
+        "coverage_note": {"type": "string"},
+        "incomplete_last_year": {"type": "boolean"},
+        "stages": {
+          "type": "array",
+          "description": "阶段划分；每个阶段 name/start/end，代表作需覆盖",
+          "items": {
+            "type": "object",
+            "required": ["name", "start", "end"]
+          }
+        }
+      }
+    },
+    "data_quality": {
+      "type": "object",
+      "required": ["denominator", "duplicates_removed", "missing_year_ids", "dedupe_key"],
+      "description": "去重与缺年份口径；denominator 四项必须与输入复算一致",
+      "properties": {
+        "denominator": {
+          "type": "object",
+          "required": ["rows", "duplicates", "unique", "dated", "missing_year"]
+        },
+        "duplicates_removed": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "duplicate_of", "basis"]
+          }
+        },
+        "missing_year_ids": {"type": "array", "items": {"type": "string"}},
+        "dedupe_key": {"type": "string"}
+      }
+    },
+    "topic_mapping": {
+      "type": "object",
+      "description": "原始主题词 → 规范主题；术语漂移与同名异义的归并依据",
+      "additionalProperties": {"type": "string"}
+    },
+    "search_scope": {
+      "type": "string",
+      "description": "语料来源、检索式/导出、时间截面与覆盖边界；未联网需注明"
+    },
+    "year_counts": {
+      "type": "array",
+      "description": "逐年计数；数字年份 denominator=dated，缺年份单独一行 denominator=unique",
+      "items": {
+        "type": "object",
+        "required": ["year", "count", "denominator"],
+        "properties": {
+          "year": {"type": ["integer", "string"]},
+          "count": {"type": "integer", "minimum": 1},
+          "denominator": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "topic_counts": {
+      "type": "array",
+      "description": "主题计数；sum(count)=unique，denominator=unique",
+      "items": {
+        "type": "object",
+        "required": ["topic", "count", "denominator"],
+        "properties": {
+          "topic": {"type": "string"},
+          "count": {"type": "integer", "minimum": 1},
+          "denominator": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "representative_rule": {
+      "type": "string",
+      "minLength": 20,
+      "description": "阶段覆盖 + 角色（首创/方法/基准）+ 被引的组合规则；不能只按被引排序"
+    },
+    "representatives": {
+      "type": "array",
+      "minItems": 1,
+      "description": "每个阶段至少一条；低被引首创工作需入选或解释",
+      "items": {
+        "type": "object",
+        "required": ["record_id", "role", "reason"],
+        "properties": {
+          "record_id": {"type": "string"},
+          "topic": {"type": "string"},
+          "role": {"type": "string"},
+          "reason": {"type": "string", "minLength": 8},
+          "stage": {"type": "string"}
+        }
+      }
+    },
+    "representative_exclusions": {
+      "type": "array",
+      "description": "未入选的高被引/低被引首创工作及理由",
+      "items": {"type": "object", "required": ["record_id", "reason"]}
+    },
     "findings": {
       "type": "array",
-      "description": "结论、来源与证据组",
+      "minItems": 1,
+      "description": "结论必须标 evidence_type；count/co-occurrence 禁止因果措辞",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "statement", "evidence_type", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "statement": {"type": "string"},
+          "evidence_type": {
+            "enum": ["count", "co-occurrence", "qualitative", "inference", "descriptive"]
+          },
+          "sources": {"type": "array", "items": {"type": "string"}},
+          "limitations": {"type": "array", "items": {"type": "string"}},
+          "evidence": {
+            "type": "array",
+            "items": {"$ref": "#/$defs/evidence"}
+          }
+        }
+      }
+    },
+    "gap_analysis": {
+      "type": "array",
+      "minItems": 1,
+      "description": "研究空白；每条需 basis + excluded_alternative",
+      "items": {
+        "type": "object",
+        "required": ["gap", "basis", "excluded_alternative"],
+        "properties": {
+          "gap": {"type": "string"},
+          "basis": {"type": "string"},
+          "excluded_alternative": {
+            "type": "string",
+            "description": "为何不是检索遗漏/未检到（同义词、数据库、时间窗）"
+          }
+        }
       }
     },
     "references": {
       "type": "array",
       "description": "引用条目与标识符",
-      "items": {
-        "type": "object"
-      }
-    },
-    "gap_analysis": {
-      "type": "array",
-      "description": "研究空白及其证据基础",
-      "items": {
-        "type": "object"
-      }
+      "items": {"type": "object"}
     },
     "evidence": {
       "type": "array",
-      "description": "path+locator+quote 的逐字证据",
-      "items": {
-        "type": "object"
-      }
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/evidence"}
     },
     "uncertainties": {
       "type": "array",
-      "description": "冲突、空白、未覆盖范围",
-      "items": {
-        "type": "object"
-      }
-    },
-    "time_window": {
+      "description": "冲突、缺年份、末年不完整、偏倚与未覆盖范围",
+      "items": {"type": "object"}
+    }
+  },
+  "$defs": {
+    "evidence": {
       "type": "object",
-      "description": "task-specific field required by this sub-challenge"
-    },
-    "year_counts": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
-      }
-    },
-    "topic_counts": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
-      }
-    },
-    "representative_rule": {
-      "type": "string",
-      "description": "task-specific field required by this sub-challenge"
-    },
-    "representatives": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
+      "required": ["path", "locator", "quote"],
+      "properties": {
+        "path": {"type": "string"},
+        "locator": {"type": "string"},
+        "quote": {"type": "string", "minLength": 8}
       }
     }
   }

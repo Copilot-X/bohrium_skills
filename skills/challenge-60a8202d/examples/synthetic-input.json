@@ -1,98 +1,146 @@
 {
-  "case_id": "SYNTH-SEARCH",
+  "case_id": "SYNTH-CITE",
   "mode": "citation-tracking",
-  "summary": "Synthetic example only.",
-  "question": "Synthetic research question",
+  "summary": "Synthetic example only: one seed, one backward reference, one forward citing work, one merged preprint, one parallel work and one direction-unknown record; values illustrate the interface.",
+  "question": "Synthetic citation-tracking question around one seed paper",
   "queries": [
     {
       "id": "Q1",
-      "round": 1,
-      "query": "synthetic query",
-      "source": "provided corpus",
-      "purpose": "recall",
-      "stop_condition": "no new eligible records in 2 rounds"
+      "type": "provided_citation_graph",
+      "source": "citations.md",
+      "purpose": "provenance; no live query was run"
+    }
+  ],
+  "tracking_scope": {
+    "levels": 2,
+    "stop_condition": "stop when no new record has a source-backed citation edge",
+    "budget": "synthetic: 10 records",
+    "sources": [
+      "citations.md",
+      "seed.md",
+      "source_note.md"
+    ]
+  },
+  "seeds": [
+    {
+      "id": "SEED",
+      "title": "Synthetic Seed: Graph Retrieval for Screening",
+      "authors": "A. Rivera; M. Chen",
+      "year": "2020",
+      "venue": "Synthetic Methods Journal",
+      "doi": "10.9999/synth.seed.2020",
+      "evidence": {
+        "path": "seed.md",
+        "locator": "SEED",
+        "quote": "Synthetic Seed: Graph Retrieval for Screening"
+      }
     }
   ],
   "candidates": [
     {
-      "id": "C001",
-      "title": "Synthetic paper",
-      "authors": "A. Example",
-      "year": "2026",
-      "venue": "Journal of Synthetic Examples",
-      "doi": "10.0000/synth.001",
-      "relevance": "core",
+      "id": "SEED",
+      "title": "Synthetic Seed: Graph Retrieval for Screening",
+      "authors": "A. Rivera; M. Chen",
+      "year": "2020",
+      "venue": "Synthetic Methods Journal",
+      "doi": "10.9999/synth.seed.2020",
+      "relevance": "seed",
       "rank": 1,
       "score": 1.0,
-      "dedupe_key": "doi:10.0000/synth.001",
+      "dedupe_key": "doi:10.9999/synth.seed.2020",
       "merged_from": [],
-      "reason": "Synthetic relevance reason",
+      "reason": "Synthetic supplied seed.",
       "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
+        "path": "seed.md",
+        "locator": "SEED",
+        "quote": "Synthetic Seed: Graph Retrieval for Screening"
       }
-    }
-  ],
-  "metrics": {
-    "k": 10,
-    "precision_at_k": 1.0,
-    "ndcg_at_k": 1.0,
-    "recall_at_k": 1.0,
-    "metadata_accuracy": 1.0,
-    "definition": "synthetic values; replace with measured values"
-  },
-  "screening": {
-    "include": [
-      "C001"
-    ],
-    "exclude": [],
-    "uncertain": []
-  },
-  "findings": [
+    },
     {
-      "id": "F001",
-      "statement": "Synthetic finding",
-      "evidence": [
-        {
-          "path": "synthetic.md",
-          "locator": "P1",
-          "quote": "synthetic source sentence"
-        }
-      ]
-    }
-  ],
-  "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
-  ],
-  "uncertainties": [],
-  "seeds": [
-    {
-      "id": "C001",
-      "title": "Synthetic seed",
-      "doi": "10.0000/synth.001",
+      "id": "B1",
+      "title": "Synthetic Graph Methods for Screening",
+      "authors": "T. Ito",
+      "year": "2016",
+      "venue": "SYNTHCONF",
+      "doi": "10.9999/synth.2016.003",
+      "relevance": "reference",
+      "rank": 2,
+      "score": 0.8,
+      "dedupe_key": "doi:10.9999/synth.2016.003",
+      "merged_from": [],
+      "reason": "Cited by the seed as its method source.",
       "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
+        "path": "citations.md",
+        "locator": "B1",
+        "quote": "The seed paper cites this work as its method source."
+      }
+    },
+    {
+      "id": "F1",
+      "title": "Synthetic Improvement of Graph Screening",
+      "authors": "L. Okafor",
+      "year": "2022",
+      "venue": "Synthetic Replication Letters",
+      "doi": "10.9999/synth.2022.088",
+      "relevance": "follow_up",
+      "rank": 3,
+      "score": 0.9,
+      "dedupe_key": "doi:10.9999/synth.2022.088",
+      "merged_from": [
+        "F1-PRE"
+      ],
+      "reason": "Cites the seed and improves recall.",
+      "evidence": {
+        "path": "citations.md",
+        "locator": "F1",
+        "quote": "This paper cites the seed paper and improves recall by 8 points."
+      }
+    },
+    {
+      "id": "R1",
+      "title": "Synthetic Parallel Work on Retrieval Screening",
+      "authors": "M. Chen",
+      "year": "2021",
+      "venue": "SYNTHCONF",
+      "doi": "10.9999/synth.2021.033",
+      "relevance": "parallel",
+      "rank": 4,
+      "score": 0.6,
+      "dedupe_key": "doi:10.9999/synth.2021.033",
+      "merged_from": [],
+      "reason": "Shares two references with the seed but does not cite it.",
+      "evidence": {
+        "path": "citations.md",
+        "locator": "R1",
+        "quote": "This paper does not cite the seed paper but shares two references with it."
       }
     }
   ],
   "edges": [
     {
       "id": "E1",
-      "from": "C001",
-      "to": "C002",
+      "from": "SEED",
+      "to": "B1",
+      "direction": "backward",
+      "hop": 1,
+      "basis": "The seed cites B1 as its method source.",
+      "source": {
+        "path": "citations.md",
+        "locator": "B1",
+        "quote": "The seed paper cites this work as its method source."
+      }
+    },
+    {
+      "id": "E2",
+      "from": "SEED",
+      "to": "F1",
       "direction": "forward",
       "hop": 1,
+      "basis": "F1 cites the seed and improves it.",
       "source": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
+        "path": "citations.md",
+        "locator": "F1",
+        "quote": "This paper cites the seed paper and improves recall by 8 points."
       }
     }
   ],
@@ -100,32 +148,135 @@
     {
       "id": "PATH1",
       "nodes": [
-        "C001",
-        "C002"
+        "SEED",
+        "B1"
       ],
       "edges": [
         "E1"
       ],
-      "relation": "cites"
+      "relation": "cited_by",
+      "direct": true,
+      "basis": "Backward hop to the method source."
+    },
+    {
+      "id": "PATH2",
+      "nodes": [
+        "SEED",
+        "F1"
+      ],
+      "edges": [
+        "E2"
+      ],
+      "relation": "cites",
+      "direct": true,
+      "basis": "Forward hop to the citing improvement."
     }
   ],
   "identity_groups": [
     {
-      "keep": "C001",
-      "merge": [],
-      "basis": "doi:10.0000/synth.001"
+      "canonical_id": "SEED",
+      "members": [
+        "SEED"
+      ],
+      "merged": false,
+      "basis": "single seed record; doi:10.9999/synth.seed.2020",
+      "version_basis": "",
+      "keep_separate_reason": ""
+    },
+    {
+      "canonical_id": "F1",
+      "members": [
+        "F1",
+        "F1-PRE"
+      ],
+      "merged": true,
+      "basis": "same title and author; arXiv preprint versus 2022 journal version",
+      "version_basis": "F1-PRE (arXiv 2112.99999, 2021) and F1 (DOI 10.9999/synth.2022.088, 2022) share title and author; the formal version is canonical.",
+      "keep_separate_reason": ""
+    },
+    {
+      "canonical_id": "B1",
+      "members": [
+        "B1"
+      ],
+      "merged": false,
+      "basis": "single supplied reference",
+      "version_basis": "",
+      "keep_separate_reason": ""
+    },
+    {
+      "canonical_id": "R1",
+      "members": [
+        "R1"
+      ],
+      "merged": false,
+      "basis": "single supplied parallel work",
+      "version_basis": "",
+      "keep_separate_reason": ""
+    },
+    {
+      "canonical_id": "AMB",
+      "members": [
+        "AMB"
+      ],
+      "merged": false,
+      "basis": "same title as the seed but different authors and research question",
+      "version_basis": "",
+      "keep_separate_reason": "Different authors and research question; do not merge with the seed."
     }
   ],
   "related_works": [
     {
-      "id": "C002",
-      "reason": "synthetic only",
+      "id": "R1",
+      "relation": "bibliographic_coupling",
+      "basis": "Shares two references with the seed but does not cite it.",
       "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
+        "path": "citations.md",
+        "locator": "R1",
+        "quote": "This paper does not cite the seed paper but shares two references with it."
       }
     }
   ],
-  "direction_unknown": []
+  "direction_unknown": {
+    "checked": true,
+    "items": [
+      {
+        "id": "F9",
+        "reason": "The third-party list does not state whether F9 cites the seed or only shares keywords.",
+        "source": "source_note.md"
+      },
+      {
+        "id": "F10",
+        "reason": "The third-party list does not state whether F10 cites the seed or only shares keywords.",
+        "source": "source_note.md"
+      }
+    ],
+    "policy": "undetermined records are excluded from directed paths"
+  },
+  "findings": [
+    {
+      "id": "F001",
+      "statement": "Synthetic finding: the seed has one method-source reference and one citing improvement.",
+      "evidence": {
+        "path": "citations.md",
+        "locator": "B1,F1",
+        "quote": "This paper cites the seed paper and improves recall by 8 points."
+      }
+    }
+  ],
+  "evidence": [
+    {
+      "path": "citations.md",
+      "locator": "F1",
+      "quote": "This paper cites the seed paper and improves recall by 8 points."
+    }
+  ],
+  "uncertainties": [
+    {
+      "item": "F9/F10 direction",
+      "reason": "The supplied list does not state citation direction.",
+      "impact": "They cannot be used as directed edges or path hops.",
+      "action": "Check the resolver/export or the publisher page."
+    }
+  ]
 }

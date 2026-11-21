@@ -21,6 +21,8 @@
     "quality_report",
     "rule_log",
     "original_snapshot",
+    "closure",
+    "data_dictionary",
     "evidence"
   ],
   "focus": "数据字典、缺失/异常/重复处理、清洗规则与快照",
@@ -52,7 +54,9 @@
     "rule_log": "",
     "quality_report": [],
     "original_snapshot": "",
-    "closure": {}
+    "closure": {},
+    "counts": {},
+    "stats": {}
   },
   "example": {
     "case_id": "SYNTH-ANALYSIS",
@@ -145,18 +149,20 @@
   },
   "schema_properties": {
     "analysis": "问题、方法、假设与步骤",
-    "results": "指标、数值、单位、来源与证据",
+    "results": "实际清洗指标；每条含 metric/value/evidence",
     "figures": "图表路径及其数据来源",
     "code": "真实执行的分析脚本路径",
-    "evidence": "path+locator+quote 的逐字证据",
-    "uncertainties": "异常、缺失、失败与未验证项",
-    "data_dictionary": "task-specific field required by this sub-challenge",
-    "cleaning_rules": "task-specific field required by this sub-challenge",
-    "cleaned_table": "task-specific field required by this sub-challenge",
-    "rule_log": "task-specific field required by this sub-challenge",
-    "quality_report": "task-specific field required by this sub-challenge",
-    "original_snapshot": "task-specific field required by this sub-challenge",
-    "closure": "task-specific field required by this sub-challenge"
+    "evidence": "path+locator+quote 的逐字证据；locator 为 L<n> 行号",
+    "uncertainties": "未知单位、非数值、below_lod、超范围与未解决项",
+    "data_dictionary": "数据字典逐列记录（column/description/source/locator）",
+    "cleaning_rules": "逐条规则：rule/field/before/after/delta/basis/reversible",
+    "cleaned_table": "output/cleaned-table.csv 的真实路径；保留原始列并追加归一/标记列",
+    "rule_log": "output/rule-log.json 的真实路径；含缺失码、范围、单位等式、去重键与闭合",
+    "quality_report": "字段级问题清单：field/issue/count/action",
+    "original_snapshot": "output/raw-snapshot.csv 的真实路径；SHA-256 与输入一致",
+    "closure": "raw_rows/dropped/cleaned_rows 且必须闭合",
+    "counts": "raw_rows/dropped/cleaned_rows/missing/below_lod/outlier/converted/invalid/unit_unknown",
+    "stats": "清洗后可用值统计；below_lod 不计入、未填补"
   },
   "mode_metrics": [
     "清洗前后计数闭合；规则可复跑；原始快照保留；异常不静默。"

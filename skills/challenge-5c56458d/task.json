@@ -18,7 +18,18 @@
   "required_fields": [
     "query",
     "results",
-    "evidence"
+    "evidence",
+    "sql_sha256",
+    "snapshot",
+    "schema_mapping",
+    "row_count_check",
+    "empty_result",
+    "permissions",
+    "sql_text",
+    "result_table",
+    "field_mapping",
+    "empty_result_handling",
+    "snapshot_version"
   ],
   "focus": "查询设计、模式/字段映射、结果校验与空结果处理",
   "checks": "查询可复跑；结果与问题对应；权限/空结果明确",
@@ -44,9 +55,17 @@
     "figures": [],
     "code": "",
     "query": "",
+    "sql_sha256": "",
+    "snapshot": {},
     "schema_mapping": {},
+    "row_count_check": {},
     "permissions": {},
-    "empty_result": {}
+    "empty_result": {},
+    "sql_text": "",
+    "result_table": "",
+    "field_mapping": {},
+    "empty_result_handling": {},
+    "snapshot_version": {}
   },
   "example": {
     "case_id": "SYNTH-ANALYSIS",
@@ -112,15 +131,23 @@
   },
   "schema_properties": {
     "analysis": "问题、方法、假设与步骤",
-    "results": "task-specific field required by this sub-challenge",
+    "results": "实际执行得到的指标；每条含 metric/value/evidence",
     "figures": "图表路径及其数据来源",
     "code": "真实执行的分析脚本路径",
-    "evidence": "path+locator+quote 的逐字证据",
-    "uncertainties": "异常、缺失、失败与未验证项",
-    "query": "task-specific field required by this sub-challenge",
-    "schema_mapping": "task-specific field required by this sub-challenge",
-    "permissions": "task-specific field required by this sub-challenge",
-    "empty_result": "task-specific field required by this sub-challenge"
+    "evidence": "path+locator+quote 的逐字证据；locator 为 L<n> 行号",
+    "uncertainties": "空结果、缺失组、连接膨胀、字段歧义与未验证项",
+    "query": "实际执行的单条只读 SQL",
+    "sql_sha256": "实际执行 SQL 的 SHA-256",
+    "snapshot": "快照路径、SHA-256、大小、SQLite 版本与只读标志",
+    "schema_mapping": "数据字典字段到真实 table.column 的逐条映射及原文证据",
+    "row_count_check": "期望行数、实际行数、是否一致及来源",
+    "permissions": "只读模式、是否允许写入与说明",
+    "empty_result": "是否空结果、缺失的已登记组与显式说明",
+    "sql_text": "output_contract(sql_text) 对应的 SQL 原文",
+    "result_table": "output/result-table.csv 的真实路径",
+    "field_mapping": "output_contract(field_mapping) 对应的 schema_mapping",
+    "empty_result_handling": "output_contract(empty_result_handling) 对应的空结果声明",
+    "snapshot_version": "output_contract(snapshot_version) 对应的快照与哈希"
   },
   "mode_metrics": [
     "查询可复跑；结果与问题对应；权限/空结果明确；字段映射可核对。"
