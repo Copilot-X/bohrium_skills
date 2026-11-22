@@ -1,6 +1,6 @@
 ---
 name: review-quality-review-skill
-description: 论文质量审查：围绕事实核验、引用支持、方法设计、统计报告、论证链、学术规范六类检查项，逐条产出可定位、可核对、分严重度的审查问题，附原文证据、claim-source 对照、误报检查与可执行修改建议；交付 review-report.md、findings.json、evidence-map.json 和含官方 reading/writing 字段的 result.json。Use for 论文质量审查、quality-review、review、证据绑定、claim-source matrix、结果复核.
+description: 论文质量审查：先用 quality_review.py 从 /input 抽取章节、方法段、统计报告、图表题注与数字并生成带逐字证据的候选 findings，再由模型逐条核验；围绕事实核验、引用支持、方法设计、统计报告、论证链、学术规范六类检查项，产出可定位、分严重度的审查问题，附 claim-source 对照、误报检查与可执行修改建议；交付 review-report.md、findings.json、evidence-map.json 和含官方 reading/writing 字段的 result.json。Use for 论文质量审查、quality-review、review、证据绑定、claim-source matrix、结果复核.
 ---
 
 # 论文质量审查（review track · quality-review）
@@ -49,6 +49,7 @@ mkdir -p /app/work /app/output
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、产物登记与 result 信封 |
+| `scripts/quality_review.py` | **规则扫描**：抽取章节/段落/句子/图表题注/统计量与引文，生成带逐字证据的候选 findings、claim-source 行和覆盖建议；写 `work/rule-review.json` |
 | `scripts/review_gate.py` | 分面覆盖、finding 子字段、逐字证据、claim-source 与报告自检 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/review-findings.json` 的字段契约 |
@@ -77,7 +78,83 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 材料缺失、文件不可读、图表无文字层要立即写入 `uncertainties` 与
 `not_checked`，不要在后面假装查过。
 
-### 第 2 步：分面审查（约 60% 预算）
+### 第 2 步：规则扫描 + 分面审查（约 60% 预算）
+
+#### 2.1 先运行规则扫描（约 10% 预算）
+
+```bash
+python3 "$SKILL_DIR/scripts/quality_review.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+脚本会从 `/input`（或 prepare 生成的 `work/materials.json`）抽取：章节与
+段落序列（`P1`/`U1` + 行号 locator）、句子、方法段、p 值/样本量/效应量/
+置信区间/检验统计量、图表题注、引用编号与 LaTeX `\cite{}` 键，并对
+**可判定的文本模式**做窄
+规则检查。输出 `work/rule-review.json` 与 `output/rule-review.json`：
+
+| 字段 | 内容 |
+|---|---|
+| `engine_status` | `ok` / `partial`（缺方法或结果段）/ `input_error`（无可读材料） |
+| `extraction` | 章节、段落（含 `stats`）、题注、参考文献与统计摘要 |
+| `findings[]` | 候选问题：`rule_id`、facet、locator、逐字 quote、severity/type、`confidence`、`rule_status`、fix、`false_positive_check` |
+| `claim_source_matrix[]` | 从正文引用与参考文献条目自动配对的候选行（多为 `unverifiable`） |
+| `coverage[]` | 六面建议状态（checked/partial/not_checked + reason） |
+| `structure_gaps[]` / `uncertainties[]` | 缺段、缺图注、缺样本量说明等“无法逐字引用”的缺口 |
+
+规则扫描与模型的分工是硬边界：
+
+| 环节 | `quality_review.py` | 模型 |
+|---|---|---|
+| 抽取与定位 | 输出原文切片、行号、逐字 quote | 抽查并补足脚本未覆盖的段落/图表 |
+| 候选问题 | 只按规则产生候选，`confidence` 标明强度 | **逐条回原文核验**，接受、改写或删除 |
+| 严重度/类型 | 给默认值，不声称最终结论 | 结合学科惯例与影响确定 final severity/type |
+| 误报检查 | 预填已做的核对项 | 补充期刊/学科/作者取舍判断，必要时标 needs_recheck |
+| 结论与报告 | **不生成**任何审稿结论 | 写摘要、总体判断、问题清单与限制 |
+| claim-source | 生成候选行，能判定的写 `none`，其余 `unverifiable` | 查看摘要/全文后改为 full/partial/none 并写 note |
+
+常用规则：
+
+| rule_id | facet | 触发条件 |
+|---|---|---|
+| `p_value_mismatch` | fact_consistency | 摘要首个 p 值与结果段首个 p 值不同；若后文出现相同 p 值则标 needs_recheck |
+| `significance_threshold_conflict` | statistical_reporting | 同一句称 significant 但 p ≥ 0.05，且无 not/non-significant |
+| `randomization_conflict` | method_design | 摘要/方法称 randomized，方法段写 assigned alternately |
+| `sample_size_not_reported` | method_design | 明确写未做先验样本量/效能计算；仅“未找到”则进 gap |
+| `effect_size_missing` | statistical_reporting | 有 p 值但全文无效应量（同时记录 CI/检验统计量缺失） |
+| `causal_overclaim` / `durability_overclaim` / `generalization_overreach` | argument_chain | 因果措辞 vs 非随机设计；无随访却称持久；窄样本外推到所有人群 |
+| `citation_claim_mismatch` | citation_support | 干预/因果论断引用 cross-sectional/survey/no-intervention 等设计不匹配的条目 |
+| `citation_reference_missing` / `reference_metadata_incomplete` | citation_support | 正文编号或 `\cite{}` 无条目；条目明写 incomplete/unknown；多条目缺年份时进 gap 而非逐条 finding |
+| `figure_not_provided` | fact_consistency | 正文明确写图未提供/缺失；仅“未见图注”进 gap |
+| `compliance_declarations_missing` / `data_availability_missing` / `coi_statement_missing` | academic_compliance | 人类参与者研究未见伦理/同意/数据/利益冲突声明 |
+| `sample_size_inconsistency` | fact_consistency | 摘要与方法段的 n 值集合不相交 |
+
+审核后如要把候选导入工作文件，再运行：
+
+```bash
+python3 "$SKILL_DIR/scripts/quality_review.py" \
+  --input /input --work /app/work --output /app/output \
+  --merge --min-confidence medium
+```
+
+`--merge` 只追加不覆盖：已存在的 ID/引文不重复；新候选编号为 `A01...`，
+**一律写成 `status=needs_recheck`**，并保留 `rule_status` 说明规则的原始判定。
+低置信度候选只留在 `work/rule-review.json`。模型必须逐条确认（改
+`status=confirmed`）、降级或删除；不得原样把全部候选当最终结论。
+直接用 `--merge` 而不复核，报告中必须说明这是未复核候选。
+
+空输入、缺方法段、缺结果段的降级由脚本保证：`engine_status` 分别为
+`input_error` / `partial`，对应 facet 写 `not_checked` 并给出 reason，
+findings 为空或只覆盖可判定部分，进程仍 `exit 0`。三路 synthetic 自测：
+
+```bash
+python3 "$SKILL_DIR/scripts/quality_review.py" --selftest
+```
+
+自测只使用临时目录中的 synthetic 文本（正常稿件、空输入、缺方法/结果段），
+不写入正式答案；失败时退出码为 1，并打印每个 case 的缺失规则/字段。
+
+#### 2.2 模型分面审查（约 50% 预算）
 
 按下面六类逐面阅读并记录。**每一面都先写覆盖状态，再写发现**；没有
 问题的面要给出“查了什么、为何通过”的证据，而不是留空。
@@ -119,7 +196,14 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 按 `templates/work.schema.json` 写结构化工作文件。必需字段：
 `findings`, `facets_checked`, `review_status`, `evidence`。建议同时写
 `checks`, `claim_source_matrix`, `coverage_summary`, `not_checked`,
-`verdict`, `uncertainties`。
+`verdict`, `uncertainties`, `rule_review`, `structure_gaps`。
+
+若用 `--merge` 导入了规则候选：逐条围绕 `rule_id` 与 `confidence` 回原文
+核对；确认的改为 `status=confirmed` 并补齐 `impact`；不成立的删除并在
+`uncertainties` 记录驳回原因；改写的保留 `rule_id`/`rule_status` 便于复核。
+最终 ID 可保留 `A01...` 或统一重编号，但必须与 `output/findings.json`、
+`output/evidence-map.json` 和报告完全一致。规则没有覆盖的面，仍需模型
+按 2.2 的六面协议补查，`rule_review` 不是“已全部检查”的证明。
 
 finding 的最小结构（字段名必须一致）：
 
@@ -273,9 +357,14 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 - `preserved_facts[]`：证据中的数字/单位（有则填）；
 - `evidence_map[]`：每条证据的 path/locator/quote/claim 映射；
 - `artifacts[]`：主产物、`output/findings.json`、
-  `output/evidence-map.json` 与 `output/self-check.json`；
+  `output/evidence-map.json`、`output/rule-review.json`（规则扫描运行证据）
+  与 `output/self-check.json`；
 - `uncertainties[]`、`change_log[]`、`output_contract`、
   `contract_coverage`。
+
+`output/rule-review.json` 是辅助运行证据，**不是**审查结论或主产物；
+其 `findings` 只是候选。`result.json` 的 `claims[]` 与报告必须来自
+模型核验后的 `work/review-findings.json`。
 
 若 `/input/case.json` 的 `output_contract` 含本题特有键（例如
 `review_report`、`findings`、`evidence_map`、`status`），必须：
@@ -290,6 +379,7 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 | # | 检查 | 通过标准 |
 |---|---|---|
+| G0 | 规则扫描 | 已运行 `scripts/quality_review.py`；`work/rule-review.json` 存在且 `engine_status` 如实；每条候选有确认/改写/删除记录；不得声称脚本结论即最终结论 |
 | G1 | 主产物 | `output/review-report.md` 存在、非空、含 5 个必备章节 |
 | G2 | 必填字段 | `findings`, `facets_checked`, `review_status`, `evidence` 齐全且非空 |
 | G3 | 定位与原文 | 每条 finding 有 path+locator+逐字 `original_quote`；多证据逐条可查 |
@@ -315,8 +405,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 | 情况 | 处理 |
 |---|---|
-| 材料为空/不可读 | `input_error`；不生成伪问题/伪结论 |
+| 材料为空/不可读 | `input_error`；不生成伪问题/伪结论；`quality_review.py` 仍写 `engine_status=input_error` 且 exit 0 |
 | 只有摘要/部分材料 | 只审可确认部分；正文标“基于摘要”；`status=partial` |
+| 缺方法段/结果段 | 规则扫描 `engine_status=partial`，对应 facet 为 `not_checked` 并写 reason；只审可判定条目，不把缺失写成“通过” |
+| 规则扫描异常 | `work/rule-review.json` 记录 `engine_status=error` 与 traceback；模型改为人工分面审查，finalize 如实写 `partial` |
+| 规则候选疑似误报 | 回到原文与学科惯例核对；删除、降为 `suggestion` 或标 `needs_recheck`，并在 `uncertainties` 记录原因；不得为凑数保留 |
 | 图表/补充材料缺失 | 写入 `uncertainties` 与 `not_checked`，不把“未见”判成“错误” |
 | 证据 quote 找不到 | 回到原文重摘；无法逐字时删除该 finding 或标 `needs_recheck` |
 | 引用元数据不全 | 记 `insufficient_evidence`；不补造作者/年份/DOI |
@@ -368,8 +461,12 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
-- 版本 `1.1.0`：六面审查协议 + finding 子字段 + claim-source 矩阵 +
-  `scripts/review_gate.py` 自检；模型写内容，脚本做可核对性审计。
+- 版本 `1.2.0`：六面审查协议 + finding 子字段 + claim-source 矩阵 +
+  `scripts/quality_review.py` 规则扫描（抽取/候选/覆盖建议/三路自测）+
+  `scripts/review_gate.py` 自检；模型写内容与最终判断，脚本只做抽取、
+  候选生成和可核对性审计。
+- 规则扫描是文本模式匹配：只能发现可逐字定位的候选，不能判断语义蕴含、
+  研究设计是否真的正确，也不能替代同行评审。所有 `Axx` 候选必须复核。
 - 不联网：只使用 `/input` 提供的材料或导出；不伪造在线检索结果。
 - 证据校验是逐字匹配启发式，不能替代语义蕴含判断；引用是否真正
   支持论断仍需作者/审稿人复核。

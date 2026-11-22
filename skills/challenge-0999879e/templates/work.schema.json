@@ -108,6 +108,24 @@
             "type": "string",
             "minLength": 5
           },
+          "rule_id": {
+            "type": "string",
+            "description": "quality_review.py 规则编号（模型改写后保留，便于复核）"
+          },
+          "rule_status": {
+            "type": "string",
+            "description": "规则原始判定；合并后 status 一律为 needs_recheck"
+          },
+          "confidence": {
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "generated_by": {
+            "type": "string"
+          },
           "evidence": {
             "type": "array",
             "minItems": 1,
@@ -307,6 +325,17 @@
           "string"
         ]
       }
+    },
+    "structure_gaps": {
+      "type": "array",
+      "description": "缺章节/缺图注/缺声明等无法逐字引用的结构缺口；转写为 uncertainties/not_checked",
+      "items": {
+        "type": "object"
+      }
+    },
+    "rule_review": {
+      "type": "object",
+      "description": "quality_review.py 运行元信息：候选数、采纳数、置信度阈值、规则文件路径"
     },
     "review_status": {
       "type": "string",

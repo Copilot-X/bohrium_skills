@@ -206,3 +206,19 @@ task.md 要求"根据数据画图""生成数据图表""改一张数据图"时使
 输入：`results.csv`（12 行，含 sd 与 n）+ 要求 2 面板。
 输出：`fig2.svg`（bar + line）；`value-check.json` 9 点全 match；
 `fig2.pdf` 1 页；`preview/fig2.png` 2126×1063 @300 dpi；`status: "completed"`。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点输入与数据表 |
+| `scripts/make_chart.py` | 按 figure-spec 生成 SVG/PNG/PDF |
+| `scripts/validate_result.py` | 校验 result.json 与产物 |
+| `references/04-graphics.md` | 图表与视觉规范 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 可编辑源文件：示意图、机制图、流程图或图表的分层源文件；完成标准：实体、关系、图例和数据映射正确。
+- 目标格式、尺寸、分辨率、字体和色彩检查；完成标准：可在目标场景打开和使用。
+- 来源与修改记录：元素来源、版本、数据映射和人工确认；完成标准：关键图面可核验，异常有说明。

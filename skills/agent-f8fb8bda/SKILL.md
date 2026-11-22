@@ -41,6 +41,7 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
+| `scripts/domain_work.py` | 本模式确定性初稿：子问题、检索计划、工具调用、逐字证据、引用与缺口 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/research-plan.json` 的字段契约 |
@@ -64,6 +65,15 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成深度研究初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/domain_work.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本会拆子问题、生成检索计划与工具调用记录、把材料句子映射为逐字证据、
+抽取 DOI 并列出缺口。词面匹配只作为候选证据，模型必须逐条复核后形成结论。
 
 ### 第 2 步：写 `work/research-plan.json`（约 60% 预算）
 

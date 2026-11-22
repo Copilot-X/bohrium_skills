@@ -81,7 +81,7 @@
         "temperature": 350
       },
       "expected": "high selectivity",
-      "basis": "synthetic history"
+      "basis": "synthetic history row 1"
     }
   ],
   "validation_experiment": {
@@ -89,5 +89,11 @@
       "synthetic validation"
     ],
     "stop_condition": "confirmed or budget exhausted"
+  },
+  "parameter_analysis": {
+    "script": "scripts/parameter_optimizer.py",
+    "path": "output/parameter-analysis.json",
+    "status": "synthetic placeholder, not a real analysis",
+    "not_computable": []
   }
 }

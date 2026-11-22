@@ -43,3 +43,84 @@
 - 风险：风险/影响/处置；安全、伦理、预算、时间约束逐项说明。
 - 比较/解释：同维度比较，评分可复算；解释区分观测与推断，异常有证据。
 - 推荐值有依据；约束明确；给出验证实验与停止条件。
+
+## 7. 参数分析脚本 `scripts/parameter_optimizer.py`
+
+### 7.1 何时运行
+
+`/input` 存在 `.csv` 或含行数组的 `.json` 时运行；数据不足时也运行，
+让脚本写出 `status=not_computable` 的真实记录。列名歧义或题面明确目标时，
+显式传 `--parameters/--responses/--objective/--file`。
+
+```bash
+python3 scripts/parameter_optimizer.py --input /input --output /app/output
+```
+
+### 7.2 计算口径
+
+| 指标 | 定义 | 限制 |
+|---|---|---|
+| Pearson r | 完整参数-响应配对上的线性相关 | 需要 n≥3 且两列非常数 |
+| Spearman rho | 秩相关（并列取平均秩） | 只说明单调关联，不是因果 |
+| OLS | `y = intercept + slope*x`，含 R² | 单参数简单回归，不含交互项 |
+| LOOCV RMSE | 留一交叉验证均方根误差 | 仅 n≥4；不能替代独立验证 |
+| 效应跨度 | `slope × (max(x)-min(x))` | 只在观测跨度内可解释 |
+| 可行子集 | 先按硬约束过滤行，再计算上述统计 | 可行子集不足 3 行时退回全体行并标注 |
+
+强度分档仅作描述：`|r|≥0.7` strong、`≥0.4` moderate、`≥0.2` weak，
+其余 negligible。`n<5`、`|r|≥0.9 且 n<6`、水平均值非单调会写入 warnings。
+
+### 7.2b 记录类型
+
+脚本把数据分为三类并写入 `dataset.record_type`：
+
+- `measurements`：实测/报告观测，可用于敏感性、可行域与推荐。
+- `candidate_plans`：候选方案或预测值（含 `plan_id`/`candidate`/`version`
+  等键，或文件名含 plan/candidate）；只做描述性算术比较，置信度压到
+  `low`，不得写成实测最优。
+- `contract_table`：价格、资源、预约、预算等合同表（文件名含
+  price/resource/booking/budget 等）；不进入敏感性计算，只作为约束/成本
+  口径人工读取。若只有合同表，输出 `not_computable`。
+
+同一列集合内，脚本优先选择 `measurements` 组，避免把预测值和实测值混在
+一起；被忽略的表写入 `dataset.ignored_tables` 与 `inputs.ignored`。
+
+### 7.3 约束解析
+
+1. `case.json` 中的结构化约束优先：`{column, op, value}` 或
+   `{column: {max/min: value}}`。
+2. 文本约束是保守正则抽取，必须带 `path+locator+quote`，并标
+   `needs_review=true`；未映射到列的约束进入 `constraints.unmapped`。
+3. 同一参数多个上限时取最小值、多个下限取最大值；冲突写入
+   `constraints.conflicts`，较宽松值不能作为可执行边界。
+4. 响应约束（如杂质/成本上限）用于逐行可行性过滤；参数缺失或响应缺失的行
+   标 `unknown`，不得当作可行。
+
+### 7.4 推荐与验证
+
+- 推荐方法是“约束过滤后的最优历史点 + 目标容差邻域”，不是黑箱最优解；
+  `support_rows` 必须指回原始行。
+- `recommended_interval` 是邻域与硬边界的交集；单水平参数只能保持并验证，
+  不能宣称最优。
+- 预测响应优先报告实测最优点；线性模型预测仅作描述，附 `loocv_rmse`、
+  `r2`、`n` 与 `extrapolation` 标记。
+- 验证计划按“中心重复 + 单参数上下边缘 + 最严格边界探测”生成；边界探测
+  是超出历史窗口的外推点，必须显式标注。
+- 停止条件至少覆盖：约束连续违例、目标平台期、成功确认、安全/设备越界、
+  预算耗尽。
+
+### 7.5 不可计算与复核
+
+以下情况必须写 `not_computable`，不得估算：
+
+- 没有可读的 CSV/JSON 数据表；
+- 显式指定的参数/响应列不存在；
+- 参数列无变化或完整配对 n<3；
+- 找不到目标响应列或目标方向；
+- 没有一行满足硬约束；
+- 参数硬边界与观测区间无交集。
+
+复核顺序：列角色 → 数据质量 → 约束原文与映射 → 可行行 → 敏感性 → 推荐
+区间/边界 → 验证计划 → 异常与 not_computable → 证据 locator。CSV 证据在
+finalize 中按 tab 分隔文本校验，因此逐字 quote 应使用 tab 连接的行，而不是
+原始逗号行。

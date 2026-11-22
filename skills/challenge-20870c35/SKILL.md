@@ -194,3 +194,20 @@ task.md 要求"组织汇报内容""设计讲述逻辑""排时间""准备答辩/�
 输出：`outline.md` 12 页（含 2 页 backup）；`timing.json` 11+4 分钟；
 `timing_check.deviation = 0.04`；`qa-prep.md` 10 问；
 `deck.pptx` 12 页；`status: "completed"`。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点论文、数据与旧 deck |
+| `scripts/make_pptx.py` | 按页级计划生成可编辑演示文件 |
+| `scripts/pptx_edit.py` | 编辑现有 deck |
+| `scripts/validate_result.py` | 校验页级结构、讲稿与 result.json |
+| `references/05-slides.md` | 幻灯片与讲述规范 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 可编辑演示文件：页级结构、主张、图表、讲稿/备注和模板结果；完成标准：能围绕论文主线讲清楚。
+- 页级证据映射：每页内容对应论文图、表、章节或数据；完成标准：引用准确，未改写事实。
+- 渲染与版本记录：源文件、导出件、字体/模板和修改记录；完成标准：可打开、播放、编辑并复核。

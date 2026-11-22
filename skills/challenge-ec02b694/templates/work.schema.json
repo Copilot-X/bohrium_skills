@@ -7,7 +7,8 @@
     "summary",
     "recommendations",
     "parameters",
-    "evidence"
+    "evidence",
+    "validation_experiment"
   ],
   "properties": {
     "case_id": {
@@ -102,7 +103,38 @@
     },
     "validation_experiment": {
       "type": "object",
-      "description": "task-specific field required by this sub-challenge"
+      "description": "验证步骤、判读标准、停止条件与预算"
+    },
+    "parameter_analysis": {
+      "type": "object",
+      "description": "指向 output/parameter-analysis.json：脚本状态、数据质量、敏感性、约束与 not_computable",
+      "properties": {
+        "script": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "not_computable": {
+          "type": "array",
+          "items": {}
+        }
+      }
+    },
+    "objective": {
+      "type": "string",
+      "description": "目标响应列与方向（如 yield_pct:max）"
+    },
+    "sensitivity_summary": {
+      "type": "object",
+      "description": "参数-响应敏感性/趋势摘要，须注明描述性口径与 n"
+    },
+    "tradeoffs": {
+      "type": "object",
+      "description": "响应指标之间的权衡与非可行最优点说明"
     }
   }
 }

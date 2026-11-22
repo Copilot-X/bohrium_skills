@@ -6,6 +6,7 @@
     "case_id",
     "summary",
     "compliance_checklist",
+    "compliance_matrix",
     "guideline_source",
     "review_status",
     "findings",
@@ -14,69 +15,161 @@
   "properties": {
     "case_id": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "必须与 /input/case.json 的 case_id 一致"
     },
     "mode": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "固定为 compliance-review"
     },
     "summary": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "一段话概括检查范围、结果与边界；不得声称替代机构审查"
     },
     "findings": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "逐条问题；每条必须有 locator、original_quote、rule_id、severity、type、fix、status 与逐字 evidence",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": [
+          "id",
+          "locator",
+          "original_quote",
+          "rule_id",
+          "severity",
+          "type",
+          "fix",
+          "status",
+          "evidence"
+        ],
+        "properties": {
+          "id": {"type": "string"},
+          "check_id": {"type": "string"},
+          "facet": {"type": "string"},
+          "rule_id": {"type": "string"},
+          "rule_version": {"type": "string"},
+          "locator": {
+            "oneOf": [
+              {"type": "object"},
+              {"type": "string"}
+            ],
+            "description": "path + locator，例如 {\"path\":\"manuscript.md\",\"locator\":\"P6\",\"line_start\":8,\"line_end\":8}"
+          },
+          "original_quote": {"type": "string"},
+          "severity": {"enum": ["critical", "major", "minor", "info"]},
+          "type": {"type": "string"},
+          "issue_type": {
+            "enum": [
+              "missing_declaration",
+              "incomplete_declaration",
+              "inconsistent_declaration",
+              "permission_gap",
+              "potential_privacy_risk",
+              "potential_text_reuse",
+              "disclosure_requires_check"
+            ]
+          },
+          "status": {"enum": ["open", "needs_recheck", "resolved"]},
+          "fix": {"type": "string"},
+          "impact": {"type": "string"},
+          "false_positive_check": {"type": "string"},
+          "absence_check": {
+            "type": "object",
+            "description": "缺失类 finding 的负向检索范围与命中数；不得伪造命中"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "locator", "quote"],
+              "properties": {
+                "path": {"type": "string"},
+                "locator": {"type": "string"},
+                "quote": {"type": "string"},
+                "supports": {"type": "string"},
+                "section": {"type": "string"},
+                "line_start": {"type": "integer"},
+                "line_end": {"type": "integer"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "compliance_matrix": {
+      "type": "array",
+      "description": "逐 facet 的合规矩阵：状态、依据位置、缺口、整改与人工复核标记",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "facet", "rule_id", "rule_version", "status", "reason"],
+        "properties": {
+          "check_id": {"type": "string"},
+          "facet": {"type": "string"},
+          "label_zh": {"type": "string"},
+          "rule_id": {"type": "string"},
+          "rule_version": {"type": "string"},
+          "status": {
+            "enum": ["pass", "issue", "needs_recheck", "not_checked", "not_applicable"]
+          },
+          "status_zh": {"type": "string"},
+          "applicability": {"enum": ["applicable", "unknown", "not_applicable"]},
+          "severity_if_issue": {"enum": ["critical", "major", "minor", "info"]},
+          "reason": {"type": "string"},
+          "evidence": {"type": "array", "items": {"type": "object"}},
+          "gaps": {"type": "array", "items": {"type": "string"}},
+          "actions": {"type": "array", "items": {"type": "string"}},
+          "manual_review": {"type": "boolean"},
+          "confidence": {"enum": ["high", "medium", "low"]},
+          "finding_ids": {"type": "array", "items": {"type": "string"}}
+        }
       }
     },
     "checks": {
       "type": "array",
-      "description": "检查项与 pass/fail/not_checked",
-      "items": {
-        "type": "object"
-      }
+      "description": "检查项与 pass/fail/needs_recheck/not_checked；未检查不等于通过",
+      "items": {"type": "object"}
     },
     "verdict": {
       "type": "string",
-      "description": "总体判断及边界"
+      "description": "总体判断及边界，取值与 review_status 对齐"
     },
     "evidence": {
       "type": "array",
-      "description": "path+locator+quote 的逐字证据",
+      "description": "path+locator+quote 的逐字证据汇总",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["path", "locator", "quote"]
       }
     },
     "uncertainties": {
       "type": "array",
-      "description": "无法判断、材料不足、待复核",
-      "items": {
-        "type": "object"
-      }
+      "description": "无法判断、材料不足、待复核项；每项写原因、影响与处理",
+      "items": {"type": "object"}
     },
     "compliance_checklist": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "逐项 checklist；每项绑定 rule_id/rule_version 与 status",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["rule_id", "rule_version", "status"]
       }
     },
     "guideline_source": {
       "type": "object",
-      "description": "task-specific field required by this sub-challenge"
+      "description": "指南名称/版本/日期；未提供时 name=未提供..., version=unavailable，不得编造",
+      "required": ["name", "version"]
     },
     "review_status": {
-      "type": "string",
-      "description": "task-specific field required by this sub-challenge"
+      "enum": ["pass", "issues", "needs_recheck", "not_checked"]
     },
     "not_checked": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
-      }
+      "description": "未检查/待复核项的显式清单",
+      "items": {"type": "string"}
+    },
+    "human_review_items": {
+      "type": "array",
+      "description": "必须人工复核的项目与边界",
+      "items": {"type": "string"}
     }
   }
 }

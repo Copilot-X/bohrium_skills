@@ -72,3 +72,20 @@ description: Compare and integrate multiple scientific documents in a fixed case
 ## 最小示例（示例）
 
 三维度表：方法 / 指标 / 结论；两篇文档在「指标」维度口径不同，标 `incomparable`，synthesis 中列为 gap。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点多文档输入与可读范围 |
+| `scripts/validate_result.py` | 校验 comparison_table、synthesis、conflicts 与 result.json |
+| `references/00-protocol.md` | 统一运行契约 |
+| `references/01-evidence.md` | 证据定位与逐字引用规则 |
+| `references/02-reading.md` | 多文档阅读与对照维度 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 阅读/解析结果：按题目要求的答案、结构化字段、翻译或知识结构；完成标准：覆盖任务要求且能回到材料定位。
+- 证据与边界：页码、段落、图表、字段或公式位置；未报告和不确定项；完成标准：关键结论可复核，无法判断不被写成事实。
+- 运行状态：成功、部分完成、无法判断或拒答及原因；完成标准：异常原因和可人工接管位置清楚。

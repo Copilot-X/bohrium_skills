@@ -180,3 +180,20 @@ task.md 要求"开题报告""研究计划书""proposal defence"时使用。
 输出：1 个问题、2 个假设；3 个目标对应 3 个模块；
 `plan` 8 个季度；`risks` 3 条；`ethics.status: "not_applicable"`；
 `gaps` 1 条（缺预实验数据）。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点立项材料、指南与前期数据 |
+| `scripts/validate_result.py` | 校验 proposal 计划、证据映射与 result.json |
+| `references/00-protocol.md` | 统一运行契约 |
+| `references/01-evidence.md` | 证据定位与逐字引用规则 |
+| `references/03-writing.md` | 长文写作与结构规范 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 目标产物：可编辑的稿件、改稿、引用/格式结果或结构化写作产物；完成标准：满足题目指定体裁、受众和格式。
+- 事实与来源映射：数字、术语、引用、图表和关键论断的来源/修改记录；完成标准：可逐条回溯，不新增材料外事实。
+- 版本与边界：修改差异、人工确认项、材料缺口和异常；完成标准：结果可继续编辑，未确认部分明确标注。

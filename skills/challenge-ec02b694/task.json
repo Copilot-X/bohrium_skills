@@ -12,16 +12,24 @@
     "output/experiment-report.md",
     "output/parameter-recommendations.json",
     "output/validation-plan.json",
-    "output/risk-assessment.json"
+    "output/risk-assessment.json",
+    "output/parameter-analysis.json",
+    "output/parameter-analysis.md"
   ],
   "required_fields": [
     "recommendations",
     "parameters",
-    "evidence"
+    "evidence",
+    "validation_experiment"
   ],
   "focus": "参数空间、历史数据、约束、推荐值与验证实验",
   "checks": "推荐值有依据；约束明确；给出验证/停止条件",
   "run_python": false,
+  "analysis_script": "scripts/parameter_optimizer.py",
+  "analysis_outputs": [
+    "output/parameter-analysis.json",
+    "output/parameter-analysis.md"
+  ],
   "work_template": {
     "case_id": "challenge-ec02b694",
     "mode": "parameter-optimization",
@@ -48,7 +56,16 @@
     "constraints": [],
     "history": [],
     "recommendations": [],
-    "validation_experiment": {}
+    "validation_experiment": {},
+    "parameter_analysis": {
+      "script": "scripts/parameter_optimizer.py",
+      "path": "output/parameter-analysis.json",
+      "status": "",
+      "not_computable": []
+    },
+    "objective": "",
+    "sensitivity_summary": {},
+    "tradeoffs": {}
   },
   "example": {
     "case_id": "SYNTH-EXPERIMENT",
@@ -133,7 +150,7 @@
           "temperature": 350
         },
         "expected": "high selectivity",
-        "basis": "synthetic history"
+        "basis": "synthetic history row 1"
       }
     ],
     "validation_experiment": {
@@ -141,6 +158,12 @@
         "synthetic validation"
       ],
       "stop_condition": "confirmed or budget exhausted"
+    },
+    "parameter_analysis": {
+      "script": "scripts/parameter_optimizer.py",
+      "path": "output/parameter-analysis.json",
+      "status": "synthetic placeholder, not a real analysis",
+      "not_computable": []
     }
   },
   "schema_properties": {
@@ -156,7 +179,8 @@
     "constraints": "task-specific field required by this sub-challenge",
     "history": "task-specific field required by this sub-challenge",
     "recommendations": "task-specific field required by this sub-challenge",
-    "validation_experiment": "task-specific field required by this sub-challenge"
+    "validation_experiment": "task-specific field required by this sub-challenge",
+    "parameter_analysis": "指向 output/parameter-analysis.json：脚本状态、数据质量、敏感性、约束与 not_computable"
   },
   "mode_metrics": [
     "推荐值有依据；约束明确；给出验证实验与停止条件。"

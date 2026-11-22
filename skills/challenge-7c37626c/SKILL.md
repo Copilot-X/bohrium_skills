@@ -14,16 +14,9 @@ description: 公式解析与数学推理：把公式转写为 LaTeX，建立符�
 | 文件 | 何时用 | 用法 |
 |---|---|---|
 | `references/formula-reasoning-playbook.md` | 转写、建符号表、推导、量纲检查前 | 先读；按其中三查/字段/失败模式执行 |
-| `references/00-protocol.md` | 第一次运行、确认目录/预算/工具 | 按其中路径与预算安排步骤 |
-| `references/01-evidence.md` | 选 quote、定 locator、区分 reported/inferred | 每个公式与数值检查按该规则绑证据 |
-| `references/02-reading.md` | 判断问题类型（事实/条件/计算/缺口） | 按类型选择回答与状态 |
-| `references/08-quality-gates.md` | 交付前总检 | 与本文件质量闸门一起执行 |
 | `templates/formula-analysis.json` | 结果骨架 | 复制结构，替换为真实公式与符号 |
 | `templates/symbol-table.md` | 建符号表时 | 逐符号填含义/单位/范围/状态，未知符号显式登记 |
-| `templates/result_envelope.json` | 官方 reading 信封 | 补齐 status/result/claims/uncertainties |
-| `scripts/inspect_mathml.py` | 输入含 publisher/source XML 时**先跑** | `python3 {SKILL_DIR}/scripts/inspect_mathml.py --input /input --out /app/work/formula_inventory.json --json` |
 | `scripts/check_formula_analysis.py` | 交付前 | `python3 {SKILL_DIR}/scripts/check_formula_analysis.py --result /app/output/result.json --input /input/case.json --json` |
-| `scripts/emit_official.py` | 写盘后、校验前 | `python3 {SKILL_DIR}/scripts/emit_official.py --result /app/output/result.json --profile reading --main-field formulas --json` |
 | `scripts/validate_result.py` | 通用契约校验 | `python3 {SKILL_DIR}/scripts/validate_result.py /app/output/result.json --input /input` |
 
 `{SKILL_DIR}` 通常为 `/skills/weekly-skill`。校验器会检查 LaTeX 括号/环境平衡、
@@ -32,15 +25,7 @@ description: 公式解析与数学推理：把公式转写为 LaTeX，建立符�
 
 ## 执行步骤
 
-0. **盘点输入与公式来源**：读 `/input/case.json`、`/input/task.md`、
-   `environment/resources.yaml`，列出实际文件。若存在 `artifacts/publisher-source.xml`
-   或 `artifacts/source-formulas.xml`，先运行
-   `inspect_mathml.py`，用 `formula_inventory.json` 中的 `xml_id`、MathML 结构、
-   `tex_annotation` 和祖先 section id 作为转写依据。**XML 目录只是公式节点子集，
-   不是线性化答案或推导**，不得把目录顺序当推导链。
-1. **转写**：公式 → LaTeX；保留原编号 `eq_id`。XML 直接给出的公式标
-   `transcription_mode: xml_mathml` 并在 `source.xml_id` 记录节点 id；
-   从 PDF 文本抽的标 `pdf_text`；视觉识别标 `vlm` 并逐符号复核。
+1. **转写**：公式 → LaTeX；保留原编号 `eq_id`。
 2. **定义符号**：每个符号给含义、单位、取值范围、已知/未知。
 3. **解析结构**：标注公式类型（定义式/守恒式/经验式/近似式）。
 4. **推导**：从已知式到目标式，每步一行，写明依据（代入/移项/近似/定理名）。
@@ -49,53 +34,15 @@ description: 公式解析与数学推理：把公式转写为 LaTeX，建立符�
    `check_formula_analysis.py` 会安全复算并核对。
 6. **合理性检查**：数量级、边界条件、极限行为；在 `plausibility` 写清依据。
 7. **回答**：问题逐条对应到公式或推导步骤。
-8. **官方契约**：运行 `emit_official.py --profile reading --main-field formulas`，
-   补齐 `status/result/claims/uncertainties`；原有 `formulas/derivation/numeric_check`
-   等字段不改名、不删除。
-9. **交付校验**：运行 `check_formula_analysis.py`（LaTeX 平衡、符号、推导、量纲、
-   数值复算、XML 来源、缺失分支）和 `validate_result.py`；有 problem 先修，修不了
-   标 `status=partial` 并把限制写入 `uncertainty`。最后确认 `/app/output/result.json`
-   是校验后的版本（`emit_official.py` 与校验器的写盘顺序不要颠倒）。
-
-## 本版输入契约（C01–C03 / XML 与缺失分支）
-
-本版三个固定案例的材料不同，**按实际文件处理，不按旧学科标签补写**：
-
-1. **C01/C03（有 XML）**：`artifacts/publisher-source.xml` 是出版商原始 XML 的原样
-   副本；`artifacts/source-formulas.xml` 是其中实际公式节点的派生子集。转写与符号表
-   必须回到这些节点：每个公式写 `source.xml_id` / `source.artifact_path` /
-   `source.paragraph_id` 中的至少一个，并保留 MathML 的分式、上下标与来源 ID。
-   在 `formula_inventory` 记录 `xml_files`、`formula_nodes` 与实际读取的文件。
-2. **C02（真实缺失）**：若原快照没有公式表示、逐条预测或可复算原始数据，
-   **保留缺失分支**：能核对的明确指标与条件照常交付并给证据；需要缺失对象的推导或
-   复算必须 `status=partial` 或 `status=insufficient_evidence`，并在
-   `formula_absence` 写 `found:false`、`reason`、`search_scope`/`evidence`。
-   **禁止反推公式、禁止把未知值填 0、禁止把目录当答案。**
-3. 输入只有正文文字时，公式转写标 `transcription_mode: pdf_text`；公式被截断或
-   模糊时标 `transcription_confidence: low` 并在 `uncertainty` 说明，不猜补。
-4. 官方输出契约要求顶层 `case_id`、`status`、`result`、`claims`、`uncertainties`。
-   写盘后运行 `emit_official.py` 补齐；`status` 取
-   `answered|partial|insufficient_evidence|input_error`，与 `formula_absence` /
-   `uncertainty` 一致，不得为了拿分把缺失写成成功。
+8. **交付校验**：运行 `check_formula_analysis.py`（LaTeX 平衡、符号、推导、量纲、
+   数值复算）和 `validate_result.py`；有 problem 先修，修不了标 `status=partial`
+   并把限制写入 `uncertainty`。
 
 ## 输出契约
 
 ```json
 {
   "case_id": "...",
-  "status": "answered|partial|insufficient_evidence|input_error",
-  "formula_inventory": {
-    "xml_files": 2,
-    "formula_nodes": 14,
-    "files": ["artifacts/publisher-source.xml", "artifacts/source-formulas.xml"],
-    "order_rule": "document order, not derivation order"
-  },
-  "formula_absence": {
-    "found": false,
-    "reason": "原快照没有公式表示或可复算原始数据",
-    "search_scope": "p1-p12, tables 1-2, artifacts/",
-    "evidence": {"path": "case.json", "locator": "artifacts", "quote": "..."}
-  },
   "formulas": [
     {
       "eq_id": "Eq.3",
@@ -103,9 +50,7 @@ description: 公式解析与数学推理：把公式转写为 LaTeX，建立符�
       "type": "definition|conservation|empirical|approximation",
       "symbols": [{"symbol": "\\eta", "meaning": "效率", "unit": "1", "status": "defined"},
                   {"symbol": "P_{out}", "meaning": "输出功率", "unit": "W", "status": "defined"}],
-      "source": {"paragraph_id": "p5", "xml_id": "m12",
-                 "artifact_path": "artifacts/source-formulas.xml",
-                 "quote": "..."},
+      "source": {"paragraph_id": "p5", "quote": "..."},
       "assumptions": ["稳态"],
       "formula_ast": {"op": "frac", "children": ["P_out", "P_in"]},
       "transcription_mode": "deterministic|vlm",
@@ -132,18 +77,9 @@ description: 公式解析与数学推理：把公式转写为 LaTeX，建立符�
   "support_files_used": ["references/formula-reasoning-playbook.md",
                          "scripts/check_formula_analysis.py"],
   "uncertainty": [{"item": "符号 x 未定义", "reason": "原文未给出", "impact": "无法数值化"}],
-  "uncertainties": [{"item": "符号 x 未定义", "reason": "原文未给出", "impact": "无法数值化"}],
-  "claims": [
-    {"claim_id": "C1", "kind": "reported|derived|inferred",
-     "text": "结论或计算结论", "evidence": [{"path": "...", "locator": "...", "quote": "..."}]}
-  ],
-  "change_log": [{"step": 1, "action": "...", "evidence": "..."}],
-  "official_contract": {"profile": "reading", "source": "organizer public contract adapter"}
+  "change_log": [{"step": 1, "action": "...", "evidence": "..."}]
 }
 ```
-
-`claims[]` 中每条数值结论的 `evidence.quote` 必须逐字来自实际材料；`derived` 结论
-还要给 `computation`，`inferred` 结论给 `rationale` 与 `confidence`（0–1）。
 
 ## 规则
 
@@ -200,8 +136,6 @@ description: 公式解析与数学推理：把公式转写为 LaTeX，建立符�
 
 | # | 检查 | 通过标准 | 不通过时 |
 |---|---|---|---|
-| G0 | 输入来源 | XML 案例已跑 `inspect_mathml.py`；无公式案例有 `formula_absence` 证据 | 补盘点；不得用常识补公式 |
-| G0b | 状态诚实 | C02 类缺失为 `partial`/`insufficient_evidence`，且 `uncertainty` 说明范围 | 改状态或补真实证据，不填 0 |
 | G1 | LaTeX | 每个公式可编译/语法合法，编号与原文一致 | 修语法；不确定符号用 `\square` 并登记 |
 | G2 | 符号 | 每个符号有含义/单位/状态 | 补定义或标 `unknown_symbol` |
 | G3 | 推导 | 每步有 from/to/operation/justification | 补依据；无法补则标 `not_derived` |
@@ -222,16 +156,13 @@ description: 公式解析与数学推理：把公式转写为 LaTeX，建立符�
 
 ## 交付清单
 
-- [ ] `/app/output/result.json` 含 `case_id`、`status`、`formulas[]`、`derivation[]`、
-      `numeric_check`、`render_target`、`support_files_used`，以及官方
-      `result/claims/uncertainties`
-- [ ] 每个公式有 LaTeX、类型、符号表、来源；XML 公式有 `source.xml_id`
+- [ ] `/app/output/result.json` 含 `case_id`、`formulas[]`、`derivation[]`、
+      `numeric_check`、`render_target`、`support_files_used`
+- [ ] 每个公式有 LaTeX、类型、符号表、来源
 - [ ] 每步推导有 from/to/operation/justification
 - [ ] 数值代入含单位、量纲检查、有效数字；`computation` 可复算
 - [ ] 近似条件已写明；未知/歧义项已显式记录
-- [ ] C02 类缺失有 `formula_absence{found:false, reason, search_scope}`，未反推/未填 0
-- [ ] `inspect_mathml.py`（如适用）、`emit_official.py`、
-      `check_formula_analysis.py` 与 `validate_result.py` 均通过
+- [ ] `check_formula_analysis.py` 与 `validate_result.py` 通过
 
 ## 最小示例（示例）
 

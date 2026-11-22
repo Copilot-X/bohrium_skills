@@ -180,3 +180,18 @@ task.md 要求"画思维导图""知识结构图""概念图""梳理逻辑框架"�
 输入：1 篇论文（IMRaD）+ 要求"5 个一级分支、≤30 节点"。
 输出：`mindmap.json` 28 节点、5 分支、4 条 cross-link；
 `mindmap.svg` 通过 lint（`text_elements: 28`）；`preview/mindmap.png` 由 SVG 渲染。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点材料、节点与关系 |
+| `scripts/validate_result.py` | 校验思维导图结构、证据与 result.json |
+| `references/01-evidence.md` | 证据定位与逐字引用规则 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 目标产物：可编辑的稿件、改稿、引用/格式结果或结构化写作产物；完成标准：满足题目指定体裁、受众和格式。
+- 事实与来源映射：数字、术语、引用、图表和关键论断的来源/修改记录；完成标准：可逐条回溯，不新增材料外事实。
+- 版本与边界：修改差异、人工确认项、材料缺口和异常；完成标准：结果可继续编辑，未确认部分明确标注。

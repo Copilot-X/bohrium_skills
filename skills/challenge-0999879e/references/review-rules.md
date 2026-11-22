@@ -153,7 +153,59 @@ facet 用 `not_applicable` 并写 reason；材料不足无法核对的用
 | 静默改数据 | 不可复现 | 保留原始快照与变更日志 |
 | 把所有建议写成缺陷 | 误报失控 | 用 suggestion 类型并做误报检查 |
 
-## 11. 自检清单
+## 11. 规则扫描（quality_review.py）
+
+运行顺序：`prepare` → `quality_review.py` → 模型分面审查 → `review_gate.py`
+→ `finalize` → `review_gate.py --apply`。
+
+### 11.1 脚本输出
+
+`work/rule-review.json` 与 `output/rule-review.json`：
+
+| 字段 | 用途 |
+|---|---|
+| `engine_status` | `ok` / `partial`（缺方法或结果段）/ `input_error`（无材料）/ `error`（脚本异常） |
+| `extraction` | 章节、段落（locator + 行号 + 统计标记）、图表题注、参考文献条目 |
+| `findings[]` | 候选问题与逐字证据；`confidence` ∈ high/medium/low，`rule_status` 为规则原始判定 |
+| `claim_source_matrix[]` | 引用编号与文献条目自动配对；只有设计关键词明显不匹配时判 `none`，否则 `unverifiable` |
+| `coverage[]` | 六面建议状态；缺段/缺图注时为 `not_checked` 并写 reason |
+| `structure_gaps[]` | 无法逐字引用的缺口（缺章节、缺图注、缺样本量说明） |
+
+### 11.2 候选处置规则
+
+1. `--merge` 导入的候选一律为 `status=needs_recheck`，编号 `A01...`；
+   `rule_status` 只表示脚本曾判为 confirmed，**不是最终结论**。
+2. 逐条回原文核验：确认 → `status=confirmed`；改写 → 保留 `rule_id` 并写
+   `rule_status`；驳回 → 删除并写入 `uncertainties`（原因 + 需要的材料）。
+3. 规则未覆盖的段落、图表与语义问题仍按六面协议人工补查；
+   `rule_review` 不是“已全部检查”的证明。
+4. 低置信度候选默认不合并；若模型认为有价值，可手动加入并说明理由。
+5. 脚本永不生成 summary、verdict、报告结论；这些只能由模型写。
+
+### 11.3 已知误报来源
+
+| 规则 | 主要误报来源 | 处置 |
+|---|---|---|
+| `p_value_mismatch` | 摘要报告的是次要/校正后分析；不同结局各有一个 p | 核对该 p 对应的分析集与结局，标 needs_recheck 或删除 |
+| `effect_size_missing` | 效应量只在补充材料/表格图片中 | 检查补充材料；若存在则删除 |
+| `citation_claim_mismatch` | 引用仅作背景铺垫；文献条目是节选 | 查看文献全文/摘要；背景引用不判 error |
+| `compliance_declarations_missing` | 声明在投稿系统、标题页或补充文件 | 材料中确认存在即删除 |
+| `sample_size_inconsistency` | 入组数 vs 纳入分析数不同 | 若正文明确区分分析集，改为 suggestion/删除 |
+| `generalization_overreach` | 局限段已明确声明推广限制 | 若结论句本身无保留，保留 finding 但降级 |
+
+### 11.4 自测
+
+```bash
+python3 scripts/quality_review.py --selftest
+```
+
+覆盖三路 synthetic 输入：正常稿件（应触发 p 值冲突、随机化冲突、引用错配、
+因果/外推、缺效应量、缺伦理声明等候选）、空输入（`input_error` 且无
+findings）、缺方法/结果段（`partial`、对应 facet `not_checked`、有
+structure_gaps、引文仍逐字可查）。自测输出明确标 `synthetic_only`，
+不写入正式结果。
+
+## 12. 自检清单
 
 运行 `scripts/review_gate.py` 后确认：
 

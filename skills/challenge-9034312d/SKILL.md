@@ -212,3 +212,21 @@ task.md 要求"画实验装置图""技术路线图""工艺流程""研究方法�
 输入：方法 §2.1–2.3（6 个部件、3 条管路、2 个工况点）+ 技术路线 4 阶段 1 判定。
 输出：`fig4.svg` 两 panel；`components` 6、`stages` 4、`decisions` 1；
 `preview/fig4.png` 2126×1299 @300 dpi；`status: "completed"`。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点装置描述、路线与图注 |
+| `scripts/make_schematic.py` | 生成分层装置/路线示意图 |
+| `scripts/svg_export.py` | 导出 PNG/PDF 预览 |
+| `scripts/svg_lint.py` | 检查文本、实体与引用 |
+| `scripts/validate_result.py` | 校验 result.json 与产物 |
+| `references/04-graphics.md` | 装置图与视觉规范 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 可编辑源文件：示意图、机制图、流程图或图表的分层源文件；完成标准：实体、关系、图例和数据映射正确。
+- 目标格式、尺寸、分辨率、字体和色彩检查；完成标准：可在目标场景打开和使用。
+- 来源与修改记录：元素来源、版本、数据映射和人工确认；完成标准：关键图面可核验，异常有说明。

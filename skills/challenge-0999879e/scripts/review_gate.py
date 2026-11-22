@@ -434,18 +434,46 @@ def check_report(report_path, work):
     return problems, warnings
 
 
+CANONICAL_CONTRACT_ALIASES = {
+    "review_report": "deliverable",
+    "review-report": "deliverable",
+    "findings": "findings",
+    "evidence_map": "evidence_map",
+    "evidence-map": "evidence_map",
+    "status": "review_status",
+    "review_status": "review_status",
+}
+
+
 def check_contract(case, work, output):
     problems, warnings = [], []
     contract = case.get("output_contract")
     if not isinstance(contract, dict):
         return problems, warnings
     work_keys = set(work)
+    canonical_files = {
+        "review_report": [Path(output) / "review-report.md"],
+        "review-report": [Path(output) / "review-report.md"],
+        "findings": [Path(output) / "findings.json"],
+        "evidence_map": [Path(output) / "evidence-map.json"],
+        "evidence-map": [Path(output) / "evidence-map.json"],
+    }
     for key in contract:
         candidates = [Path(output) / "results" / (key + ".json"),
                       Path(output) / "results" / key,
                       Path(output) / (key + ".json"),
                       Path(output) / key]
         present = key in work_keys or any(p.exists() for p in candidates)
+        alias = CANONICAL_CONTRACT_ALIASES.get(key)
+        if not present and alias == "deliverable":
+            present = (Path(output) / "review-report.md").is_file()
+        if not present and alias == "evidence_map":
+            present = bool(work.get("claim_source_matrix")) or any(
+                p.exists() for p in canonical_files.get(key, []))
+        if not present and alias == "review_status":
+            present = bool(work.get("review_status"))
+        if not present and alias == "findings":
+            present = any(p.exists() for p in canonical_files.get(key, []))
         if not present:
             warnings.append("output_contract key %r has no work field or artifact yet" % key)
     return problems, warnings
@@ -504,6 +532,32 @@ def evaluate(input_dir, work_dir, output_dir):
         if quote and quote not in global_quotes:
             warnings.append("finding %s original_quote is not in top-level evidence[]"
                             % finding.get("id"))
+    # Rule scan traceability: the scan is optional for robustness, but when it
+    # is absent or unreadable the model must not imply that rule coverage ran.
+    rule_payload = load_json(work_dir / "rule-review.json", {})
+    rule_candidates = 0
+    if not (work_dir / "rule-review.json").is_file():
+        warnings.append("work/rule-review.json missing: run quality_review.py "
+                        "and verify its candidates, or state why the scan was skipped")
+    elif not isinstance(rule_payload, dict) or not rule_payload:
+        warnings.append("work/rule-review.json is unreadable")
+    else:
+        rule_candidates = len(rule_payload.get("findings") or [])
+        if rule_payload.get("generated_by") != "scripts/quality_review.py":
+            warnings.append("work/rule-review.json was not produced by the packaged "
+                            "quality_review.py")
+        if rule_payload.get("engine_status") in ("error", "input_error"):
+            warnings.append("rule scan status is %r: candidates are incomplete"
+                            % rule_payload.get("engine_status"))
+    meta = work.get("rule_review")
+    if isinstance(meta, dict) and meta.get("merged"):
+        auto = [f for f in findings if isinstance(f, dict) and f.get("rule_id")]
+        confirmed_auto = [f for f in auto if canonical_status(
+            f.get("status") or "confirmed") == "confirmed"]
+        if confirmed_auto:
+            warnings.append("%d rule-derived findings are marked confirmed; "
+                            "ensure each was checked against the manuscript"
+                            % len(confirmed_auto))
     coverage = {
         "facets": len(work.get("facets_checked") or []),
         "findings": len(findings),
@@ -513,6 +567,7 @@ def evaluate(input_dir, work_dir, output_dir):
                              if canonical_status(f.get("status")) == "needs_recheck"),
         "evidence": len(flat),
         "claim_source_rows": len(work.get("claim_source_matrix") or []),
+        "rule_candidates": rule_candidates,
         "report_bytes": (output_dir / "review-report.md").stat().st_size
         if (output_dir / "review-report.md").is_file() else 0,
     }

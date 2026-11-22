@@ -1,7 +1,8 @@
 {
   "case_id": "SYNTH-REVIEW",
   "mode": "citation-fact-check",
-  "summary": "Synthetic example only.",
+  "summary": "Synthetic example only. Not a formal case result.",
+  "precheck": "output/citation-check.json",
   "findings": [
     {
       "id": "R001",
@@ -9,11 +10,13 @@
         "path": "synthetic.md",
         "locator": "P1"
       },
-      "check_item": "synthetic check item",
+      "check_item": "论断与来源结论匹配",
       "original_quote": "synthetic source sentence",
       "issue": "Synthetic issue",
       "severity": "major",
-      "type": "review_issue",
+      "type": "citation_mismatch",
+      "subtype": "synthetic",
+      "status": "confirmed",
       "fix": "synthetic fix",
       "comment": "Synthetic comment",
       "evidence": {
@@ -25,12 +28,23 @@
   ],
   "checks": [
     {
-      "item": "synthetic check",
+      "item": "每条引用可回查",
       "status": "pass",
+      "detail": "synthetic only"
+    },
+    {
+      "item": "论断与来源结论匹配",
+      "status": "not_checked",
+      "detail": "synthetic only"
+    },
+    {
+      "item": "来源状态与撤稿核验",
+      "status": "not_checked",
       "detail": "synthetic only"
     }
   ],
   "verdict": "major_revision",
+  "review_status": "issues",
   "evidence": [
     {
       "path": "synthetic.md",
@@ -43,14 +57,22 @@
     {
       "claim_id": "C1",
       "claim": "synthetic claim",
-      "source": "synthetic.md",
+      "claim_locator": "synthetic.md:P1",
+      "source": "[A] synthetic.md",
+      "source_locator": "synthetic.md:P1",
+      "source_statement": "synthetic source sentence",
       "source_design": "synthetic design",
       "type": "citation_mismatch",
+      "subtype": "synthetic",
       "fix": "synthetic fix",
       "verdict": "partial",
       "reason": "synthetic only",
+      "manuscript_value": "",
+      "source_value": "",
       "locator": "P1",
       "original_quote": "synthetic source sentence",
+      "needs_review": false,
+      "reviewed": true,
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -60,10 +82,24 @@
   ],
   "source_status": [
     {
-      "source": "synthetic.md",
+      "source": "[A] synthetic.md",
       "status": "unknown",
       "version_note": "synthetic only",
-      "needs_recheck": true
+      "needs_recheck": true,
+      "status_basis": "synthetic only",
+      "evidence": {
+        "path": "synthetic.md",
+        "locator": "P1",
+        "quote": "synthetic source sentence"
+      }
     }
-  ]
+  ],
+  "reviewed_candidates": [
+    {
+      "candidate_id": "C1",
+      "decision": "accept",
+      "reason": "synthetic only"
+    }
+  ],
+  "rejected_candidates": []
 }

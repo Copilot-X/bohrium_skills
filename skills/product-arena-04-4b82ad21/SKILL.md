@@ -420,3 +420,12 @@ gap/contributions/claim_evidence 也齐全时）。
 - PDF 预览依赖运行时 matplotlib；缺失时记 `pdf_preview` uncertainty，
   `sections.md` 与 DOCX 不受影响。
 - 示例全部为 synthetic 接口样例，不是正式案例答案；不要复制其中的实体或结论。
+
+## 本题专项检查
+
+- 引言/相关工作的 claim-evidence 绑定、引用与贡献映射、逐字证据
+- 四要素齐全
+- 引用可绑定
+- 空白由已引局限推出
+- 贡献有证据
+- 数字不新增

@@ -46,7 +46,9 @@
     "claim_source_matrix": [],
     "coverage_summary": {},
     "review_status": "",
-    "not_checked": []
+    "not_checked": [],
+    "structure_gaps": [],
+    "rule_review": {}
   },
   "example": {
     "case_id": "SYNTH-REVIEW",
@@ -109,13 +111,17 @@
     "uncertainties": "无法判断、材料不足、待复核",
     "facets_checked": "task-specific field required by this sub-challenge",
     "review_status": "task-specific field required by this sub-challenge",
-    "not_checked": "task-specific field required by this sub-challenge"
+    "not_checked": "task-specific field required by this sub-challenge",
+    "rule_review": "规则扫描元信息：脚本、候选数、采纳数、置信度阈值；候选仍需模型确认",
+    "structure_gaps": "缺章节/缺图注/缺声明的不可逐字引用缺口"
   },
   "mode_metrics": [
     "每个 finding 有 facet/locator/original_quote/severity/type/fix/误报检查。",
     "review_status 区分稿件结论与流程状态；未检查项列 not_checked。",
     "六类检查项逐面记录状态；citation_support 问题必须有 claim_source_matrix 行（含 source）。",
+    "先运行 quality_review.py 生成 work/rule-review.json；规则候选必须逐条复核，Axx 不得直接当最终结论。",
+    "脚本可抽取章节/方法段/统计量/图表题注并生成候选 findings；空输入与缺方法/结果段要如实降级且 exit 0。",
     "finalize 后运行 review_gate.py --apply，未解决项会把 result 降级为 partial。"
   ],
-  "version": "1.1.0"
+  "version": "1.2.0"
 }

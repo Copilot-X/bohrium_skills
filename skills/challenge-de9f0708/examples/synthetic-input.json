@@ -1,52 +1,87 @@
 {
   "case_id": "SYNTH-REVIEW",
   "mode": "compliance-review",
-  "summary": "Synthetic example only.",
+  "summary": "Synthetic example only; demonstrates the compliance matrix and evidence envelope. Not a real case and not a compliance verdict.",
   "findings": [
     {
       "id": "C001",
+      "check_id": "ethics_approval",
+      "facet": "ethics_approval",
       "locator": {
         "path": "synthetic.md",
-        "locator": "P1"
+        "locator": "P1",
+        "line_start": 5,
+        "line_end": 5
       },
       "original_quote": "synthetic source sentence",
-      "rule_id": "SYN-1",
+      "rule_id": "CMP-ETH-01",
+      "rule_version": "v1",
       "severity": "major",
       "type": "compliance",
-      "fix": "synthetic fix",
-      "status": "needs_recheck",
-      "false_positive_check": "guideline scope checked",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
+      "issue_type": "missing_declaration",
+      "status": "open",
+      "fix": "Synthetic fix: add the committee name, approval number, date and scope; if exempt, state the exemption basis.",
+      "impact": "Synthetic impact only.",
+      "false_positive_check": "Synthetic absence search over the supplied synthetic text; not a real ethics finding.",
+      "absence_check": {
+        "scope": "all supplied material",
+        "patterns_checked": ["ethics approval", "IRB/IEC", "伦理审批"],
+        "matches": 0
+      },
+      "evidence": [
+        {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence",
+          "supports": "absence_search_anchor"
+        }
+      ]
     }
   ],
   "checks": [
     {
       "item": "synthetic check",
-      "status": "pass",
-      "detail": "synthetic only"
+      "check_id": "ethics_approval",
+      "status": "needs_recheck",
+      "matrix_status": "not_checked",
+      "detail": "Synthetic only."
     }
   ],
-  "verdict": "major_revision",
+  "verdict": "needs_recheck",
   "evidence": [
     {
       "path": "synthetic.md",
       "locator": "P1",
-      "quote": "synthetic source sentence"
+      "quote": "synthetic source sentence",
+      "supports": "absence_search_anchor"
     }
   ],
-  "uncertainties": [],
+  "uncertainties": [
+    {
+      "item": "synthetic",
+      "reason": "Synthetic example only; no real material was reviewed.",
+      "impact": "No real conclusion can be drawn.",
+      "action": "Run the skill on the actual case material."
+    }
+  ],
   "compliance_checklist": [
     {
-      "facet": "ethics",
-      "rule_id": "SYN-1",
+      "facet": "ethics_approval",
+      "check_id": "ethics_approval",
+      "label_zh": "伦理审批与批件信息",
+      "rule_id": "CMP-ETH-01",
       "rule_version": "v1",
       "type": "compliance",
-      "fix": "synthetic fix",
       "status": "not_checked",
+      "matrix_status": "not_checked",
+      "detail": "Synthetic only; no ethics statement in the synthetic material.",
+      "gaps": [
+        "synthetic gap"
+      ],
+      "actions": [
+        "synthetic action"
+      ],
+      "fix": "synthetic fix",
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -54,13 +89,73 @@
       }
     }
   ],
+  "compliance_matrix": [
+    {
+      "check_id": "ethics_approval",
+      "facet": "ethics_approval",
+      "label_zh": "伦理审批与批件信息",
+      "rule_id": "CMP-ETH-01",
+      "rule_version": "v1",
+      "status": "not_checked",
+      "status_zh": "未检查",
+      "applicability": "unknown",
+      "severity_if_issue": "major",
+      "reason": "Synthetic example only; the synthetic material has no ethics statement.",
+      "evidence": [
+        {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence",
+          "supports": "absence_search_anchor"
+        }
+      ],
+      "gaps": [
+        "synthetic gap"
+      ],
+      "actions": [
+        "synthetic action"
+      ],
+      "manual_review": true,
+      "confidence": "low",
+      "finding_ids": [
+        "C001"
+      ]
+    },
+    {
+      "check_id": "data_availability",
+      "facet": "data_availability",
+      "label_zh": "数据可用性",
+      "rule_id": "CMP-DAT-01",
+      "rule_version": "v1",
+      "status": "not_checked",
+      "status_zh": "未检查",
+      "applicability": "unknown",
+      "severity_if_issue": "major",
+      "reason": "Synthetic example only; no data statement in the synthetic material.",
+      "evidence": [],
+      "gaps": [
+        "synthetic gap"
+      ],
+      "actions": [
+        "synthetic action"
+      ],
+      "manual_review": true,
+      "confidence": "low",
+      "finding_ids": []
+    }
+  ],
   "guideline_source": {
     "name": "Synthetic guideline",
     "version": "v1",
-    "date": "2026-01-01"
+    "date": "2026-01-01",
+    "note": "Synthetic only; not a real guideline."
   },
   "review_status": "not_checked",
   "not_checked": [
-    "No institutional guideline supplied"
+    "No institutional guideline supplied",
+    "Synthetic material only"
+  ],
+  "human_review_items": [
+    "Synthetic only; all items require human review in a real run."
   ]
 }

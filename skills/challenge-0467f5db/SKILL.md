@@ -41,6 +41,7 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
+| `scripts/domain_work.py` | 本模式确定性初稿：冻结参考集、计算覆盖率、归因漏检、生成补检骨架 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/search-plan.json` 的字段契约 |
@@ -64,6 +65,16 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成覆盖率初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/domain_work.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本先冻结参考集再计算，不会用结果反推分母；有结构化参考集时输出
+`coverage.numerator/denominator/ratio`，没有时明确写 `not_computable`。
+模型必须复核每条命中的匹配键、漏检归因和补检收益，再补充领域判断。
 
 ### 第 2 步：写 `work/search-plan.json`（约 60% 预算）
 

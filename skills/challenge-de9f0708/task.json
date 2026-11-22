@@ -11,14 +11,16 @@
   "output_files": [
     "output/review-report.md",
     "output/findings.json",
-    "output/evidence-map.json"
+    "output/evidence-map.json",
+    "output/compliance-matrix.json"
   ],
   "required_fields": [
     "compliance_checklist",
     "guideline_source",
     "review_status",
     "findings",
-    "evidence"
+    "evidence",
+    "compliance_matrix"
   ],
   "focus": "学术规范、引用/数据/伦理/利益冲突与合规检查",
   "checks": "检查项逐条有结论；证据不足标待复核；不替代机构审查",
@@ -44,9 +46,11 @@
     "checks": [],
     "verdict": "",
     "compliance_checklist": [],
+    "compliance_matrix": [],
     "guideline_source": {},
     "review_status": "",
-    "not_checked": []
+    "not_checked": [],
+    "human_review_items": []
   },
   "example": {
     "case_id": "SYNTH-REVIEW",
@@ -55,32 +59,41 @@
     "findings": [
       {
         "id": "C001",
+        "check_id": "ethics_approval",
         "locator": {
           "path": "synthetic.md",
-          "locator": "P1"
+          "locator": "P1",
+          "line_start": 5,
+          "line_end": 5
         },
         "original_quote": "synthetic source sentence",
-        "rule_id": "SYN-1",
+        "rule_id": "CMP-ETH-01",
+        "rule_version": "v1",
         "severity": "major",
         "type": "compliance",
+        "issue_type": "missing_declaration",
+        "status": "open",
         "fix": "synthetic fix",
-        "status": "needs_recheck",
-        "false_positive_check": "guideline scope checked",
-        "evidence": {
-          "path": "synthetic.md",
-          "locator": "P1",
-          "quote": "synthetic source sentence"
-        }
+        "impact": "synthetic impact",
+        "false_positive_check": "synthetic absence check only",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence",
+            "supports": "absence_search_anchor"
+          }
+        ]
       }
     ],
     "checks": [
       {
         "item": "synthetic check",
-        "status": "pass",
+        "status": "not_checked",
         "detail": "synthetic only"
       }
     ],
-    "verdict": "major_revision",
+    "verdict": "needs_recheck",
     "evidence": [
       {
         "path": "synthetic.md",
@@ -91,12 +104,15 @@
     "uncertainties": [],
     "compliance_checklist": [
       {
-        "facet": "ethics",
-        "rule_id": "SYN-1",
+        "facet": "ethics_approval",
+        "check_id": "ethics_approval",
+        "rule_id": "CMP-ETH-01",
         "rule_version": "v1",
         "type": "compliance",
-        "fix": "synthetic fix",
         "status": "not_checked",
+        "matrix_status": "not_checked",
+        "detail": "Synthetic only",
+        "fix": "synthetic fix",
         "evidence": {
           "path": "synthetic.md",
           "locator": "P1",
@@ -104,29 +120,70 @@
         }
       }
     ],
+    "compliance_matrix": [
+      {
+        "check_id": "ethics_approval",
+        "facet": "ethics_approval",
+        "label_zh": "伦理审批与批件信息",
+        "rule_id": "CMP-ETH-01",
+        "rule_version": "v1",
+        "status": "not_checked",
+        "status_zh": "未检查",
+        "applicability": "unknown",
+        "severity_if_issue": "major",
+        "reason": "Synthetic example only; the synthetic material has no ethics statement.",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence",
+            "supports": "absence_search_anchor"
+          }
+        ],
+        "gaps": [
+          "synthetic gap"
+        ],
+        "actions": [
+          "synthetic action"
+        ],
+        "manual_review": true,
+        "confidence": "low",
+        "finding_ids": [
+          "C001"
+        ]
+      }
+    ],
     "guideline_source": {
       "name": "Synthetic guideline",
       "version": "v1",
-      "date": "2026-01-01"
+      "date": "2026-01-01",
+      "note": "Synthetic only; not a real guideline."
     },
     "review_status": "not_checked",
     "not_checked": [
       "No institutional guideline supplied"
+    ],
+    "human_review_items": [
+      "Synthetic only"
     ]
   },
   "schema_properties": {
-    "findings": "task-specific field required by this sub-challenge",
+    "findings": "逐条问题：locator/original_quote/rule_id/severity/type/fix/status/evidence",
     "checks": "检查项与 pass/fail/not_checked",
     "verdict": "总体判断及边界",
     "evidence": "path+locator+quote 的逐字证据",
     "uncertainties": "无法判断、材料不足、待复核",
-    "compliance_checklist": "task-specific field required by this sub-challenge",
-    "guideline_source": "task-specific field required by this sub-challenge",
-    "review_status": "task-specific field required by this sub-challenge",
-    "not_checked": "task-specific field required by this sub-challenge"
+    "compliance_checklist": "逐项 checklist，必须绑定 rule_id/version 与 status",
+    "compliance_matrix": "合规矩阵：14 个 facet 的状态/依据位置/缺口/整改/人工复核",
+    "guideline_source": "指南来源；未提供时写明 unavailable，不得编造",
+    "review_status": "pass|issues|needs_recheck|not_checked",
+    "not_checked": "未检查/待复核项的显式清单",
+    "human_review_items": "必须人工复核的边界与项目"
   },
   "mode_metrics": [
-    "合规条款绑定 rule_id/version；无指南/批件时标 not_checked，不给出违规结论。",
-    "报告明确“不替代机构审查”；缺定位/依据的检查项降级。"
+    "合规条款绑定 rule_id/version；无指南/批件时标 not_checked/needs_recheck，不给出违规结论。",
+    "未报告不得写成合规：缺失声明记为 issue，并给出缺口与整改。",
+    "报告明确“不替代机构审查”；缺定位/依据的检查项降级。",
+    "同一输入重复运行应得到一致的矩阵与 findings（规则确定性）。"
   ]
 }

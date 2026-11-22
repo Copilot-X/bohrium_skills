@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "引用与事实核验 work file",
+  "description": "Run scripts/verify_citations.py first, review every candidate, then write this file. Quotes must be verbatim from the material.",
   "type": "object",
   "required": [
     "case_id",
@@ -8,66 +9,166 @@
     "claim_source_matrix",
     "source_status",
     "findings",
-    "evidence"
+    "evidence",
+    "checks",
+    "verdict",
+    "review_status"
   ],
   "properties": {
     "case_id": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "Must equal /input/case.json case_id"
     },
     "mode": {
       "type": "string",
-      "description": "task-specific field"
+      "const": "citation-fact-check"
     },
     "summary": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "审查范围、材料边界与总体结论（不代替逐条 findings）"
+    },
+    "precheck": {
+      "type": "string",
+      "description": "Path to the deterministic precheck output, normally output/citation-check.json"
     },
     "findings": {
       "type": "array",
-      "description": "逐条问题：location、issue、severity、comment、evidence",
+      "description": "逐条问题：location、check_item、original_quote、issue、severity、type、fix、status、evidence",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "location", "severity", "type", "original_quote", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "type": {
+            "type": "string",
+            "enum": ["missing_reference", "uncited_claim", "citation_mismatch", "quote_mismatch"]
+          },
+          "subtype": {"type": "string"},
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "major", "minor", "info"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["confirmed", "needs_recheck"]
+          },
+          "location": {
+            "type": "object",
+            "required": ["path", "locator"],
+            "properties": {
+              "path": {"type": "string"},
+              "locator": {"type": "string"}
+            }
+          },
+          "check_item": {"type": "string"},
+          "original_quote": {"type": "string"},
+          "issue": {"type": "string"},
+          "fix": {"type": "string"},
+          "evidence": {}
+        }
       }
     },
     "checks": {
       "type": "array",
-      "description": "检查项与 pass/fail/not_checked",
+      "description": "检查项与 pass/fail/not_checked；未检查不等于通过",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["item", "status"],
+        "properties": {
+          "item": {"type": "string"},
+          "status": {"type": "string", "enum": ["pass", "fail", "not_checked"]},
+          "detail": {"type": "string"}
+        }
       }
     },
     "verdict": {
       "type": "string",
-      "description": "总体判断及边界"
+      "description": "总体判断、修订建议级别及边界"
+    },
+    "review_status": {
+      "type": "string",
+      "description": "结果状态：pass / issues / needs_recheck / not_checked",
+      "enum": ["pass", "issues", "needs_recheck", "not_checked"]
     },
     "evidence": {
       "type": "array",
       "description": "path+locator+quote 的逐字证据",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["path", "locator", "quote"],
+        "properties": {
+          "path": {"type": "string"},
+          "locator": {"type": "string"},
+          "quote": {"type": "string"}
+        }
       }
     },
     "uncertainties": {
       "type": "array",
-      "description": "无法判断、材料不足、待复核",
+      "description": "无法判断、材料不足、仅书目信息、待复核；区分错误、证据不足与建议",
       "items": {
         "type": "object"
       }
     },
     "claim_source_matrix": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "claim-source 矩阵；核心是区分引用存在与引用支持结论",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["claim_id", "claim", "source", "verdict"],
+        "properties": {
+          "claim_id": {"type": "string"},
+          "claim": {"type": "string"},
+          "claim_locator": {"type": "string"},
+          "source": {"type": "string"},
+          "source_locator": {"type": "string"},
+          "source_statement": {"type": "string"},
+          "source_design": {"type": "string"},
+          "manuscript_value": {"type": "string"},
+          "source_value": {"type": "string"},
+          "verdict": {
+            "type": "string",
+            "enum": ["full", "partial", "none", "unverifiable"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["", "missing_reference", "uncited_claim", "citation_mismatch", "quote_mismatch"]
+          },
+          "subtype": {"type": "string"},
+          "reason": {"type": "string"},
+          "needs_review": {"type": "boolean"},
+          "evidence": {}
+        }
       }
     },
     "source_status": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "来源状态；unknown 必须 needs_recheck=true；撤稿/预印本需有输入材料证据",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["source", "status", "needs_recheck"],
+        "properties": {
+          "source": {"type": "string"},
+          "status": {
+            "type": "string",
+            "enum": ["published", "preprint", "retracted", "unknown"]
+          },
+          "version_note": {"type": "string"},
+          "needs_recheck": {"type": "boolean"},
+          "status_basis": {"type": "string"},
+          "evidence": {}
+        }
       }
+    },
+    "reviewed_candidates": {
+      "type": "array",
+      "description": "人工复核后接受的候选及理由",
+      "items": {"type": "object"}
+    },
+    "rejected_candidates": {
+      "type": "array",
+      "description": "脚本候选中的假阳性及拒绝理由",
+      "items": {"type": "object"}
     }
   }
 }

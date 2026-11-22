@@ -78,9 +78,11 @@ def _material_payload(ctx):
 
 
 def prepare(ctx):
-    if not any(S.doc_text(d).strip() or d.get("data") for d in ctx.docs):
-        ctx.result.change("prepare", "input", "no readable material")
-        ctx.result.uncertainty("materials", "no readable text, JSON or table",
+    readable = any(S.doc_text(d).strip() or d.get("data") for d in ctx.docs)
+    has_materials = any(row.get("role") == "material" for row in (ctx.inv or []))
+    if not readable and not has_materials:
+        ctx.result.change("prepare", "input", "no material files")
+        ctx.result.uncertainty("materials", "no material files were supplied",
                                "the task cannot start", "provide the case material")
         return ctx.result.finalize("input_error")
     materials = _material_payload(ctx)
@@ -121,6 +123,14 @@ def prepare(ctx):
                             "inventory and pending work files")
     ctx.result.change("prepare", "materials",
                       "%d material files extracted" % len(materials))
+    if not readable:
+        ctx.result.uncertainty(
+            "materials", "material files exist but no text/JSON/table could be decoded",
+            "the skill must work from page/image inspection or honest partial output",
+            "record unreadable regions and avoid inventing content")
+        return ctx.provisional(
+            reason="material files exist but no text could be decoded; "
+                   "continue with page/image inspection and mark unreadable regions")
     return ctx.provisional(reason="materials extracted; write the work file and outputs, then run finalize")
 
 
@@ -588,15 +598,44 @@ def _classify_group_ids(group):
         for key in ("items", "ids", "members", "item_ids", "files", "paths"):
             if isinstance(group.get(key), list):
                 return [str(value) for value in group[key]]
-        return []
+        # Common duplicate/version group shapes: kept+archived, current+superseded.
+        ids = []
+        for key in ("kept", "current", "primary"):
+            value = group.get(key)
+            if isinstance(value, str) and value.strip():
+                ids.append(value.strip())
+        for key in ("archived", "superseded", "duplicates", "versions", "others"):
+            value = group.get(key)
+            if isinstance(value, list):
+                ids.extend(str(item) for item in value if str(item).strip())
+        return ids
     if isinstance(group, list):
         return [str(value) for value in group]
     return []
 
 
+CLASSIFY_SUPPORT_NAMES = {
+    "case.json", "task.md", "task-note.md", "taxonomy.md", "manifest.md",
+    "readme.md", "instructions.md",
+}
+
+
 def _classify_input_paths(ctx):
-    return sorted(str(row.get("path") or "") for row in (ctx.inv or [])
-                  if row.get("role") == "material" and row.get("path"))
+    """Files that need a classification decision.
+
+    Task metadata, a taxonomy definition and a corpus manifest are inputs to
+    the workflow, not items to be filed.  Excluding them keeps both synthetic
+    fixtures and official cases from being forced to classify their own rules.
+    """
+    paths = []
+    for row in ctx.inv or []:
+        if row.get("role") != "material" or not row.get("path"):
+            continue
+        path = str(row.get("path") or "")
+        if Path(path).name.lower() in CLASSIFY_SUPPORT_NAMES:
+            continue
+        paths.append(path)
+    return sorted(paths)
 
 
 def _classify_output_json(ctx, name):
@@ -638,7 +677,8 @@ def _classification_audit(ctx, work):
         if not isinstance(item, dict):
             problems.append("item %d is not an object" % index)
             continue
-        iid = str(item.get("id") or item.get("item_id") or "I%03d" % index)
+        iid = str(item.get("id") or item.get("item_id") or
+                  item.get("file_id") or "I%03d" % index)
         path = str(item.get("path") or item.get("file") or "")
         category = str(item.get("category") or "")
         if iid in by_id:
@@ -694,7 +734,7 @@ def _classification_audit(ctx, work):
             qid = entry
         elif isinstance(entry, dict):
             qid = str(entry.get("item_id") or entry.get("id") or
-                      entry.get("path") or "")
+                      entry.get("file_id") or entry.get("path") or "")
         else:
             qid = ""
         if not qid:
@@ -782,7 +822,7 @@ def _classification_audit(ctx, work):
         if output_paths != set(by_path):
             problems.append("library-results.json items do not match the plan paths")
         output_review = {str(row.get("item_id") or row.get("id") or
-                             row.get("path") or "")
+                             row.get("file_id") or row.get("path") or "")
                          for row in results.get("review_queue") or []
                          if isinstance(row, dict)}
         if required - output_review:
@@ -1337,6 +1377,192 @@ def _finalize_result_interpretation(ctx, work, payload):
     return payload
 
 
+def _materialize_declared_outputs(ctx, work, deliverable_path, work_name):
+    """Derive declared artifacts from real work-file content when the model
+    omitted a file.  This never invents new facts: it only re-serializes
+    values the model already wrote, and records the derivation in change_log.
+    """
+    changed = []
+    mode = str(_config(ctx).get("mode") or "")
+    for name in _output_files(ctx):
+        path = _resolve_output(ctx, name)
+        if path.exists() and (path.is_dir() or path.stat().st_size > 0):
+            continue
+        if path.name == "result.json":
+            continue
+        stem = path.stem
+        keys = [stem, stem.replace("-", "_"), stem.replace("_", "-")]
+        value = None
+        for key in keys:
+            if key in work and work.get(key) not in (None, "", [], {}):
+                value = work.get(key)
+                break
+        if value is None:
+            mode_defaults = {
+                "review": ["findings", "claim_source_matrix", "checks"],
+                "search": ["queries", "candidates", "items"],
+                "library": ["items", "taxonomy", "review_queue"],
+                "analysis": ["results", "analysis", "steps"],
+                "experiment": ["parameters", "recommendations", "risks"],
+                "writing": ["claims", "evidence", "preserved_facts"],
+                "reading": ["items", "claims", "evidence"],
+            }
+            for key in mode_defaults.get(mode, []):
+                if work.get(key) not in (None, "", [], {}):
+                    value = work.get(key)
+                    break
+        suffix = path.suffix.lower()
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            if suffix == ".json":
+                if value is None:
+                    value = {"case_id": ctx.case_id, "available_fields":
+                             [k for k in ("summary", "findings", "items",
+                                          "results", "evidence", "uncertainties")
+                              if work.get(k) not in (None, "", [], {})],
+                             "note": "derived from the work file; no new facts"}
+                payload = value if isinstance(value, (dict, list)) else {stem: value}
+                if isinstance(payload, dict):
+                    payload = dict(payload)
+                    payload.setdefault("case_id", ctx.case_id)
+                    payload.setdefault("derived_from", work_name)
+                S.write_json(path, payload)
+            elif suffix in (".md", ".txt"):
+                summary = work.get("summary") or work.get("answer") or ""
+                lines = ["# %s" % (_config(ctx).get("title") or ctx.case_id), "",
+                         "> 由 work 文件内容生成；未新增材料外事实。", "",
+                         "## 摘要", "", str(summary) or "(work summary is empty)", ""]
+                for label, key in (("发现", "findings"), ("候选项", "candidates"),
+                                   ("条目", "items"), ("结果", "results"),
+                                   ("证据", "evidence"),
+                                   ("不确定项", "uncertainties")):
+                    rows = work.get(key)
+                    if not isinstance(rows, list) or not rows:
+                        continue
+                    lines += ["## %s" % label, ""]
+                    for row in rows[:100]:
+                        if isinstance(row, dict):
+                            text = (row.get("statement") or row.get("text")
+                                    or row.get("title") or row.get("label")
+                                    or row.get("reason") or json.dumps(
+                                        row, ensure_ascii=False)[:500])
+                            lines.append("- %s" % text)
+                        else:
+                            lines.append("- %s" % row)
+                    lines.append("")
+                S.write_text(path, "\n".join(lines).rstrip() + "\n")
+            elif suffix == ".csv":
+                rows = value if isinstance(value, list) else work.get("rows")
+                if not isinstance(rows, list) or not rows:
+                    continue
+                if all(isinstance(row, dict) for row in rows):
+                    import csv
+                    fields = list(dict.fromkeys(
+                        key for row in rows for key in row.keys()))
+                    with path.open("w", encoding="utf-8", newline="") as fh:
+                        writer = csv.DictWriter(fh, fieldnames=fields)
+                        writer.writeheader()
+                        writer.writerows(rows)
+                else:
+                    import csv
+                    with path.open("w", encoding="utf-8", newline="") as fh:
+                        writer = csv.writer(fh)
+                        writer.writerows(rows)
+            else:
+                continue
+            changed.append(name)
+            ctx.result.change("materialize", "output",
+                              "derived %s from %s" % (name, work_name))
+        except (OSError, TypeError, ValueError) as exc:
+            ctx.result.uncertainty(
+                "materialize", "could not derive %s: %s" % (name, exc),
+                "the declared artifact remains missing",
+                "write the artifact explicitly and rerun finalize")
+    # A missing Markdown deliverable can be built from the same work content.
+    if deliverable_path and not deliverable_path.exists() \
+            and deliverable_path.suffix.lower() in (".md", ".txt"):
+        try:
+            summary = work.get("summary") or work.get("answer") or ""
+            lines = ["# %s" % (_config(ctx).get("title") or ctx.case_id), "",
+                     "> 由 work 文件内容生成；未新增材料外事实。", "",
+                     "## 摘要", "", str(summary) or "(work summary is empty)", ""]
+            for label, key in (("发现", "findings"), ("候选项", "candidates"),
+                               ("条目", "items"), ("结果", "results"),
+                               ("证据", "evidence"),
+                               ("不确定项", "uncertainties")):
+                rows = work.get(key)
+                if not isinstance(rows, list) or not rows:
+                    continue
+                lines += ["## %s" % label, ""]
+                for row in rows[:100]:
+                    if isinstance(row, dict):
+                        text = (row.get("statement") or row.get("text")
+                                or row.get("title") or row.get("label")
+                                or row.get("reason") or json.dumps(
+                                    row, ensure_ascii=False)[:500])
+                        lines.append("- %s" % text)
+                    else:
+                        lines.append("- %s" % row)
+                lines.append("")
+            deliverable_path.parent.mkdir(parents=True, exist_ok=True)
+            S.write_text(deliverable_path, "\n".join(lines).rstrip() + "\n")
+            changed.append(deliverable_path.name)
+            ctx.result.change("materialize", "deliverable",
+                              "derived %s from %s" % (
+                                  deliverable_path.name, work_name))
+        except (OSError, TypeError, ValueError):
+            pass
+    return changed
+
+
+def _fallback_work(ctx):
+    """Build an honest, quote-only draft when the model wrote no work file.
+
+    It does not answer the task.  It preserves readable material excerpts,
+    labels them as extracted evidence, and gives finalize enough structure to
+    emit a real partial deliverable instead of an empty envelope.
+    """
+    evidence, findings = [], []
+    for doc in ctx.docs:
+        text = S.doc_text(doc)
+        path = doc.get("rel_path") or doc.get("path") or ""
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        for index, line in enumerate(lines[:5], 1):
+            if len(line) > 400:
+                line = line[:400]
+            item = {"path": path, "locator": "L%d" % index, "quote": line}
+            evidence.append(item)
+            findings.append({
+                "id": "E%03d" % (len(findings) + 1),
+                "statement": line,
+                "type": "extracted_quote",
+                "evidence": item,
+            })
+    if not evidence:
+        return {}
+    config = _config(ctx)
+    work = {
+        "case_id": ctx.case_id,
+        "mode": config.get("mode") or config.get("family"),
+        "summary": "材料已读取，但模型未完成题面要求的实质性回答；"
+                   "以下仅为逐字摘录，不能替代正式结论。",
+        "findings": findings,
+        "evidence": evidence,
+        "uncertainties": [{
+            "item": "model_work_missing",
+            "reason": "no model-authored work file was found",
+            "impact": "the task-specific answer is not available",
+            "action": "write the work file described in SKILL.md and rerun finalize",
+        }],
+    }
+    for field in config.get("required_fields") or []:
+        if field in work:
+            continue
+        work[field] = [] if field not in ("analysis", "taxonomy",
+                                          "reporting_checklist") else {}
+    return work
+
+
 def finalize(ctx):
     work_name = _work_name(ctx)
     work_path = ctx.work / work_name
@@ -1350,15 +1576,24 @@ def finalize(ctx):
         elif deliverable_path.is_file():
             work = {"summary": S.read_text(deliverable_path)[:2000]}
     if not work and not deliverable_path.is_file():
-        ctx.result.change("finalize", "output", "no work file and no deliverable")
-        ctx.result.uncertainty("deliverable", "the model-authored work file is missing",
-                               "no substantive answer", "write %s" % work_name)
-        payload = ctx.result.finalize("partial")
-        if _config(ctx).get("mode") == "classification":
-            payload = _finalize_classification(ctx, work, payload)
-        elif _config(ctx).get("mode") == "result-interpretation":
-            payload = _finalize_result_interpretation(ctx, work, payload)
-        return payload
+        work = _fallback_work(ctx)
+        if not work:
+            ctx.result.change("finalize", "output", "no work file and no deliverable")
+            ctx.result.uncertainty("deliverable", "the model-authored work file is missing",
+                                   "no substantive answer", "write %s" % work_name)
+            payload = ctx.result.finalize("partial")
+            if _config(ctx).get("mode") == "classification":
+                payload = _finalize_classification(ctx, work, payload)
+            elif _config(ctx).get("mode") == "result-interpretation":
+                payload = _finalize_result_interpretation(ctx, work, payload)
+            return payload
+        ctx.result.change("finalize", "work",
+                          "fallback excerpt draft: no model work file")
+        ctx.result.uncertainty(
+            "model_work_missing",
+            "the model-authored work file was missing; only verbatim excerpts were kept",
+            "the deliverable is a partial draft, not a task answer",
+            "write %s and rerun finalize" % work_name)
 
     required = _config(ctx).get("required_fields") or []
     missing = [field for field in required if field not in work and not (
@@ -1388,6 +1623,8 @@ def finalize(ctx):
             ctx.result.uncertainty("analysis_execution", execution["stderr"],
                                    "generated analysis did not complete",
                                    "fix analysis.py and rerun finalize")
+
+    _materialize_declared_outputs(ctx, work, deliverable_path, work_name)
 
     declared = _output_files(ctx)
     for name in declared:
@@ -1473,6 +1710,24 @@ def finalize(ctx):
     for field in required:
         if field in work and field not in ("evidence",):
             ctx.result.data[field] = work.get(field)
+    # Preserve original output_contract keys when the work file already uses the
+    # same key (e.g. step_plan, intermediate_products, final_results).  This is
+    # a copy, not a new claim.
+    contract = ctx.contract if isinstance(ctx.contract, dict) else {}
+    contract_aliases = {
+        "step_plan": "steps",
+        "intermediate_products": "intermediate_results",
+        "final_results": "results",
+        "review_report": "findings",
+        "search_results": "candidates",
+        "extraction_results": "results",
+    }
+    for key in contract:
+        value = work.get(key)
+        if value in (None, "", [], {}) and key in contract_aliases:
+            value = work.get(contract_aliases[key])
+        if value not in (None, "", [], {}) and key not in ctx.result.data:
+            ctx.result.data[key] = value
     payload = ctx.result.finalize(
         status,
         deliverable=deliverable_path if deliverable_path.exists() else None,

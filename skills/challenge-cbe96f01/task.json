@@ -11,21 +11,29 @@
   "output_files": [
     "output/review-report.md",
     "output/findings.json",
-    "output/evidence-map.json"
+    "output/evidence-map.json",
+    "output/citation-precheck.md",
+    "output/citation-check.json"
   ],
   "required_fields": [
     "claim_source_matrix",
     "source_status",
     "findings",
-    "evidence"
+    "evidence",
+    "checks",
+    "verdict",
+    "review_status"
   ],
   "focus": "引用与事实核验、论断-来源匹配、编造/错配检出",
   "checks": "每条引用可回查；论断与来源结论匹配；不确定项明确",
   "run_python": false,
+  "precheck_script": "scripts/verify_citations.py",
+  "precheck_command": "python3 \"$SKILL_DIR/scripts/verify_citations.py\" --input /input --work /app/work --output /app/output",
   "work_template": {
     "case_id": "challenge-cbe96f01",
     "mode": "citation-fact-check",
     "summary": "",
+    "precheck": "",
     "question": "",
     "answer": "",
     "queries": [],
@@ -42,13 +50,17 @@
     "artifacts": [],
     "checks": [],
     "verdict": "",
+    "review_status": "",
     "claim_source_matrix": [],
-    "source_status": []
+    "source_status": [],
+    "reviewed_candidates": [],
+    "rejected_candidates": []
   },
   "example": {
     "case_id": "SYNTH-REVIEW",
     "mode": "citation-fact-check",
     "summary": "Synthetic example only.",
+    "precheck": "output/citation-check.json",
     "findings": [
       {
         "id": "R001",
@@ -56,11 +68,13 @@
           "path": "synthetic.md",
           "locator": "P1"
         },
-        "check_item": "synthetic check item",
+        "check_item": "论断与来源结论匹配",
         "original_quote": "synthetic source sentence",
         "issue": "Synthetic issue",
         "severity": "major",
-        "type": "review_issue",
+        "type": "citation_mismatch",
+        "subtype": "synthetic",
+        "status": "confirmed",
         "fix": "synthetic fix",
         "comment": "Synthetic comment",
         "evidence": {
@@ -72,12 +86,18 @@
     ],
     "checks": [
       {
-        "item": "synthetic check",
+        "item": "每条引用可回查",
         "status": "pass",
+        "detail": "synthetic only"
+      },
+      {
+        "item": "论断与来源结论匹配",
+        "status": "not_checked",
         "detail": "synthetic only"
       }
     ],
     "verdict": "major_revision",
+    "review_status": "issues",
     "evidence": [
       {
         "path": "synthetic.md",
@@ -90,14 +110,22 @@
       {
         "claim_id": "C1",
         "claim": "synthetic claim",
-        "source": "synthetic.md",
+        "claim_locator": "synthetic.md:P1",
+        "source": "[A] synthetic.md",
+        "source_locator": "synthetic.md:P1",
+        "source_statement": "synthetic source sentence",
         "source_design": "synthetic design",
         "type": "citation_mismatch",
+        "subtype": "synthetic",
         "fix": "synthetic fix",
         "verdict": "partial",
         "reason": "synthetic only",
+        "manuscript_value": "",
+        "source_value": "",
         "locator": "P1",
         "original_quote": "synthetic source sentence",
+        "needs_review": false,
+        "reviewed": true,
         "evidence": {
           "path": "synthetic.md",
           "locator": "P1",
@@ -107,12 +135,26 @@
     ],
     "source_status": [
       {
-        "source": "synthetic.md",
+        "source": "[A] synthetic.md",
         "status": "unknown",
         "version_note": "synthetic only",
-        "needs_recheck": true
+        "needs_recheck": true,
+        "status_basis": "synthetic only",
+        "evidence": {
+          "path": "synthetic.md",
+          "locator": "P1",
+          "quote": "synthetic source sentence"
+        }
       }
-    ]
+    ],
+    "reviewed_candidates": [
+      {
+        "candidate_id": "C1",
+        "decision": "accept",
+        "reason": "synthetic only"
+      }
+    ],
+    "rejected_candidates": []
   },
   "schema_properties": {
     "findings": "逐条问题：location、issue、severity、comment、evidence",
@@ -120,11 +162,15 @@
     "verdict": "总体判断及边界",
     "evidence": "path+locator+quote 的逐字证据",
     "uncertainties": "无法判断、材料不足、待复核",
-    "claim_source_matrix": "task-specific field required by this sub-challenge",
-    "source_status": "task-specific field required by this sub-challenge"
+    "claim_source_matrix": "claim/claim_locator/source/source_locator/verdict/type/evidence",
+    "source_status": "source/status/version_note/needs_recheck/evidence",
+    "reviewed_candidates": "人工复核后接受/拒绝的候选及理由",
+    "rejected_candidates": "脚本候选中的假阳性及拒绝理由"
   },
   "mode_metrics": [
-    "claim/source/verdict 四档枚举（full/partial/none/unverifiable）；引用存在≠支持结论。",
-    "来源状态 published/preprint/retracted/unknown；unknown 标 needs_recheck；数值 claim 有 source_value/manuscript_value。"
+    "问题类型四档：missing_reference / uncited_claim / citation_mismatch / quote_mismatch；引用存在≠支持结论。",
+    "claim/source/verdict 四档枚举（full/partial/none/unverifiable）；数值 claim 有 source_value/manuscript_value。",
+    "来源状态 published/preprint/retracted/unknown；unknown 标 needs_recheck；撤稿/版本差异必须有输入材料证据。",
+    "预检状态 ok_with_candidates/ok_no_issues/missing_reference_list/no_materials/error；脚本候选必须经人工复核后才能进入 findings。"
   ]
 }

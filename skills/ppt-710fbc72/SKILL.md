@@ -152,3 +152,20 @@ task.md 给出**模板**（`.pptx`/`.potx`）并要求"按模板做""适配格�
 输出：`layout-map.json` 3 个角色映射；`font_substitution` 1 条（Arial→Liberation Sans）；
 `apply-template` 返回 `master+layouts+theme`；`format_check.violations = []`；
 `preview/deck.pdf` 12 页；`status: "completed"`。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点论文、模板与旧 deck |
+| `scripts/make_pptx.py` | 按页级计划生成可编辑演示文件 |
+| `scripts/pptx_edit.py` | 编辑现有 deck 并保留版式 |
+| `scripts/validate_result.py` | 校验页级结构、证据与 result.json |
+| `references/05-slides.md` | 幻灯片模板与格式规范 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 可编辑演示文件：页级结构、主张、图表、讲稿/备注和模板结果；完成标准：能围绕论文主线讲清楚。
+- 页级证据映射：每页内容对应论文图、表、章节或数据；完成标准：引用准确，未改写事实。
+- 渲染与版本记录：源文件、导出件、字体/模板和修改记录；完成标准：可打开、播放、编辑并复核。

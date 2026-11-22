@@ -148,3 +148,21 @@ task.md 要求"图形摘要""cover graphic""visual abstract""图文摘要"时使
 输入：摘要 + Fig.1b + Fig.2a，期刊要求 1200×600 px。
 输出：`ga.svg` 3 元素（问题/手段/结果）+ 1 句主张；
 `preview/ga.png` 1200×600；`consistency` 4 项全 true；`status: "completed"`。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点论文、图注与数据 |
+| `scripts/make_schematic.py` | 生成分层 SVG/PNG/PDF 图 |
+| `scripts/make_chart.py` | 生成数据图与误差线 |
+| `scripts/svg_lint.py` | 检查 SVG 文本、实体与引用 |
+| `scripts/validate_result.py` | 校验 result.json 与产物 |
+| `references/04-graphics.md` | 图形摘要与视觉规范 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 可编辑源文件：示意图、机制图、流程图或图表的分层源文件；完成标准：实体、关系、图例和数据映射正确。
+- 目标格式、尺寸、分辨率、字体和色彩检查；完成标准：可在目标场景打开和使用。
+- 来源与修改记录：元素来源、版本、数据映射和人工确认；完成标准：关键图面可核验，异常有说明。

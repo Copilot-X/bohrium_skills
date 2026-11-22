@@ -41,6 +41,7 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
+| `scripts/domain_work.py` | 确定性多步骤初稿：盘点→去重→汇总→分组→复算，写 steps/中间结果/恢复点 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/analysis-plan.json` 的字段契约 |
@@ -64,6 +65,16 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成可复算的多步骤初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/domain_work.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本会从 CSV/JSON 表生成 5 个步骤、去重与缺失统计、数值/分组汇总、
+中间结果和恢复点，并写 `work/analysis.py`。模型必须复核列语义、缺失值规则
+和分组是否合理，再补充领域解释；不得把脚本初稿当成最终科学结论。
 
 ### 第 2 步：写 `work/analysis-plan.json`（约 60% 预算）
 

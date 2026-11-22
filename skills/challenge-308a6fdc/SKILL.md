@@ -172,3 +172,19 @@ description: 学术论文写作：基于实验记录、图表与参考文献起�
 输入：`materials/results.csv`（3 组、每组 n=3）、`Fig.1`、`task.md` 要求写 Results 一节。
 输出：`manuscript.md` 的 `3.1` 节 180 词，含 3 个数值句；`source_map` 三条分别指向
 `results.csv` 行号与 `Fig.1`；`status: "completed"`。
+## 支持文件
+
+| 文件 | 作用 |
+|---|---|
+| `scripts/inspect_input.py` | 盘点材料、提纲与数据 |
+| `scripts/make_docx.py` | 生成/编辑 DOCX 稿件 |
+| `scripts/validate_result.py` | 校验稿件、证据与 result.json |
+| `references/03-writing.md` | 论文结构与写作规范 |
+| `references/08-quality-gates.md` | 交付质量闸门 |
+| `templates/result_envelope.json` | result.json 信封示例 |
+
+## 本题交付对照
+
+- 目标产物：可编辑的稿件、改稿、引用/格式结果或结构化写作产物；完成标准：满足题目指定体裁、受众和格式。
+- 事实与来源映射：数字、术语、引用、图表和关键论断的来源/修改记录；完成标准：可逐条回溯，不新增材料外事实。
+- 版本与边界：修改差异、人工确认项、材料缺口和异常；完成标准：结果可继续编辑，未确认部分明确标注。
