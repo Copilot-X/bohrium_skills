@@ -43,3 +43,16 @@
 - 图表：轴/单位/图例/数据来源齐全；导出 SVG/PNG 与数据文件一致。
 - 代码/查询：真实执行，保留 `execution.log` 或查询语句；失败不伪造结果。
 - 方法与数据匹配；前提检查；效应量/区间；报告数字与结果文件一致；不越界因果。
+
+## 7. 本题执行器协议（uci_profile.py）
+
+- 识别 Concrete/Iris/Wine 或 generic 表；建立派生快照与数据字典映射。
+- 逐列缺失/重复/异常值/范围检查，只标记不删除。
+- 描述统计 + 经典/Welch ANOVA + 成对 Welch + Holm + eta²/omega² +
+  Hedges g + 95% CI；Concrete 另做与抗压强度的相关。
+- Jarque-Bera（筛查）与 Brown-Forsythe 前提检查；不满足时降级说明。
+- 生成 `work/analysis.py`（与 `output/analysis-code.py` 一致）并真实执行。
+- 输出 `results.json`、`results.csv`、`statistics-report.json`、
+  `environment.json`、`cleaned-table.csv`、`quality-report.json`、
+  `cleaning-rules.json`、`figures/` 与 `analysis-report.md`。
+- 所有数字来自同一次执行；报告不得另写一套数字。

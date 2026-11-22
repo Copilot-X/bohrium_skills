@@ -205,7 +205,76 @@ findings）、缺方法/结果段（`partial`、对应 facet `not_checked`、有
 structure_gaps、引文仍逐字可查）。自测输出明确标 `synthetic_only`，
 不写入正式结果。
 
-## 12. 自检清单
+## 12. 全文分段、主张清单与具体审稿面（1.3.0 新增）
+
+### 12.1 全文分段
+
+`quality_review.py` 输出 `fulltext_coverage`：章节、段落、句子、字数、
+各章节主张数与图表题注。规则：
+
+1. 必须基于全文；只有摘要/短摘录时，相关 facet 标 `partial/not_checked`；
+2. 缺方法/结果段时 `engine_status=partial`，不得把缺失写成通过；
+3. 超长稿件按章节分块读取，报告中写清覆盖范围；
+4. PDF/DOCX 复用 prepare 提取文本；扫描件无文字层时如实记录。
+
+### 12.2 主张清单（claim_inventory）
+
+字段：`id/claim/type/section/speaker/support/strength/locator/evidence`。
+
+- `speaker` ∈ `author/cited/assumption`；引用观点与作者假设不是作者缺陷；
+- `type` ∈ `causal/mediation/association/generalization/proof/result/
+  prediction/definition/assumption/cited/background`；
+- `support` ∈ `full/partial/none/unverifiable`；`none` 表示当前材料没有
+  找到可支撑该强度的证据，不自动等于作者错误；
+- `strength` ∈ `descriptive/associative/suggestive/causal/absolute/assumption`。
+
+### 12.3 跨章节核对（cross_section_checks）
+
+`consistency` 五档：`delivered/partial/not_delivered/contradicted/
+unverifiable`。至少核对：
+
+- 摘要/引言承诺 → 方法与结果；
+- 摘要显著/改善结论 → 结果段同一分析；
+- 讨论因果/证明措辞 → 方法设计；
+- 方法设计 → 结果段干预/改善表述。
+
+### 12.4 具体审稿面（facet_subchecks）
+
+| subfacet | 查什么 | 不算问题的情形 |
+|---|---|---|
+| `structure_completeness` | 摘要/方法/结果/讨论/结论是否齐备 | 目标期刊允许短报告；补充材料承载 |
+| `abstract_body_alignment` | 摘要 p 值、样本量、方向与正文一致 | 摘要报告次要/校正后分析且已标明 |
+| `term_consistency` | 定义句、同一术语多定义、定义与测量 | 学科通用术语；定义在补充文件 |
+| `citation_resolvable` | 引用编号/键有条目、元数据可回查 | 引用仅作背景；条目在补充材料 |
+| `design_and_allocation` | 设计、随机化、分配隐藏、对照、盲法 | 观察性研究本就不随机；作者声明探索性 |
+| `sample_size_justification` | 先验样本量/效能、入组/分析集、停止规则 | 描述性/探索性研究明确声明 |
+| `statistical_completeness` | 效应量、CI、检验统计量、精确 p、多重比较、缺失数据 | 期刊不要求 CI；描述性统计 |
+| `causal_boundary` | 因果措辞 vs 设计、时间顺序、替代解释、外推 | 作者明确声明局限或假设 |
+| `ethics_and_consent` | 伦理审批、知情同意、豁免依据 | 非人类研究；豁免已说明 |
+| `data_and_code_availability` | 数据/代码可用性与受控访问 | 期刊允许投稿系统单独提交 |
+| `conflict_of_interest` | 利益冲突与资助来源 | 期刊不要求正文声明 |
+| `reporting_and_registration` | 试验注册、报告指南、分析计划 | 非试验研究；探索性研究已声明 |
+
+### 12.5 新增规则
+
+| rule_id | 触发 | 默认状态 |
+|---|---|---|
+| `abstract_body_direction_conflict` | 摘要称显著/改善，结果段首个或主要检验不显著 | needs_recheck |
+| `conclusion_exceeds_results` | 讨论/结论使用显著/因果措辞，但结果段无对应显著结果 | needs_recheck |
+| `promise_not_delivered` | 引言/摘要承诺机制或纵向分析，方法/结果未交付 | confirmed（方法明确未做）/needs_recheck |
+| `circular_definition` | 定义与测量共用同一组词 | confirmed（重叠≥2）/needs_recheck |
+| `control_group_missing` | 干预研究无对照/等待组/组内比较 | needs_recheck |
+| `trial_registration_missing` | 随机/试验设计但无注册/预注册 | needs_recheck |
+
+### 12.6 不强判缺陷
+
+1. 规则未命中不等于通过：报告要写“查了什么、为何通过”；
+2. 规则命中不等于缺陷：先做误报检查，再决定 type/severity/status；
+3. 作者假设、引用观点、学科惯例、明确的探索性设计不得判为 error；
+4. 材料未报告与材料矛盾要分开：前者 `insufficient_evidence`，后者 `error`；
+5. 不为凑数保留候选；删除的候选写入 `uncertainties` 并说明原因。
+
+## 13. 自检清单
 
 运行 `scripts/review_gate.py` 后确认：
 

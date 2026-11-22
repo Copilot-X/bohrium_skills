@@ -1,6 +1,6 @@
 ---
 name: review-quality-review-skill
-description: 论文质量审查：先用 quality_review.py 从 /input 抽取章节、方法段、统计报告、图表题注与数字并生成带逐字证据的候选 findings，再由模型逐条核验；围绕事实核验、引用支持、方法设计、统计报告、论证链、学术规范六类检查项，产出可定位、分严重度的审查问题，附 claim-source 对照、误报检查与可执行修改建议；交付 review-report.md、findings.json、evidence-map.json 和含官方 reading/writing 字段的 result.json。Use for 论文质量审查、quality-review、review、证据绑定、claim-source matrix、结果复核.
+description: 论文质量审查：先用 quality_review.py 对实际全文做章节/段落/句子分段，抽取主张清单、方法/统计/图表题注与引用，生成 fulltext_coverage、claim_inventory、cross_section_checks、facet_subchecks 和带逐字证据的候选 findings，再由模型逐条核验；围绕事实核验、引用支持、方法设计、统计报告、论证链、学术规范六类检查项，产出可定位、分严重度的审查问题，附 claim-source 对照、误报检查与可执行修改建议；交付 review-report.md、findings.json、evidence-map.json 和含官方 reading/writing 字段的 result.json。Use for 论文质量审查、quality-review、review、证据绑定、claim-source matrix、结果复核.
 ---
 
 # 论文质量审查（review track · quality-review）
@@ -99,6 +99,10 @@ python3 "$SKILL_DIR/scripts/quality_review.py" \
 | `extraction` | 章节、段落（含 `stats`）、题注、参考文献与统计摘要 |
 | `findings[]` | 候选问题：`rule_id`、facet、locator、逐字 quote、severity/type、`confidence`、`rule_status`、fix、`false_positive_check` |
 | `claim_source_matrix[]` | 从正文引用与参考文献条目自动配对的候选行（多为 `unverifiable`） |
+| `claim_inventory[]` | 全文主张清单：speaker(author/cited/assumption)、type、section、support、strength、locator、逐字证据 |
+| `cross_section_checks[]` | 摘要/引言承诺在方法/结果中是否交付；consistency 五档枚举 |
+| `fulltext_coverage` | 章节/段落/句子/字数、各章节主张数与图表题注；证明审的是全文而非摘录 |
+| `facet_subchecks[]` | 具体审稿面：结构完整性、摘要-正文、术语、引用可回查、设计/分配、样本量、统计完整性、因果边界、伦理、数据/代码、利益冲突、注册 |
 | `coverage[]` | 六面建议状态（checked/partial/not_checked + reason） |
 | `structure_gaps[]` / `uncertainties[]` | 缺段、缺图注、缺样本量说明等“无法逐字引用”的缺口 |
 
@@ -128,6 +132,12 @@ python3 "$SKILL_DIR/scripts/quality_review.py" \
 | `figure_not_provided` | fact_consistency | 正文明确写图未提供/缺失；仅“未见图注”进 gap |
 | `compliance_declarations_missing` / `data_availability_missing` / `coi_statement_missing` | academic_compliance | 人类参与者研究未见伦理/同意/数据/利益冲突声明 |
 | `sample_size_inconsistency` | fact_consistency | 摘要与方法段的 n 值集合不相交 |
+| `abstract_body_direction_conflict` | fact_consistency | 摘要称显著/改善，结果段首个或主要检验不显著 |
+| `conclusion_exceeds_results` | argument_chain | 讨论/结论使用显著/因果措辞，但结果段没有对应显著结果 |
+| `promise_not_delivered` | argument_chain | 引言/摘要承诺机制或纵向分析，方法/结果未交付 |
+| `circular_definition` | argument_chain | 构念定义与测量共用同一组词 |
+| `control_group_missing` | method_design | 方法描述干预，但没有对照/等待组或组内比较 |
+| `trial_registration_missing` | academic_compliance | 随机/试验设计但未见注册/预注册声明 |
 
 审核后如要把候选导入工作文件，再运行：
 
@@ -195,7 +205,8 @@ python3 "$SKILL_DIR/scripts/quality_review.py" --selftest
 
 按 `templates/work.schema.json` 写结构化工作文件。必需字段：
 `findings`, `facets_checked`, `review_status`, `evidence`。建议同时写
-`checks`, `claim_source_matrix`, `coverage_summary`, `not_checked`,
+`checks`, `claim_source_matrix`, `claim_inventory`, `cross_section_checks`,
+`fulltext_coverage`, `facet_subchecks`, `coverage_summary`, `not_checked`,
 `verdict`, `uncertainties`, `rule_review`, `structure_gaps`。
 
 若用 `--merge` 导入了规则候选：逐条围绕 `rule_id` 与 `confidence` 回原文
@@ -380,6 +391,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G0 | 规则扫描 | 已运行 `scripts/quality_review.py`；`work/rule-review.json` 存在且 `engine_status` 如实；每条候选有确认/改写/删除记录；不得声称脚本结论即最终结论 |
+| G0b | 全文分段 | `fulltext_coverage` 记录章节/段落/句子/字数与各章节主张数；不得只审摘要或短摘录 |
+| G0c | 具体审稿面 | `facet_subchecks` 覆盖结构、摘要-正文、术语、引用、设计/分配、样本量、统计、因果、伦理、数据、利益冲突、注册；缺失项有 reason |
 | G1 | 主产物 | `output/review-report.md` 存在、非空、含 5 个必备章节 |
 | G2 | 必填字段 | `findings`, `facets_checked`, `review_status`, `evidence` 齐全且非空 |
 | G3 | 定位与原文 | 每条 finding 有 path+locator+逐字 `original_quote`；多证据逐条可查 |
@@ -461,10 +474,10 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
-- 版本 `1.2.0`：六面审查协议 + finding 子字段 + claim-source 矩阵 +
-  `scripts/quality_review.py` 规则扫描（抽取/候选/覆盖建议/三路自测）+
-  `scripts/review_gate.py` 自检；模型写内容与最终判断，脚本只做抽取、
-  候选生成和可核对性审计。
+- 版本 `1.3.0`：六面审查协议 + finding 子字段 + claim-source 矩阵 +
+  `scripts/quality_review.py` 全文分段/主张清单/跨章节核对/具体审稿面/
+  规则扫描（抽取/候选/覆盖建议/三路自测）+ `scripts/review_gate.py` 自检；
+  模型写内容与最终判断，脚本只做抽取、候选生成和可核对性审计。
 - 规则扫描是文本模式匹配：只能发现可逐字定位的候选，不能判断语义蕴含、
   研究设计是否真的正确，也不能替代同行评审。所有 `Axx` 候选必须复核。
 - 不联网：只使用 `/input` 提供的材料或导出；不伪造在线检索结果。

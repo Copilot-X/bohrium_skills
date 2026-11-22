@@ -66,6 +66,17 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
 
+### 第 1.5 步：构建引用图初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/build_reference_graph.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本只扫描固定文档和其中的 DOI/引用行，构建节点、边、方向、BFS 路径、
+DOI/标题身份组与共享参考文献的相关作品；没有明确方向的边进
+`direction_unknown`，不冒充前向/后向。模型必须复核每条边的方向、身份合并与
+“相关”依据，再补充检索结论。
+
 ### 第 2 步：写 `work/search-plan.json`（约 60% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。至少包含

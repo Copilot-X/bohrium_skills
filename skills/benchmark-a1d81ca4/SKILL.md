@@ -62,6 +62,7 @@ workorder 每项至少包含：`item_id`、`question`、`gold_points`、`gold_ev
 | 文件 | 作用 |
 |---|---|
 | `scripts/run_benchmark_case.py` | **唯一入口**：prepare / finalize / run / self-test；真实评分并组装 result.json |
+| `scripts/auto_predict.py` | 仅用材料生成基线 predictions.jsonl（忽略 gold_points），防止空预测；模型需复核/改进 |
 | `scripts/score_benchmark.py` | 确定性 scorer；支持 `--self-test`，缺预测计入 coverage/errors |
 | `scripts/validate_benchmark.py` | 协议/指标/result 契约门禁；支持 `--self-test` |
 | `templates/benchmark-protocol.json` | 协议骨架；workorder 字段优先 |
@@ -89,6 +90,16 @@ python3 "$SKILL_DIR/scripts/run_benchmark_case.py" prepare \
 - 题数与 id 必须与 workorder 一致；
 - 缺 workorder 时状态为 `input_error`，不生成题集；
 - quote 找不到时看 `gold_evidence[].verify_status`，回到原文重摘，不要改写。
+
+### 第 1.5 步（可选）：生成材料基线预测
+
+```bash
+python3 "$SKILL_DIR/scripts/auto_predict.py" --work /app/work --output /app/output
+```
+
+脚本只读 workorder 的 `question` 和材料文本，**忽略 gold_points/gold_evidence**，
+按词面 overlap + 数字优先抽取候选句和数值，写 `work/predictions.jsonl`。
+它只是一个可评分的基线，模型必须逐题复核：改错值、补证据、材料不足时拒答。
 
 ### 第 2 步（约 40% 预算）：写预测，不抄金标准
 

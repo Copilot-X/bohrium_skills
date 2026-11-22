@@ -41,6 +41,7 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
+| `scripts/library_inventory.py` | **本题专项**：扫描真实文件，算哈希/元数据/别名，建索引、重复组、版本链与操作日志 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/library-plan.json` 的字段契约 |
@@ -64,6 +65,16 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成资料库索引初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/library_inventory.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本扫描真实文件，写 path/bytes/sha256/title/DOI/year/别名、索引操作、按哈希/
+DOI 的重复组和按规范化标题的版本链；不移动源文件，operations 的 rollback 写明
+“只删索引、不改源文件”。模型必须复核版本链与重复组后再决定合并/保留。
 
 ### 第 2 步：写 `work/library-plan.json`（约 60% 预算）
 

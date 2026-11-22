@@ -11,17 +11,23 @@
   "output_files": [
     "output/review-report.md",
     "output/findings.json",
-    "output/evidence-map.json"
+    "output/evidence-map.json",
+    "output/logic-precheck.md",
+    "output/logic-check.json"
   ],
   "required_fields": [
     "claim_inventory",
-    "findings",
     "cross_section_checks",
+    "findings",
+    "facets_checked",
+    "review_status",
     "evidence"
   ],
   "focus": "论证链、前提-结论、因果/相关、反例与逻辑跳跃",
   "checks": "每个问题指向具体段落；区分事实错误与论证不足；给出修复建议",
   "run_python": false,
+  "precheck_script": "scripts/logic_review.py",
+  "precheck_command": "python3 \"$SKILL_DIR/scripts/logic_review.py\" --input /input --work /app/work --output /app/output",
   "work_template": {
     "case_id": "challenge-16d4414d",
     "mode": "logic-review",
@@ -43,7 +49,12 @@
     "checks": [],
     "verdict": "",
     "claim_inventory": [],
-    "cross_section_checks": []
+    "cross_section_checks": [],
+    "facets_checked": [],
+    "logic_facets": [],
+    "review_status": "",
+    "not_checked": [],
+    "rule_review": {}
   },
   "example": {
     "case_id": "SYNTH-REVIEW",
@@ -52,15 +63,18 @@
     "findings": [
       {
         "id": "L001",
+        "facet": "argument_chain",
+        "subfacet": "causal_inference",
         "locator": {
           "path": "synthetic.md",
           "locator": "P1"
         },
         "original_quote": "synthetic source sentence",
         "severity": "major",
-        "type": "logic_gap",
-        "status": "open",
-        "fix": "synthetic fix",
+        "type": "error",
+        "status": "needs_recheck",
+        "impact": "Synthetic impact.",
+        "fix": "Synthetic fix targeting P1.",
         "false_positive_check": "cited view vs author claim checked",
         "evidence": {
           "path": "synthetic.md",
@@ -72,7 +86,7 @@
     "checks": [
       {
         "item": "synthetic check",
-        "status": "pass",
+        "status": "not_checked",
         "detail": "synthetic only"
       }
     ],
@@ -92,8 +106,12 @@
         "type": "causal",
         "section": "Discussion",
         "speaker": "author",
-        "support": "partial",
-        "strength": "suggestive",
+        "support": "none",
+        "strength": "causal",
+        "locator": {
+          "path": "synthetic.md",
+          "locator": "P1"
+        },
         "evidence": {
           "path": "synthetic.md",
           "locator": "P1",
@@ -104,22 +122,60 @@
     "cross_section_checks": [
       {
         "promise": "synthetic promise",
+        "promise_locator": "P1",
         "delivery": "synthetic delivery",
-        "consistency": "partial"
+        "delivery_locator": "P1",
+        "consistency": "not_delivered",
+        "evidence": [
+          {
+            "path": "synthetic.md",
+            "locator": "P1",
+            "quote": "synthetic source sentence"
+          }
+        ]
       }
-    ]
+    ],
+    "facets_checked": [
+      {
+        "facet": "argument_chain",
+        "status": "checked",
+        "items": [
+          "claim inventory",
+          "promise-delivery"
+        ]
+      }
+    ],
+    "logic_facets": [
+      {
+        "facet": "claim_extraction",
+        "status": "checked",
+        "items": [
+          "speaker"
+        ]
+      }
+    ],
+    "review_status": "needs_recheck"
   },
   "schema_properties": {
-    "findings": "task-specific field required by this sub-challenge",
+    "findings": "逐条问题：facet/subfacet、locator、逐字原文、severity、type、impact、fix、false_positive_check、evidence",
     "checks": "检查项与 pass/fail/not_checked",
     "verdict": "总体判断及边界",
     "evidence": "path+locator+quote 的逐字证据",
     "uncertainties": "无法判断、材料不足、待复核",
-    "claim_inventory": "task-specific field required by this sub-challenge",
-    "cross_section_checks": "task-specific field required by this sub-challenge"
+    "claim_inventory": "主张清单：speaker(author/cited/assumption)、type、support、strength、section、locator、evidence",
+    "cross_section_checks": "承诺-交付核对：promise/delivery/consistency 枚举与两处 locator",
+    "facets_checked": "六个官方检查面的覆盖状态与 items；partial/not_checked 必须写 reason",
+    "logic_facets": "claim_extraction/evidence_support/reasoning_chain/causal_inference/cross_section_consistency/severity_and_fix",
+    "review_status": "稿件结论：pass/issues/needs_recheck/not_checked",
+    "rule_review": "逻辑预检元信息：脚本、候选数、合并数、候选仍需模型确认"
   },
   "mode_metrics": [
-    "主张清单标 speaker(author/cited/assumption) 与 support/strength；跨章节承诺-交付核对。",
-    "误报检查：引用观点/作者假设/学科惯例不得当作作者错误；severity 有判据。"
-  ]
+    "先运行 logic_review.py 对全文做章节/段落/句子分段；不得只审摘要或短摘录。",
+    "主张清单标 speaker(author/cited/assumption)、type、support、strength；引用观点/作者假设不当作作者缺陷。",
+    "跨章节承诺-交付核对：consistency 用 delivered/partial/not_delivered/contradicted/unverifiable，并给两处证据。",
+    "每条 finding 有 facet/subfacet/locator/逐字 quote/severity/type/status/impact/fix/false_positive_check。",
+    "六个官方面与六个逻辑专项面都要有状态；未检查项写 not_checked/uncertainties。",
+    "规则只产生候选；confirmed 仅用于两处原文可直接对照的矛盾，其余用 needs_recheck，禁止为凑数强判缺陷。"
+  ],
+  "version": "1.1.0"
 }

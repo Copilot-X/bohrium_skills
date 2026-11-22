@@ -39,8 +39,9 @@ mkdir -p /app/work /app/output
 
 | 文件 | 作用 |
 |---|---|
-| `scripts/run_skill.py` | **推荐入口**：prepare → 确定性抽取/核对 → finalize → 契约补全；输入不完整也写合法 `result.json` |
-| `scripts/domain_work.py` | 本模式确定性初稿：问题定义、比较矩阵、新颖性边界、可行性前提、空白与冲突证据 |
+| `scripts/run_skill.py` | **推荐入口**：prepare → research_profile → finalize → 契约补全；输入不完整也写合法 `result.json` |
+| `scripts/research_profile.py` | **研究 profile 执行器**：解析 9 来源/10 记录、固定问题、前瞻性筛选协议、证据矩阵、问题定义/比较矩阵/创新边界/可行性算术/有界方案与全部声明产物 |
+| `scripts/domain_work.py` | legacy 确定性初稿（保留兼容）；`run_skill.py` 优先调用 `research_profile.py` |
 | `scripts/run_case.py` | 分步入口：prepare / finalize / run / inspect |
 | `scripts/selftest.py` | 正向 + 空输入边界自测，真实执行并断言产物/契约 |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
@@ -51,6 +52,22 @@ mkdir -p /app/work /app/output
 | `references/research-rules.md` | 选题评估 的可执行规则与失败模式 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
+## 研究 profile（9 来源 / 10 记录）
+
+题面末尾的固定数据版本是 **9 actual sources / 10 records**：9 份真实来源材料、10 条唯一文献记录（重复导出行单列），固定领域研究问题，前瞻性筛选/检索协议，逐字来源证据，以及显式的有界提案/约束场景。
+
+`scripts/research_profile.py` 的确定性步骤：
+
+1. **来源注册**：只计实际来源文档（排除 `task.md`、`case.json`、README、约束/说明注记），记录 sha256、字符数与记录映射。
+2. **记录注册**：从 CSV/JSON/BibTeX/正文题录解析；重复行标 `duplicate_of`；仅摘要/题录与缺字段单列；不补造记录。
+3. **固定问题**：优先 `case.json` 的 `research_question`/`question`，其次 proposal/task.md 的 `Research question`/`Proposal`/`Topic`；缺失写 `not_stated_in_materials`。
+4. **前瞻性筛选协议**：Boolean 检索式、数据库/范围、纳排规则、逐条 `screening_log`；默认 `executed=false` 并说明只筛选所提供语料；计数必须闭合。
+5. **证据矩阵**：每条记录至少一个 `path + locator + quote`；quote 逐字可查；`output/evidence-matrix.json` 与 `.csv` 同步。
+6. **选题评估**：`problem_definition`（对象/变量/基线/预期结论/证伪条件）、`comparison_matrix`、`novelty_claims`（`scope=provided_corpus_only`，禁止无检索证据的“全球首次”）、`feasibility`（前提来源或 `unknown`）、`bounded_scenarios`（原方案/缩减模型/去范围化内部验证，附算术）、`conflict_check`。
+7. **产物**：`output/research-report.md`、`output/evidence-matrix.json`、`output/references.json`、`output/screening-protocol.json`、`output/source-registry.json`、`output/evidence-matrix.csv`、`output/novelty-assessment.json`、`output/feasibility-constraints.json`、`output/domain-audit.json`。
+
+实际来源数不是 9 或唯一记录不是 10 时，写入 `profile_summary`、`domain-audit.json` 与 `uncertainties`，不填充占位记录。
+
 ## 工作流
 
 ### 第 0 步：一条命令拿到可复核初稿（推荐，先保证不空转）
@@ -60,7 +77,7 @@ python3 "$SKILL_DIR/scripts/run_skill.py" \
   --input /input --work /app/work --output /app/output
 ```
 
-它会依次执行 prepare、`domain_work.py` 确定性抽取/核对、finalize，并检查：
+它会依次执行 prepare、`research_profile.py` 确定性抽取/分析、finalize，并检查：
 
 1. `work/research-plan.json`、3 个声明产物和 `output/result.json` 都存在；
 2. `output_contract` 的每个键都有真实内容或明确的 partial 指针；
@@ -253,6 +270,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | G7 | 契约 | result.json 可解析，case_id 与输入一致，contract_coverage 全覆盖 |
 | G8 | 不空转 | 材料不可读时仍写合法 result.json（`input_error`）且退出码 0 |
 | G9 | 可复跑 | `python3 scripts/selftest.py` 正反向均通过；同一语料重跑结果一致 |
+| G10 | 研究 profile | `source_registry`/`records`/`screening_log`/`evidence_matrix` 齐全；来源数与唯一记录数如实写入 `profile_summary` |
+| G11 | 筛选计数 | `identified - duplicates = screened` 且 `screened - excluded = included`；`full_text >= included` |
+| G12 | 有界评估 | `novelty_claims` 全部 `scope=provided_corpus_only`；`feasibility` 前提有来源或 `unknown`；`bounded_scenarios` 至少含原方案/缩减模型/去范围化内部验证 |
 
 ## 评分维度对照
 
@@ -374,6 +394,10 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
+- 版本 `2.0.0`：新增 `research_profile.py` 处理题面固定的 9 来源/10 记录：
+  来源注册、记录注册（重复/仅摘要单列）、固定问题、前瞻性筛选协议、逐条
+  证据矩阵、比较矩阵、创新边界、可行性算术、有界方案场景与冲突证据；
+  `run_skill.py` 优先调用该脚本，`domain_work.py` 仅作 legacy 回退。
 - 版本 `1.1.0`：新增 `run_skill.py` 一键兜底入口与 `domain_work.py`
   确定性文献抽取/覆盖核对；无材料/缺产物时仍写合法 result.json 与全部
   声明输出；创新性只在 `provided_corpus_only` 范围内判定。

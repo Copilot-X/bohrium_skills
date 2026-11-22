@@ -1,0 +1,26 @@
+{
+  "case_id": "SYNTH-UCI-C929FE",
+  "synthetic": true,
+  "note": "Synthetic interface example only; not a formal case answer.",
+  "output_contract": {
+    "analysis": "required",
+    "results": "required",
+    "evidence": "required",
+    "code": "required",
+    "analysis_code": "required",
+    "execution_log": "required",
+    "environment": "required",
+    "dependencies": "required",
+    "inputs": "required",
+    "outputs": "required",
+    "error_handling": "required",
+    "execution": "required",
+    "validation": "required",
+    "figures": "required",
+    "cleaned_table": "required",
+    "quality_report": "required",
+    "rule_log": "required",
+    "original_snapshot": "required",
+    "statistics_report": "required"
+  }
+}

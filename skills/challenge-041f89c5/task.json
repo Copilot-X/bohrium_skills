@@ -149,7 +149,7 @@
     "四项交付齐全：问题定义/比较矩阵/创新审计/可行性。",
     "创新性不得写“首次/尚无人”除非有在线检索证据；可行性每个前提有来源或标 assumption。"
   ],
-  "domain_script": "scripts/domain_work.py",
+  "domain_script": "scripts/research_profile.py",
   "runner_script": "scripts/run_skill.py",
   "exit_contract": {
     "0": "result.json written and parseable",
@@ -163,5 +163,43 @@
     "references",
     "evidence",
     "uncertainties"
+  ],
+  "profile_script": "scripts/research_profile.py",
+  "record_profile": {
+    "expected_sources": 9,
+    "expected_records": 10,
+    "record_key": "DOI, else arXiv, else normalized title+year",
+    "duplicate_rows_counted": true,
+    "access_levels": [
+      "full_text",
+      "abstract_only",
+      "metadata_only"
+    ]
+  },
+  "profile_fields": [
+    "source_registry",
+    "records",
+    "protocol",
+    "screening_criteria",
+    "screening_log",
+    "evidence_matrix",
+    "problem_definition",
+    "comparison_matrix",
+    "novelty_claims",
+    "feasibility",
+    "bounded_scenarios",
+    "conflict_check",
+    "profile_summary",
+    "uncertainties"
+  ],
+  "profile_outputs": [
+    "output/research-report.md",
+    "output/evidence-matrix.json",
+    "output/references.json",
+    "output/screening-protocol.json",
+    "output/source-registry.json",
+    "output/evidence-matrix.csv",
+    "output/novelty-assessment.json",
+    "output/feasibility-constraints.json"
   ]
 }

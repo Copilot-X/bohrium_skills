@@ -31,6 +31,7 @@ description: 文献结论与数据提取：按 /input/target-fields.json 的 fie
 |---|---|---|
 | `references/data-extraction-playbook.md` | 开始定字段、抽取数值、处理表格/缺失/冲突前 | 先读；按字段表、五元组、状态词表、失败模式执行 |
 | `templates/extraction-schema.json` | 写 `/app/output/result.json` 骨架时 | 复制结构，替换 `REPLACE_WITH_*`；逐 `field_id` 填写 |
+| `scripts/extract_fields.py` | **本题专项初稿**：按 target-fields 逐字段从文本/PDF 找候选值与逐字证据 |
 | `scripts/extract_tables.py` | 输入含 Markdown 表格、CSV/TSV 或需要表格候选索引时 | `python3 {SKILL_DIR}/scripts/extract_tables.py --input /input --out /app/work/tables.json --json` |
 | `scripts/check_extraction.py` | 每次写盘后、交付前 | `python3 {SKILL_DIR}/scripts/check_extraction.py --result /app/output/result.json --input /input --json --out /app/work/extraction_check.json` |
 | `scripts/check_extraction.py`（自测模式） | 首次使用或修改校验器后 | `python3 {SKILL_DIR}/scripts/check_extraction.py --self-test --json` |
@@ -69,6 +70,17 @@ value, unit, condition, conclusion, limitation`，并声明为 `inferred`。
 python3 {SKILL_DIR}/scripts/inspect_input.py /input --out /app/work/contract_hints.json
 python3 {SKILL_DIR}/scripts/extract_tables.py --input /input --out /app/work/tables.json --json
 ```
+
+## 第 0 步：生成字段抽取初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/extract_fields.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本逐字段读取 `/input/target-fields.json`，在提供的文本/PDF 段落中按字段名/
+别名找候选句和数字，写 `work/extraction-draft.json` 与初版 `result.json`。
+它只做别名匹配，**不确认主语/指标/条件/单位**；每条 `reported` 都必须由模型
+回读 quote 后确认，找不到的保持 `not_reported`，不得填 0 或猜值。
 
 ## 执行步骤
 

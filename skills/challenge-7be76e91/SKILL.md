@@ -41,6 +41,7 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
+| `scripts/compare_plans.py` | **本题专项**：显式权重、min-max 归一化、方案评分/选择/敏感性/缺失字段 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/experiment-plan.json` 的字段契约 |
@@ -64,6 +65,16 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成方案比较初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/compare_plans.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本读取结构化 plans 或文本中的 Plan/Option 块，抽 cost/duration/risk/yield，
+按显式权重做 min-max 评分，输出 comparison-table、scoring、risk-assessment 与
+报告；缺失字段写 not_reported，不插补。模型必须复核单位、权重与方案来源。
 
 ### 第 2 步：写 `work/experiment-plan.json`（约 60% 预算）
 

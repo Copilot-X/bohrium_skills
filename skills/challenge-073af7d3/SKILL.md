@@ -38,17 +38,51 @@ mkdir -p /app/work /app/output
 
 | 文件 | 作用 |
 |---|---|
-| `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
+| `scripts/run_skill.py` | **一键入口**：prepare → research_profile → finalize → 契约补全；空输入/缺字段/缺产物仍写合法 `result.json` |
+| `scripts/research_profile.py` | **研究 profile 执行器**：解析 9 来源/10 记录、固定问题、前瞻性筛选协议、证据矩阵、年度/主题/阶段/代表作/空白与全部声明产物 |
+| `scripts/run_case.py` | 分步入口：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `scripts/audit_work.py` | **预检闸门**：从输入 CSV 复算年度/主题/去重计数，校验代表作、evidence_type、空白依据与逐字证据 |
-| `task.json` | family/mode/profile、工作文件、产物与必填字段 |
+| `task.json` | family/mode/profile、工作文件、产物、必填字段与 `record_profile` |
 | `templates/work.schema.json` | `work/research-plan.json` 的字段契约 |
 | `references/research-rules.md` | 趋势分析 的可执行规则与失败模式 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
+## 研究 profile（9 来源 / 10 记录）
+
+题面末尾的固定数据版本是 **9 actual sources / 10 records**：9 份真实来源材料、10 条唯一文献记录（重复导出行单列，不占唯一记录名额），每条记录对应一个固定领域研究问题，筛选/检索协议是前瞻性方案，证据必须能回到具体来源与定位。
+
+`scripts/research_profile.py` 会先执行以下确定性步骤，再由模型补充领域判断：
+
+1. **来源注册**：只把实际来源文档计入 `source_count`（排除 `task.md`、`case.json`、README、约束/说明注记），记录 path、sha256、字符数与记录映射。
+2. **记录注册**：从 CSV/JSON/BibTeX/正文题录解析记录；保留重复行并标记 `duplicate_of`；缺年份、仅摘要/题录单列；不补造第 11 条或缺失字段。
+3. **固定问题**：优先从 `case.json` 的 `research_question`/`question` 读取，其次从 proposal/task.md 的 `Research question`/`Topic` 读取；没有就写 `to_confirm`，不替 PI 编问题。
+4. **前瞻性筛选协议**：生成可执行的 Boolean 检索式、数据库/范围、纳排规则与逐条 `screening_log`；除非输入明确给出已执行检索，`executed=false` 并写 `coverage_note`。计数必须闭合：`identified - duplicates = screened`，`screened - excluded = included`。
+5. **证据矩阵**：每条记录至少一个 `path + locator + quote`，quote 必须逐字出现在对应材料中；`output/evidence-matrix.json` 与 `.csv` 同步。
+6. **趋势分析**：`year_counts`（分母=有年份唯一记录）、`topic_counts`（分母=唯一记录）、`topic_mapping`、阶段划分、代表作规则与逐阶段代表、`findings` 的 `evidence_type`；`count`/`co-occurrence` 禁止因果措辞。
+7. **产物**：`output/research-report.md`、`output/evidence-matrix.json`、`output/references.json`、`output/screening-protocol.json`、`output/source-registry.json`、`output/evidence-matrix.csv`、`output/trend-analysis.json`、`output/domain-audit.json`。
+
+若实际来源数不是 9 或唯一记录不是 10，脚本会如实写入 `profile_summary`、`domain-audit.json` 与 `uncertainties`，不填充占位记录。
+
 ## 工作流
+
+### 第 0 步：一条命令生成可复核初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/run_skill.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+它依次执行 prepare、`research_profile.py` 确定性抽取/分析、finalize，并检查：
+
+1. 3 个声明产物与额外 profile 产物都存在；
+2. `output_contract` 的每个键都有真实内容或明确的 partial 指针；
+3. 输入为空/不可读时仍写合法 `result.json`（`status=input_error`）、退出码 0；
+4. 声明输出缺失时自动重跑抽取/补写并重新 finalize。
+
+随后读 `output/research-report.md`、`work/domain-status.json` 与 `output/domain-audit.json`，用剩余预算校正领域判断；不要删除已生成的逐字证据。
 
 ### 第 1 步：prepare（约 10% 预算）
 
@@ -301,6 +335,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | G8 | 预检 | `scripts/audit_work.py` 退出码 0，`output/quality-audit.json` 存在 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+| G10 | 研究 profile | `source_registry`/`records`/`screening_log`/`evidence_matrix` 齐全；来源数与唯一记录数如实写入 `profile_summary` |
+| G11 | 筛选计数 | `identified - duplicates = screened` 且 `screened - excluded = included`；`full_text >= included` |
+| G12 | profile 产物 | `output/screening-protocol.json`、`output/source-registry.json`、`output/trend-analysis.json`、`output/evidence-matrix.csv` 真实存在且非空 |
 
 ## 评分维度对照
 
@@ -437,6 +474,10 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
+- 版本 `2.0.0`：新增 `scripts/research_profile.py` 与 `scripts/run_skill.py`，
+  直接处理题面固定的 9 来源/10 记录：来源注册、记录注册（重复/缺年份/
+  仅摘要单列）、固定问题、前瞻性筛选协议、逐条证据矩阵、年度/主题/阶段/
+  代表作/空白分析与全部声明产物；计数不闭合时降级并写入 uncertainties。
 - 版本 `1.1.0`：单入口 + 共享引擎 + `fam_tracks`；新增
   `scripts/audit_work.py` 复算年度/主题/去重计数并校验代表作与
   `evidence_type`；模型写内容，脚本只做审计，不生成科学结论。

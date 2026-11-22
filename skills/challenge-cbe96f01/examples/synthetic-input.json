@@ -1,4 +1,5 @@
 {
+  "_note": "Synthetic interface example only; not a formal case result. All quotes come from the synthetic audit fixture sentence.",
   "case_id": "SYNTH-REVIEW",
   "mode": "citation-fact-check",
   "summary": "Synthetic example only. Not a formal case result.",
@@ -6,17 +7,19 @@
   "findings": [
     {
       "id": "R001",
+      "type": "citation_mismatch",
+      "subtype": "design_scope_mismatch",
+      "facet": "citation_support",
       "location": {
         "path": "synthetic.md",
-        "locator": "P1"
+        "locator": "P1",
+        "section": "results"
       },
       "check_item": "论断与来源结论匹配",
       "original_quote": "synthetic source sentence",
       "issue": "Synthetic issue",
       "severity": "major",
-      "type": "citation_mismatch",
-      "subtype": "synthetic",
-      "status": "confirmed",
+      "status": "needs_recheck",
       "fix": "synthetic fix",
       "comment": "Synthetic comment",
       "evidence": {
@@ -27,43 +30,32 @@
     }
   ],
   "checks": [
-    {
-      "item": "每条引用可回查",
-      "status": "pass",
-      "detail": "synthetic only"
-    },
-    {
-      "item": "论断与来源结论匹配",
-      "status": "not_checked",
-      "detail": "synthetic only"
-    },
-    {
-      "item": "来源状态与撤稿核验",
-      "status": "not_checked",
-      "detail": "synthetic only"
-    }
+    {"item": "每条引用可回查", "status": "pass", "detail": "synthetic only"},
+    {"item": "论断与来源结论匹配", "status": "not_checked", "detail": "synthetic only"},
+    {"item": "来源状态与撤稿核验", "status": "not_checked", "detail": "synthetic only"},
+    {"item": "全文分段", "status": "not_checked", "detail": "synthetic only"}
   ],
-  "verdict": "major_revision",
-  "review_status": "issues",
+  "verdict": "major_revision placeholder; synthetic only",
+  "review_status": "needs_recheck",
   "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
+    {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"}
   ],
-  "uncertainties": [],
+  "uncertainties": [
+    {"item": "synthetic_only", "reason": "Interface example, not a case result",
+     "impact": "No scientific conclusion", "action": "Do not reuse as an answer"}
+  ],
   "claim_source_matrix": [
     {
       "claim_id": "C1",
       "claim": "synthetic claim",
       "claim_locator": "synthetic.md:P1",
+      "claim_section": "results",
       "source": "[A] synthetic.md",
       "source_locator": "synthetic.md:P1",
       "source_statement": "synthetic source sentence",
       "source_design": "synthetic design",
       "type": "citation_mismatch",
-      "subtype": "synthetic",
+      "subtype": "design_scope_mismatch",
       "fix": "synthetic fix",
       "verdict": "partial",
       "reason": "synthetic only",
@@ -71,8 +63,8 @@
       "source_value": "",
       "locator": "P1",
       "original_quote": "synthetic source sentence",
-      "needs_review": false,
-      "reviewed": true,
+      "needs_review": true,
+      "reviewed": false,
       "evidence": {
         "path": "synthetic.md",
         "locator": "P1",
@@ -94,12 +86,57 @@
       }
     }
   ],
-  "reviewed_candidates": [
-    {
-      "candidate_id": "C1",
-      "decision": "accept",
-      "reason": "synthetic only"
-    }
+  "facets_checked": [
+    {"facet": "fact_consistency", "status": "partial",
+     "items": ["numeric consistency"], "reason": "Synthetic only."},
+    {"facet": "citation_support", "status": "checked",
+     "items": ["citation_resolvable", "semantic support"],
+     "evidence": ["P1"]},
+    {"facet": "method_design", "status": "partial",
+     "items": ["design scope"], "reason": "Synthetic only."},
+    {"facet": "statistical_reporting", "status": "partial",
+     "items": ["numeric consistency"], "reason": "Synthetic only."},
+    {"facet": "academic_compliance", "status": "partial",
+     "items": ["source status"], "reason": "Synthetic only."},
+    {"facet": "argument_chain", "status": "checked",
+     "items": ["uncited claims"], "evidence": ["P1"]}
   ],
-  "rejected_candidates": []
+  "citation_facets": [
+    {"facet": "citation_resolvable", "status": "pass",
+     "detail": "Synthetic only.", "evidence": ["P1"]},
+    {"facet": "quote_verbatim", "status": "not_checked",
+     "detail": "Synthetic only.", "evidence": ["P1"]},
+    {"facet": "numeric_consistency", "status": "not_checked",
+     "detail": "Synthetic only.", "evidence": ["P1"]},
+    {"facet": "source_status", "status": "fail",
+     "detail": "Synthetic unknown source.", "evidence": ["P1"]},
+    {"facet": "design_scope_match", "status": "fail",
+     "detail": "Synthetic only.", "evidence": ["P1"]},
+    {"facet": "uncited_results", "status": "pass",
+     "detail": "Synthetic only.", "evidence": []},
+    {"facet": "reference_metadata", "status": "partial",
+     "detail": "Synthetic only.", "evidence": ["P1"]},
+    {"facet": "section_coverage", "status": "partial",
+     "detail": "Synthetic only.", "evidence": ["P1"]}
+  ],
+  "fulltext": {
+    "sections": ["abstract", "results", "references"],
+    "paragraphs": 3,
+    "sentences": 3,
+    "documents": [
+      {"path": "synthetic.md", "sections": ["abstract", "results", "references"],
+       "paragraphs": 3, "sentences": 3, "citation_claims": 1}
+    ]
+  },
+  "reviewed_candidates": [
+    {"candidate_id": "C1", "decision": "needs_recheck",
+     "reason": "synthetic only"}
+  ],
+  "rejected_candidates": [],
+  "rule_review": {
+    "script": "scripts/verify_citations.py",
+    "candidates": 1,
+    "merged": 1,
+    "note": "Synthetic only; candidates need model review."
+  }
 }

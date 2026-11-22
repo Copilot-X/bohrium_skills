@@ -176,6 +176,40 @@ DISCLAIMER_RE = re.compile(
     r"(synthetic\s+only|fabricated|not\s+a\s+real\s+paper|for\s+audit\s+"
     r"testing|\u4ec5\u4f9b\u6d4b\u8bd5|\u793a\u4f8b|\u865a\u6784)", re.I)
 
+SECTION_HEADING_RE = re.compile(
+    r"^\s{0,3}(?:#{1,6}\s*)?(?:\d+(?:\.\d+)*[.)]?\s*)?"
+    r"(?:abstract|summary|introduction|background|"
+    r"related\s+work|methods?|methodology|materials?\s+and\s+methods?|"
+    r"results?|findings?|results\s+and\s+discussion|discussion|"
+    r"conclusions?|limitations?|references?|bibliography|reference\s+list|"
+    r"works\s+cited|literature\s+cited|acknowledg(?:e)?ments?|appendix|"
+    r"supplementary|摘要|引言|前言|背景|方法|材料与方法|结果|讨论|结论|"
+    r"局限|参考文献)\s*[:：]?\s*$", re.I)
+SECTION_ORDER = ["abstract", "introduction", "methods", "results",
+                 "discussion", "conclusion", "limitations", "references"]
+SOURCE_DESIGN_RE = re.compile(
+    r"\b(?:cross[- ]sectional|observational|survey|cohort|case[- ]control|"
+    r"qualitative|interview|commentary|opinion|editorial|protocol|"
+    r"no\s+intervention|no\s+manipulation|not\s+tested|retracted)\b|"
+    r"横断面|观察性|调查|队列|病例对照|定性|访谈|评论|社论|无干预|未测试",
+    re.I)
+CLAIM_INTERVENTION_RE = re.compile(
+    r"\b(?:intervention|training|treatment|efficacy|caus(?:e|es|ed)|"
+    r"improve[sd]?|reduce[sd]?|increase[sd]?|reverse[sd]?|"
+    r"effect\s+of|leads?\s+to|persist(?:s|ed)?)\b|"
+    r"干预|训练|治疗|疗效|导致|引起|改善|降低|提高|逆转|持续", re.I)
+FACET_BY_SUBTYPE = {
+    "numeric_mismatch": "fact_consistency",
+    "year_mismatch": "citation_support",
+    "retracted_source": "citation_support",
+    "unresolved_label": "citation_support",
+    "invalid_or_placeholder_entry": "citation_support",
+    "overclaim_or_negation": "citation_support",
+    "design_scope_mismatch": "citation_support",
+    "quote_not_in_source": "citation_support",
+    "no_inline_citation": "citation_support",
+}
+
 SUMMARY_FIELDS = ("title", "journal", "booktitle", "venue", "year",
                   "doi", "abstract", "note", "notes", "summary",
                   "source_text", "quote", "status")
@@ -392,6 +426,93 @@ def locate_reference_section(text):
     body = [(i + 1, lines[i]) for i in range(ref_index)]
     refs = [(i + 1, lines[i]) for i in range(ref_index + 1, end)]
     return body, ref_index + 1, refs
+
+
+def canonical_section_name(line):
+    text = norm_space(re.sub(r"^\s*#{1,6}\s*", "", str(line or "")))
+    text = text.strip(" .:：")
+    low = text.lower()
+    if re.search(r"\babstract\b|\bsummary\b|摘要", low):
+        return "abstract"
+    if re.search(r"\bintroduction\b|\bbackground\b|related\s+work|引言|前言|背景", low):
+        return "introduction"
+    if re.search(r"\bmethods?\b|\bmethodology\b|materials?\s+and\s+methods?|"
+                 r"方法|材料与方法", low):
+        return "methods"
+    if re.search(r"\bresults?\b|\bfindings?\b|结果", low):
+        return "results"
+    if re.search(r"\bdiscussion\b|讨论", low):
+        return "discussion"
+    if re.search(r"\bconclusions?\b|concluding remarks|结论|总结", low):
+        return "conclusion"
+    if re.search(r"\blimitations?\b|局限", low):
+        return "limitations"
+    if re.search(r"\breferences?\b|\bbibliography\b|reference\s+list|"
+                 r"works\s+cited|literature\s+cited|参考文献", low):
+        return "references"
+    return ""
+
+
+def segment_sections(text):
+    """Return (sections, line_section) with 1-based inclusive line ranges."""
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    starts = []
+    for index, line in enumerate(lines, 1):
+        name = canonical_section_name(line) if SECTION_HEADING_RE.match(line) else ""
+        if name:
+            starts.append((index, name))
+    sections = []
+    for pos, (line_no, name) in enumerate(starts):
+        end = starts[pos + 1][0] - 1 if pos + 1 < len(starts) else len(lines)
+        sections.append({"name": name, "line_start": line_no,
+                         "line_end": max(line_no, end)})
+    line_section = {}
+    for section in sections:
+        for line_no in range(section["line_start"], section["line_end"] + 1):
+            line_section.setdefault(line_no, section["name"])
+    # Text before the first explicit heading is still part of the body.
+    for line_no in range(1, (starts[0][0] if starts else len(lines) + 1)):
+        line_section.setdefault(line_no, "body")
+    return sections, line_section
+
+
+def segment_paragraphs(text, path):
+    """Paragraph index for claim/section coverage; locators stay line-based."""
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    paragraphs, buf, start = [], [], None
+    section_by_line = segment_sections(text)[1]
+    for line_no, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped:
+            if buf:
+                paragraphs.append({
+                    "id": "PAR%d" % (len(paragraphs) + 1),
+                    "path": path, "line_start": start,
+                    "line_end": line_no - 1,
+                    "section": section_by_line.get(start, "body"),
+                    "text": " ".join(buf),
+                    "locator": "%s:L%d" % (path, start),
+                })
+                buf, start = [], None
+            continue
+        if start is None:
+            start = line_no
+        buf.append(stripped)
+    if buf:
+        paragraphs.append({
+            "id": "PAR%d" % (len(paragraphs) + 1),
+            "path": path, "line_start": start, "line_end": len(lines),
+            "section": section_by_line.get(start, "body"),
+            "text": " ".join(buf), "locator": "%s:L%d" % (path, start),
+        })
+    return paragraphs
+
+
+def section_for_locator(doc, locator):
+    match = re.search(r":L(\d+)\b", str(locator or ""))
+    if not match:
+        return ""
+    return (doc.get("line_section") or {}).get(int(match.group(1)), "")
 
 
 def parse_reference_blocks(ref_lines, path):
@@ -941,6 +1062,7 @@ def load_documents(input_dir, work_dir, only_material=None):
         suffix = path.suffix.lower()
         doc = {"path": rel, "kind": suffix.lstrip(".") or "text",
                "text": "", "body": [], "refs": [], "notices": [],
+               "sections": [], "line_section": {}, "paragraphs": [],
                "warnings": [], "line_mode": True}
         if suffix == ".json":
             text = read_text(path)
@@ -968,6 +1090,8 @@ def load_documents(input_dir, work_dir, only_material=None):
             doc["body"] = [(line_no, line, "%s:L%d" % (rel, line_no))
                            for line_no, line in body]
             doc["refs"] = parse_reference_blocks(ref_lines, rel)
+            doc["sections"], doc["line_section"] = segment_sections(text)
+            doc["paragraphs"] = segment_paragraphs(text, rel)
         else:
             text = load_material_text(work_dir, rel)
             if text:
@@ -977,6 +1101,8 @@ def load_documents(input_dir, work_dir, only_material=None):
                                 "%s:extracted L%d" % (rel, line_no))
                                for line_no, line in body]
                 doc["refs"] = parse_reference_blocks(ref_lines, rel)
+                doc["sections"], doc["line_section"] = segment_sections(text)
+                doc["paragraphs"] = segment_paragraphs(text, rel)
                 doc["warnings"].append(
                     "text reused from work/materials.json; locators refer to "
                     "extracted text, not original page coordinates")
@@ -1429,8 +1555,20 @@ def assess_support(claim_text, ref, source_status, missing_labels,
         details["numeric_note"] = "\u6765\u6e90\u53ef\u6838\u9a8c\u6587\u672c"
         details["numeric_note"] += "\u4e2d\u6ca1\u6709\u53ef\u6bd4\u8f83\u7684\u6570\u503c"
 
-    if ref.get("source_text") and overclaim_signal(claim_text,
-                                                   ref["source_text"]):
+    claim_intervention = bool(CLAIM_INTERVENTION_RE.search(
+        _without_citation_text(claim_text)))
+    source_text = ref.get("source_text") or ""
+    source_design = SOURCE_DESIGN_RE.search(source_text + " " + (
+        ref.get("raw") or ""))
+    if claim_intervention and source_design:
+        details["support_scope"] = "design_scope_mismatch"
+        details["source_design"] = source_design.group(0)
+        return ("none", "citation_mismatch", "design_scope_mismatch",
+                "被引文献的设计/类型（%s）不能支持正文的干预或因果断言；"
+                "引用存在但支持范围不匹配。" % source_design.group(0),
+                details)
+
+    if source_text and overclaim_signal(claim_text, source_text):
         details["support_scope"] = "source_limitation_vs_claim_certainty"
         verdict = "none" if ref.get("is_opinion") else "partial"
         return (verdict, "citation_mismatch", "overclaim_or_negation",
@@ -1553,6 +1691,7 @@ def analyze(input_dir, work_dir, output_dir, only_material=None):
 
     for doc, sentence, locator, citations in collect_claims(documents):
         claim_path = doc["path"]
+        claim_section = section_for_locator(doc, locator)
         if citations:
             claim_counter += 1
             claim_id = "C%03d" % claim_counter
@@ -1604,6 +1743,7 @@ def analyze(input_dir, work_dir, output_dir, only_material=None):
                     "claim": sentence,
                     "claim_locator": locator,
                     "claim_path": claim_path,
+                    "claim_section": claim_section,
                     "citation": citation["raw"],
                     "citation_kind": citation["kind"],
                     "source": source_display,
@@ -1648,10 +1788,13 @@ def analyze(input_dir, work_dir, output_dir, only_material=None):
             "id": "F%03d" % finding_counter,
             "type": "uncited_claim",
             "subtype": "no_inline_citation",
+            "facet": "citation_support",
             "severity": severity,
             "status": "candidate",
             "needs_review": True,
-            "location": {"path": doc["path"], "locator": locator},
+            "location": {"path": doc["path"], "locator": locator,
+                         "section": section_for_locator(doc, locator)},
+            "claim_section": section_for_locator(doc, locator),
             "check_item": "\u6bcf\u6761\u5173\u952e\u65ad\u8a00\u53ef\u56de\u67e5",
             "original_quote": sentence,
             "issue": ("\u8be5\u53e5\u5305\u542b\u53ef\u6838\u9a8c\u7684"
@@ -1678,6 +1821,10 @@ def analyze(input_dir, work_dir, output_dir, only_material=None):
     all_evidence = dedupe_evidence(all_evidence)
     checks = build_checks(documents, refs, status_rows, matrix, findings,
                           uncited, readable, notices)
+    facets_checked, citation_facets = build_facets(
+        documents, refs, status_rows, matrix, findings, uncited, notices,
+        readable)
+    fulltext = build_fulltext(documents, matrix)
     uncertainties = build_uncertainties(documents, refs, matrix, notices,
                                         readable)
     status = decide_status(readable, refs, matrix, findings)
@@ -1717,6 +1864,9 @@ def analyze(input_dir, work_dir, output_dir, only_material=None):
         "claim_source_matrix": matrix,
         "findings": findings,
         "uncited_claims": uncited,
+        "facets_checked": facets_checked,
+        "citation_facets": citation_facets,
+        "fulltext": fulltext,
         "evidence": all_evidence,
         "uncertainties": uncertainties,
         "checks": checks,
@@ -1762,16 +1912,19 @@ def make_finding(counter, row, details):
         "id": "F%03d" % counter,
         "type": row.get("type") or "citation_mismatch",
         "subtype": subtype,
+        "facet": FACET_BY_SUBTYPE.get(subtype, "citation_support"),
         "severity": severity,
         "status": "candidate",
         "needs_review": True,
         "location": {"path": row.get("claim_path", ""),
-                     "locator": row.get("claim_locator", "")},
+                     "locator": row.get("claim_locator", ""),
+                     "section": row.get("claim_section", "")},
         "check_item": check_item_for_type(row.get("type")),
         "original_quote": row.get("claim", ""),
         "issue": issue_text,
         "fix": fix,
         "claim_id": row.get("claim_id", ""),
+        "claim_section": row.get("claim_section", ""),
         "source_id": row.get("source_id", ""),
         "source": row.get("source", ""),
         "evidence": row.get("evidence") or [],
@@ -1836,6 +1989,199 @@ def fix_for_subtype(subtype):
                                "\u540e\u4fee\u6b63\u5f15\u7528\u3002")
 
 
+def build_fulltext(documents, matrix):
+    """Section/paragraph coverage for the actual full-text materials."""
+    docs = []
+    section_names = []
+    claims_by_section, citations_by_section = {}, {}
+    for doc in documents:
+        sections = doc.get("sections") or []
+        paragraphs = doc.get("paragraphs") or []
+        sentences = 0
+        for _line_no, line, _locator in doc.get("body") or []:
+            sentences += len(split_sentences(line))
+        for section in sections:
+            name = section.get("name")
+            if name and name not in section_names:
+                section_names.append(name)
+        docs.append({
+            "path": doc.get("path"),
+            "kind": doc.get("kind"),
+            "chars": len(str(doc.get("text") or "")),
+            "sections": [s.get("name") for s in sections],
+            "section_ranges": sections,
+            "paragraphs": len(paragraphs),
+            "sentences": sentences,
+            "citation_claims": sum(1 for row in matrix
+                                   if row.get("claim_path") == doc.get("path")),
+        })
+    for row in matrix:
+        section = row.get("claim_section") or "body"
+        claims_by_section[section] = claims_by_section.get(section, 0) + 1
+        citations_by_section[section] = citations_by_section.get(section, 0) \
+            + (1 if row.get("citation") else 0)
+    return {
+        "documents": docs,
+        "sections": section_names,
+        "paragraphs": sum(item["paragraphs"] for item in docs),
+        "sentences": sum(item["sentences"] for item in docs),
+        "claims_by_section": claims_by_section,
+        "citations_by_section": citations_by_section,
+    }
+
+
+def _locators(rows, key):
+    out = []
+    for row in rows or []:
+        value = row.get(key)
+        if isinstance(value, dict):
+            value = value.get("locator")
+        if value and value not in out:
+            out.append(str(value))
+    return out[:8]
+
+
+def build_facets(documents, refs, status_rows, matrix, findings, uncited,
+                 notices, readable):
+    """Official six review facets plus concrete citation subchecks."""
+    section_names = []
+    for doc in documents:
+        for section in doc.get("sections") or []:
+            if section.get("name") and section["name"] not in section_names:
+                section_names.append(section["name"])
+    subtypes = {row.get("subtype") for row in findings}
+    types = {row.get("type") for row in findings}
+    numeric_claims = [row for row in matrix
+                      if row.get("manuscript_value") or row.get("source_value")]
+    quoted_claims = [row for row in matrix
+                     if QUOTE_RE.search(str(row.get("claim") or ""))]
+    unknown = [row for row in status_rows if row.get("status") == "unknown"]
+    retracted = [row for row in status_rows if row.get("status") == "retracted"]
+    matrix_locators = _locators([{"locator": row.get("claim_locator")}
+                                 for row in matrix], "locator")
+    source_locators = _locators([{"locator": row.get("source_locator")}
+                                 for row in matrix], "locator")
+    status_locators = []
+    for row in status_rows:
+        for ev in row.get("evidence") or []:
+            if ev.get("locator"):
+                status_locators.append(ev["locator"])
+    status_locators = list(dict.fromkeys(status_locators))[:8]
+
+    def row(facet, status, items, evidence, reason=None):
+        out = {"facet": facet, "status": status,
+               "items": [item for item in items if item],
+               "evidence": evidence[:8]}
+        if status in ("partial", "not_checked", "not_applicable"):
+            out["reason"] = reason or "材料不足"
+        return out
+
+    structure = set(section_names)
+    rows = [
+        row("fact_consistency",
+            "fail" if "numeric_mismatch" in subtypes else
+            ("checked" if numeric_claims else "partial"),
+            ["数字、百分比、样本量", "摘要/结果/来源数值",
+             "数值单位与方向"],
+            matrix_locators + source_locators,
+            None if numeric_claims else "没有可比较的数值型 claim"),
+        row("citation_support",
+            "fail" if types & {"missing_reference", "citation_mismatch",
+                               "quote_mismatch"} else
+            ("checked" if refs and matrix else "not_checked"),
+            ["引用可回查", "论断-来源语义匹配", "引用设计/范围",
+             "引文逐字", "未引用断言", "来源状态"],
+            matrix_locators + source_locators + status_locators,
+            None if refs and matrix else "没有参考文献或引用矩阵"),
+        row("method_design",
+            "fail" if "design_scope_mismatch" in subtypes else
+            ("checked" if any(row.get("source_design") in
+                              ("source_excerpt", "opinion/commentary",
+                               "preprint", "retracted")
+                              for row in matrix) else "partial"),
+            ["被引研究设计", "干预/观察性范围", "综述/评论/原始研究"],
+            source_locators,
+            None if matrix else "没有来源可核验文本"),
+        row("statistical_reporting",
+            "fail" if "numeric_mismatch" in subtypes else
+            ("checked" if numeric_claims else "partial"),
+            ["数值一致性", "样本量", "显著性表述"],
+            matrix_locators + source_locators,
+            None if numeric_claims else "没有可比较的统计数值"),
+        row("academic_compliance",
+            "fail" if retracted and any(
+                row.get("type") == "citation_mismatch"
+                and row.get("subtype") == "retracted_source" for row in findings)
+            else ("checked" if refs else "not_checked"),
+            ["撤稿/更正", "预印本/版本差异", "来源状态可核验"],
+            status_locators,
+            None if refs else "没有参考文献条目"),
+        row("argument_chain",
+            "checked" if uncited or matrix else "not_checked",
+            ["未引用结果断言", "引用存在≠支持结论", "过度推断/否定"],
+            _locators(findings, "location") + matrix_locators,
+            None if uncited or matrix else "没有可核对的断言"),
+    ]
+    detailed = [
+        {"facet": "citation_resolvable",
+         "status": "fail" if "missing_reference" in types else
+                   ("pass" if matrix else "not_checked"),
+         "detail": "%d 条引用无法回查" % sum(
+             1 for row in findings if row.get("type") == "missing_reference"),
+         "evidence": matrix_locators},
+        {"facet": "quote_verbatim",
+         "status": "fail" if "quote_mismatch" in types else
+                   ("pass" if quoted_claims else "not_checked"),
+         "detail": "%d 条带引号 claim，%d 条引文逐字不匹配" % (
+             len(quoted_claims),
+             sum(1 for row in findings if row.get("type") == "quote_mismatch")),
+         "evidence": matrix_locators},
+        {"facet": "numeric_consistency",
+         "status": "fail" if "numeric_mismatch" in subtypes else
+                   ("pass" if numeric_claims else "not_checked"),
+         "detail": "%d 条数值型 claim，%d 条数值不匹配" % (
+             len(numeric_claims),
+             sum(1 for row in findings
+                 if row.get("subtype") == "numeric_mismatch")),
+         "evidence": matrix_locators + source_locators},
+        {"facet": "source_status",
+         "status": "fail" if retracted else
+                   ("partial" if unknown else
+                    ("pass" if refs else "not_checked")),
+         "detail": "%d 条来源；unknown %d；retracted %d；通知 %d" % (
+             len(status_rows), len(unknown), len(retracted), len(notices)),
+         "evidence": status_locators},
+        {"facet": "design_scope_match",
+         "status": "fail" if "design_scope_mismatch" in subtypes else
+                   ("pass" if matrix else "not_checked"),
+         "detail": "%d 条设计/范围不匹配" % sum(
+             1 for row in findings
+             if row.get("subtype") == "design_scope_mismatch"),
+         "evidence": source_locators},
+        {"facet": "uncited_results",
+         "status": "fail" if uncited else
+                   ("pass" if matrix else "not_checked"),
+         "detail": "%d 条未引用结果性断言" % len(uncited),
+         "evidence": _locators(uncited, "location")},
+        {"facet": "reference_metadata",
+         "status": "partial" if any(not ref.get("use_ok") for ref in refs) else
+                   ("pass" if refs else "not_checked"),
+         "detail": "%d/%d 条参考文献含可回查年份与出处/DOI" % (
+             sum(1 for ref in refs if ref.get("use_ok")), len(refs)),
+         "evidence": [ref.get("locator") for ref in refs[:8]]},
+        {"facet": "section_coverage",
+         "status": "checked" if {"abstract", "methods", "results"} <= structure
+         else ("partial" if structure else "not_checked"),
+         "detail": "识别章节：%s" % (", ".join(section_names) or "none"),
+         "evidence": [section.get("line_start") for section in
+                      (documents[0].get("sections") or [])[:8]]
+         if documents else [],
+         "reason": "" if {"abstract", "methods", "results"} <= structure
+         else "缺少摘要/方法/结果段，全文覆盖只能部分完成"},
+    ]
+    return rows, detailed
+
+
 def build_checks(documents, refs, status_rows, matrix, findings, uncited,
                  readable, notices):
     missing_ref = [row for row in findings
@@ -1897,6 +2243,25 @@ def build_checks(documents, refs, status_rows, matrix, findings, uncited,
         "status": "fail" if uncited else ("pass" if matrix else "not_checked"),
         "detail": "\u53d1\u73b0 %d \u6761\u7f3a\u5c11\u6587\u5185\u5f15"
                   "\u7528\u7684\u5019\u9009\u65ad\u8a00" % len(uncited),
+    })
+    section_names = []
+    for doc in documents:
+        for section in doc.get("sections") or []:
+            if section.get("name") and section["name"] not in section_names:
+                section_names.append(section["name"])
+    checks.append({
+        "item": "\u5168\u6587\u5206\u6bb5",
+        "status": "pass" if section_names else "not_checked",
+        "detail": "\u8bc6\u522b\u7ae0\u8282\uff1a%s" % (
+            ", ".join(section_names) or "none"),
+    })
+    checks.append({
+        "item": "\u5f15\u7528\u5b50\u9762\u8986\u76d6",
+        "status": "pass" if matrix else "not_checked",
+        "detail": "\u5f15\u7528\u53ef\u56de\u67e5/\u5f15\u6587\u9010\u5b57/"
+                  "\u6570\u503c\u4e00\u81f4/\u6765\u6e90\u72b6\u6001/"
+                  "\u8bbe\u8ba1\u8303\u56f4/\u672a\u5f15\u7528\u65ad\u8a00/"
+                  "\u5143\u6570\u636e\u9010\u9879\u8bb0\u5f55",
     })
     return checks
 
@@ -2091,6 +2456,20 @@ def render_report(payload):
             item["path"], item["kind"], item["chars"],
             item["reference_entries"],
             _md_cell("; ".join(item["warnings"]), 80) if item["warnings"] else "-"))
+    fulltext = payload.get("fulltext") or {}
+    lines += ["", "## 1b. \u5168\u6587\u5206\u6bb5", "",
+              "\u7ae0\u8282: %s\uff1b\u6bb5\u843d %d\uff1b\u53e5\u5b50 %d\u3002" % (
+                  ", ".join(fulltext.get("sections") or []) or "none",
+                  fulltext.get("paragraphs", 0),
+                  fulltext.get("sentences", 0)),
+              "", "| path | sections | paragraphs | sentences | citation claims |",
+              "|---|---|---:|---:|---:|"]
+    for item in fulltext.get("documents") or []:
+        lines.append("| %s | %s | %d | %d | %d |" % (
+            _md_cell(item.get("path"), 80),
+            ", ".join(item.get("sections") or []) or "-",
+            item.get("paragraphs", 0), item.get("sentences", 0),
+            item.get("citation_claims", 0)))
     lines += ["", "## 2. \u6765\u6e90\u72b6\u6001", "",
               "| source | status | version_note | needs_recheck | basis |",
               "|---|---|---|---|---|"]
@@ -2100,12 +2479,26 @@ def render_report(payload):
             _md_cell(row["version_note"], 100) or "-",
             "yes" if row["needs_recheck"] else "no",
             _md_cell(row["status_basis"], 80)))
+    lines += ["", "## 2b. \u5ba1\u7a3f\u9762\u8986\u76d6", "",
+              "| facet | status | items | reason |", "|---|---|---|---|"]
+    for row in payload.get("facets_checked") or []:
+        lines.append("| %s | %s | %s | %s |" % (
+            row.get("facet"), row.get("status"),
+            _md_cell(", ".join(row.get("items") or []), 100),
+            _md_cell(row.get("reason"), 100)))
+    lines += ["", "### \u5f15\u7528\u5b50\u9762", "",
+              "| subfacet | status | detail |", "|---|---|---|"]
+    for row in payload.get("citation_facets") or []:
+        lines.append("| %s | %s | %s |" % (
+            row.get("facet"), row.get("status"),
+            _md_cell(row.get("detail"), 140)))
     lines += ["", "## 3. claim-source \u77e9\u9635\u5019\u9009", "",
-              "| claim_id | claim | source | verdict | type | reason | locator |",
-              "|---|---|---|---|---|---|---|"]
+              "| claim_id | claim | section | source | verdict | type | reason | locator |",
+              "|---|---|---|---|---|---|---|---|"]
     for row in payload["claim_source_matrix"]:
-        lines.append("| %s | %s | %s | %s | %s | %s | %s |" % (
+        lines.append("| %s | %s | %s | %s | %s | %s | %s | %s |" % (
             row["claim_id"], _md_cell(row["claim"], 110),
+            row.get("claim_section") or "-",
             _md_cell(row["source"], 70), row["verdict"],
             row["type"] or "-", _md_cell(row["reason"], 110),
             row["claim_locator"]))
@@ -2176,10 +2569,113 @@ def candidate_payload(payload):
         "claim_source_matrix": payload["claim_source_matrix"],
         "source_status": payload["source_status"],
         "findings": payload["findings"],
+        "facets_checked": payload.get("facets_checked") or [],
+        "citation_facets": payload.get("citation_facets") or [],
+        "fulltext": payload.get("fulltext") or {},
         "evidence": payload["evidence"],
         "uncertainties": payload["uncertainties"],
         "checks": payload["checks"],
     }
+
+
+def merge_into_work(payload, work_path):
+    """Merge deterministic candidates without overwriting model judgement."""
+    work = load_json(work_path, {})
+    if not isinstance(work, dict):
+        work = {}
+    work.setdefault("case_id", payload.get("case_id") or "CASE")
+    work.setdefault("mode", "citation-fact-check")
+    work.setdefault("summary", "")
+    for field in ("findings", "claim_source_matrix", "source_status",
+                  "facets_checked", "citation_facets", "checks", "evidence",
+                  "uncertainties", "reviewed_candidates",
+                  "rejected_candidates"):
+        if not isinstance(work.get(field), list):
+            work[field] = []
+    used_ids = {str(item.get("id")) for item in work["findings"]
+                if isinstance(item, dict)}
+    existing_sig = {(item.get("type"), item.get("subtype"),
+                     norm_space(item.get("original_quote"))[:160])
+                    for item in work["findings"] if isinstance(item, dict)}
+    next_id = 1
+    merged = 0
+    for row in payload.get("findings") or []:
+        sig = (row.get("type"), row.get("subtype"),
+               norm_space(row.get("original_quote"))[:160])
+        if sig in existing_sig:
+            continue
+        while "A%02d" % next_id in used_ids:
+            next_id += 1
+        new_row = dict(row)
+        new_row["id"] = "A%02d" % next_id
+        new_row["rule_status"] = row.get("status")
+        new_row["status"] = "needs_recheck"
+        work["findings"].append(new_row)
+        used_ids.add(new_row["id"])
+        existing_sig.add(sig)
+        merged += 1
+        next_id += 1
+    matrix_sig = {(norm_space(row.get("claim")), norm_space(row.get("source")))
+                  for row in work["claim_source_matrix"] if isinstance(row, dict)}
+    for row in payload.get("claim_source_matrix") or []:
+        sig = (norm_space(row.get("claim")), norm_space(row.get("source")))
+        if sig not in matrix_sig:
+            work["claim_source_matrix"].append(dict(row))
+            matrix_sig.add(sig)
+    status_sig = {str(row.get("source")) for row in work["source_status"]
+                  if isinstance(row, dict)}
+    for row in payload.get("source_status") or []:
+        if str(row.get("source")) not in status_sig:
+            work["source_status"].append(dict(row))
+            status_sig.add(str(row.get("source")))
+    facet_sig = {row.get("facet") for row in work["facets_checked"]
+                 if isinstance(row, dict)}
+    for row in payload.get("facets_checked") or []:
+        if row.get("facet") not in facet_sig:
+            work["facets_checked"].append(dict(row))
+            facet_sig.add(row.get("facet"))
+    for row in payload.get("citation_facets") or []:
+        if not any(isinstance(item, dict) and item.get("facet") == row.get("facet")
+                   for item in work["citation_facets"]):
+            work["citation_facets"].append(dict(row))
+    for row in payload.get("checks") or []:
+        if not any(isinstance(item, dict) and item.get("item") == row.get("item")
+                   for item in work["checks"]):
+            work["checks"].append(dict(row))
+    existing_quotes = {norm_space(item.get("quote"))
+                       for item in work["evidence"] if isinstance(item, dict)}
+    for row in payload.get("evidence") or []:
+        quote = norm_space(row.get("quote"))
+        if quote and quote not in existing_quotes:
+            work["evidence"].append(dict(row))
+            existing_quotes.add(quote)
+    for row in payload.get("uncertainties") or []:
+        item = str(row.get("item") or "")
+        if not any(isinstance(x, dict) and x.get("item") == item
+                   for x in work["uncertainties"]):
+            work["uncertainties"].append(dict(row))
+    if not work.get("review_status") or work.get("review_status") not in (
+            "issues", "pass", "not_checked"):
+        work["review_status"] = payload.get("review_status") or "needs_recheck"
+    if not work.get("summary"):
+        work["summary"] = (
+            "引用预检产生 %d 条候选（合并 %d 条，全部标 needs_recheck），"
+            "claim-source 矩阵 %d 行；候选必须逐条人工复核。"
+            % (len(payload.get("findings") or []), merged,
+               len(payload.get("claim_source_matrix") or [])))
+    work["precheck"] = "output/citation-check.json"
+    work["rule_review"] = {
+        "script": "scripts/verify_citations.py",
+        "generated_at": payload.get("generated_at"),
+        "status": payload.get("status"),
+        "candidates": len(payload.get("findings") or []),
+        "merged": merged,
+        "precheck": "work/citation-check.json",
+        "note": "merged rows use status=needs_recheck; confirm, edit or delete them",
+    }
+    write_json(work_path, work)
+    return {"work": str(work_path), "merged": merged,
+            "findings": len(work["findings"])}
 
 
 def write_outputs(payload, work_dir, output_dir):
@@ -2209,6 +2705,10 @@ def error_payload(case_id, exc, trace):
         "claim_source_matrix": [],
         "findings": [],
         "uncited_claims": [],
+        "facets_checked": [],
+        "citation_facets": [],
+        "fulltext": {"sections": [], "paragraphs": 0, "sentences": 0,
+                     "documents": []},
         "evidence": [],
         "uncertainties": [{
             "item": "script_error",
@@ -2234,11 +2734,20 @@ SELFTEST_MANUSCRIPT = """# Synthetic selftest manuscript
 
 Synthetic only; fabricated for testing.
 
+## Abstract
 S1. Chronic stress causes memory decline in older adults [A].
+
+## 1 Introduction
 S2. In a national survey, 62% of older adults reported memory problems [B].
 S3. A randomized trial reported a 12% improvement in recall [C].
+
+## 2 Methods
 S4. The authors wrote "Memory training reverses decline" [A].
+
+## 3 Results
 S5. The benefit persisted for five years [D].
+
+## 4 Discussion
 S6. These findings establish that apps reverse decline [E].
 S7. Memory apps improve recall in all older adults.
 
@@ -2309,6 +2818,11 @@ def run_selftest():
             "uncited_claim_detected": any(
                 finding["type"] == "uncited_claim" for finding in findings),
             "all_quotes_verbatim": _selftest_quote_check(payload, input_dir),
+            "fulltext_sections": {"abstract", "introduction", "methods",
+                                  "results", "discussion", "references"} <=
+                                 set((payload.get("fulltext") or {}).get("sections") or []),
+            "facets_checked": len(payload.get("facets_checked") or []) == 6,
+            "citation_facets": len(payload.get("citation_facets") or []) >= 8,
             "outputs_written": ((output / "citation-precheck.md").is_file()
                                 and (output / "citation-check.json").is_file()
                                 and (work / "review-candidates.json").is_file()),
@@ -2347,8 +2861,23 @@ def run_selftest():
                 item["item"] == "reference_list"
                 for item in missing["uncertainties"]),
         }
+        merge_path = root / "merge-work" / "review-findings.json"
+        write_json(merge_path, {"case_id": "SYNTH-SELFTEST", "findings": [],
+                                "claim_source_matrix": [], "source_status": [],
+                                "facets_checked": [], "evidence": []})
+        merged = merge_into_work(payload, merge_path)
+        merged_work = load_json(merge_path, {})
+        merge_checks = {
+            "merged": merged.get("merged", 0) > 0,
+            "all_needs_recheck": all(
+                row.get("status") == "needs_recheck"
+                for row in merged_work.get("findings") or []),
+            "matrix_rows": bool(merged_work.get("claim_source_matrix")),
+            "facets": len(merged_work.get("facets_checked") or []) == 6,
+        }
         results = {"success": checks, "empty": empty_checks,
-                   "missing_reference_list": missing_checks}
+                   "missing_reference_list": missing_checks,
+                   "merge": merge_checks}
 
     ok = all(value for group in results.values() for value in group.values())
     print(json.dumps({"selftest": "pass" if ok else "fail",
@@ -2381,6 +2910,9 @@ def main(argv=None):
                         help="only scan this relative material path for claims")
     parser.add_argument("--selftest", action="store_true",
                         help="run built-in success/empty/missing-reference tests")
+    parser.add_argument("--merge", action="store_true",
+                        help="merge candidates into work/review-findings.json "
+                             "with status=needs_recheck")
     args = parser.parse_args(argv)
 
     if args.selftest:
@@ -2389,6 +2921,10 @@ def main(argv=None):
     try:
         payload = analyze(args.input, args.work, args.output, args.material)
         write_outputs(payload, args.work, args.output)
+        merge_result = None
+        if args.merge and payload.get("status") != "no_materials":
+            merge_result = merge_into_work(
+                payload, Path(args.work) / "review-findings.json")
         print(json.dumps({
             "status": payload["status"],
             "case_id": payload["case_id"],
@@ -2396,6 +2932,8 @@ def main(argv=None):
             "claim_source_rows": payload["inventory"].get(
                 "claim_source_rows", 0),
             "findings": payload["inventory"].get("findings", 0),
+            "sections": (payload.get("fulltext") or {}).get("sections", []),
+            "merge": merge_result,
             "work": str(Path(args.work) / "citation-check.json"),
             "report": str(Path(args.output) / "citation-precheck.md"),
         }, ensure_ascii=False, indent=2))

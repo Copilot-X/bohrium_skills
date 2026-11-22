@@ -42,6 +42,7 @@ mkdir -p /app/work /app/output
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
+| `scripts/screen_records.py` | **本题专项**：从 JSON/CSV/文档生成候选，按显式 include/exclude 规则分层、稳定排序、去重与逐字证据 |
 | `scripts/audit_work.py` | **预检闸门**：校验 label/层一致性、rank/score/tie_break、k 与 ranked_keep、版本合并、元数据一致与逐字证据 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/search-plan.json` 的字段契约 |
@@ -65,6 +66,18 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成筛选/排序初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/screen_records.py"   --input /input --work /app/work --output /app/output --k 10
+```
+
+脚本把 JSON/CSV 记录或文档转成候选，按题面/`case.json` 的
+`include_criteria`/`exclude_criteria` 和问题词面重叠分层为 keep/uncertain/
+exclude，按 score 稳定排序、按 DOI/标题去重，并写四件产物。没有冻结参考集时
+`precision/ndcg/recall` 明确写 `not_computable`，不伪造指标。模型必须逐条复核
+边界项与去重决定。
 
 ### 第 2 步：写 `work/search-plan.json`（约 60% 预算）
 

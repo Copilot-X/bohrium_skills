@@ -43,3 +43,16 @@
 - 图表：轴/单位/图例/数据来源齐全；导出 SVG/PNG 与数据文件一致。
 - 代码/查询：真实执行，保留 `execution.log` 或查询语句；失败不伪造结果。
 - 代码真实运行；结果文件生成；依赖/输入/输出/错误处理说明；失败不伪造。
+
+## 7. 本题执行器协议（uci_profile.py）
+
+- 识别 SQLite/CSV/JSON/XLSX 中的真实表；按列签名识别 Concrete/Iris/Wine
+  或 generic。
+- 生成自包含的 `work/analysis.py`（复制 `uci_core.py`）并真实执行；
+  `output/analysis-code.py` 与之一致，finalize 校验 SHA-256。
+- 执行前写 `work/uci-run.json`；执行后写 `output/execution.log`、
+  `output/results.json`、`output/results.csv`、`output/statistics-report.json`、
+  `output/environment.json`、`output/figures/` 与报告。
+- SQL 聚合与 Python 计算逐项对照（行数、数值列均值）；另做空值、缺列、
+  非数值、零方差、样本不足与只读守卫自检；失败项不隐藏。
+- 结果与代码必须能被他人按 `work/uci-run.json` 和命令复跑；不伪造执行状态。

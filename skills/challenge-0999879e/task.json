@@ -44,6 +44,10 @@
     "verdict": "",
     "facets_checked": [],
     "claim_source_matrix": [],
+    "claim_inventory": [],
+    "cross_section_checks": [],
+    "fulltext_coverage": {},
+    "facet_subchecks": [],
     "coverage_summary": {},
     "review_status": "",
     "not_checked": [],
@@ -113,15 +117,20 @@
     "review_status": "task-specific field required by this sub-challenge",
     "not_checked": "task-specific field required by this sub-challenge",
     "rule_review": "规则扫描元信息：脚本、候选数、采纳数、置信度阈值；候选仍需模型确认",
-    "structure_gaps": "缺章节/缺图注/缺声明的不可逐字引用缺口"
+    "structure_gaps": "缺章节/缺图注/缺声明的不可逐字引用缺口",
+    "claim_inventory": "全文主张清单：speaker(author/cited/assumption)、type、section、support、strength、locator、evidence",
+    "cross_section_checks": "摘要/引言承诺在方法/结果中是否交付；consistency 用 delivered/partial/not_delivered/contradicted/unverifiable",
+    "fulltext_coverage": "全文分段统计：章节、段落、句子、字数、各章节主张数与图表题注",
+    "facet_subchecks": "具体审稿面：结构完整性、摘要-正文、术语、引用可回查、设计/分配、样本量、统计完整性、因果边界、伦理、数据/代码、利益冲突、注册"
   },
   "mode_metrics": [
-    "每个 finding 有 facet/locator/original_quote/severity/type/fix/误报检查。",
+    "每个 finding 有 facet/locator/original_quote/severity/type/status/impact/fix/误报检查。",
+    "先运行 quality_review.py 对全文分段并生成 claim_inventory、cross_section_checks、facet_subchecks、fulltext_coverage 与候选 findings。",
     "review_status 区分稿件结论与流程状态；未检查项列 not_checked。",
-    "六类检查项逐面记录状态；citation_support 问题必须有 claim_source_matrix 行（含 source）。",
-    "先运行 quality_review.py 生成 work/rule-review.json；规则候选必须逐条复核，Axx 不得直接当最终结论。",
-    "脚本可抽取章节/方法段/统计量/图表题注并生成候选 findings；空输入与缺方法/结果段要如实降级且 exit 0。",
+    "六类官方检查面逐面记录状态；citation_support 问题必须有 claim_source_matrix 行（含 source）。",
+    "规则候选必须逐条复核，Axx 不得直接当最终结论；confirmed 仅用于两处原文可直接对照的矛盾。",
+    "空输入与缺方法/结果段要如实降级且 exit 0；不得把未报告写成错误，也不得为凑数强判缺陷。",
     "finalize 后运行 review_gate.py --apply，未解决项会把 result 降级为 partial。"
   ],
-  "version": "1.2.0"
+  "version": "1.3.0"
 }

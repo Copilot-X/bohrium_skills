@@ -28,7 +28,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SKILL_DIR = HERE.parent
 RUN_CASE = HERE / "run_case.py"
-DOMAIN = HERE / "domain_work.py"
+DOMAIN = HERE / "research_profile.py"
+if not DOMAIN.is_file():
+    DOMAIN = HERE / "domain_work.py"
+AUDIT_WORK = HERE / "audit_work.py"
 ALLOWED_EMPTY = {
     "uncertainties", "uncertainty", "preserved_facts", "change_log", "conflicts",
     "review_queue", "skipped", "excluded", "suppressed", "residual_misses",
@@ -163,10 +166,27 @@ def patch_contract(result, case, output, work, config):
     aliases = {
         "experiment_plan": ["plan", "hypothesis", "steps", "parameters"],
         "feasibility_review": ["feasibility"],
+        "feasibility_assessment": ["feasibility", "bounded_scenarios"],
         "risk_assessment": ["risks"],
         "confirmation_items": ["confirmation_items"],
         "evidence_record": ["evidence", "evidence_map"],
         "status_note": ["uncertainties"],
+        "novelty_assessment": ["novelty_claims"],
+        "trend_analysis": ["year_counts", "topic_counts", "representatives"],
+        "review_structure": ["review_structure"],
+        "screening_protocol": ["protocol", "screening_criteria", "screening_log"],
+        "search_protocol": ["protocol", "screening_criteria", "screening_log"],
+        "source_registry": ["sources", "records"],
+        "主题": ["themes"],
+        "综述结构": ["review_structure"],
+        "研究空白": ["gap_analysis", "gaps"],
+        "问题定义": ["problem_definition"],
+        "比较矩阵": ["comparison_matrix"],
+        "创新点": ["novelty_claims"],
+        "可行性": ["feasibility", "bounded_scenarios"],
+        "有界方案": ["bounded_scenarios"],
+        "筛选协议": ["protocol", "screening_criteria", "screening_log"],
+        "来源清单": ["sources", "records"],
     }
     for key in contract:
         if present_value(result, key):
@@ -341,6 +361,10 @@ def main(argv=None):
         if model_authored_since_seed(work, output, config):
             domain_args.append("--fill-missing")
         results["domain"] = call(DOMAIN, domain_args)
+    if AUDIT_WORK.is_file():
+        results["audit_work"] = call(
+            AUDIT_WORK, ["--input", str(input_dir), "--work", str(work),
+                         "--output", str(output)])
     results["finalize"] = call(RUN_CASE, ["finalize", "--input", str(input_dir),
                                           "--work", str(work), "--output", str(output),
                                           "--skill-dir", str(SKILL_DIR)])
@@ -384,6 +408,30 @@ def main(argv=None):
             })
     audit = domain_audit(work)
     result = patch_status(result, case, audit, config, output)
+    if results.get("audit_work") and not results["audit_work"].get("ok"):
+        if result.get("status") == (config.get("status_success") or "completed"):
+            result["status"] = "partial"
+            result["task_status"] = "partial"
+        result.setdefault("uncertainties", []).append({
+            "item": "quality_audit",
+            "reason": "audit_work.py failed after the deterministic profile pass",
+            "impact": "the structured trend result did not pass the independent recount gate",
+            "action": "inspect output/quality-audit.json and correct the work file",
+        })
+    result.setdefault("output_contract", case.get("output_contract") or {})
+    result.setdefault("contract_coverage", [])
+    result["profile_summary"] = {
+        "source_count": audit.get("source_count"),
+        "record_count": audit.get("record_count"),
+        "unique_record_count": audit.get("unique_record_count"),
+        "evidence_matrix_rows": audit.get("evidence_matrix_rows"),
+        "evidence_count": audit.get("evidence_count"),
+        "screening_counts": audit.get("screening_counts"),
+        "questions_total": audit.get("questions_total"),
+        "questions_covered": audit.get("questions_covered"),
+        "blocking_checks": audit.get("blocking_checks"),
+        "mode": audit.get("mode"),
+    }
     result["run_skill"] = {
         "engine": "run_skill.py",
         "generated_at": now_iso(),

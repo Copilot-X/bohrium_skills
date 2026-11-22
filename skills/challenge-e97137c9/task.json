@@ -159,5 +159,48 @@
   "mode_metrics": [
     "主题至少 2 条证据；空白由证据推出并排除替代解释。",
     "每条论断标 support(full/partial/none/unverifiable) 与 strength；引用存在不等于引用支持。"
+  ],
+  "profile_script": "scripts/research_profile.py",
+  "runner_script": "scripts/run_skill.py",
+  "record_profile": {
+    "expected_sources": 9,
+    "expected_records": 10,
+    "record_key": "DOI, else arXiv, else normalized title+year",
+    "duplicate_rows_counted": true,
+    "access_levels": [
+      "full_text",
+      "abstract_only",
+      "metadata_only"
+    ]
+  },
+  "exit_contract": {
+    "0": "result.json written and parseable",
+    "2": "installation unusable only"
+  },
+  "profile_fields": [
+    "source_registry",
+    "records",
+    "protocol",
+    "screening_criteria",
+    "screening_log",
+    "evidence_matrix",
+    "themes",
+    "findings",
+    "synthesis",
+    "conflict_check",
+    "coverage",
+    "review_structure",
+    "gaps",
+    "profile_summary",
+    "uncertainties"
+  ],
+  "profile_outputs": [
+    "output/research-report.md",
+    "output/evidence-matrix.json",
+    "output/references.json",
+    "output/screening-protocol.json",
+    "output/source-registry.json",
+    "output/evidence-matrix.csv",
+    "output/review-structure.json"
   ]
 }

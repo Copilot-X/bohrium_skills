@@ -239,3 +239,12 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize --input "$CASE" --work "$WORK"
   再重跑，不要手改输出数字。
 - 证据校验是逐字匹配启发式，不能替代语义判断。
 - `examples/synthetic-case/` 是 synthetic 可运行示例，不是正式案例答案。
+## 第 1.5 步：UCI 清洗/分析初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/uci_profile.py"   --input /input --work /app/work --output /app/output --mode cleaning
+```
+
+脚本识别 UCI Concrete/Iris/Wine 快照或 CSV/SQLite，生成列字典、缺失/重复/异常
+规则、清洗表、质量报告与 rule_log，并合并到 `work/analysis-plan.json`。模型必须
+复核每条清洗规则与原始快照，不得静默改值。

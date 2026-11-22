@@ -19,6 +19,7 @@
     "claim_source_matrix",
     "source_status",
     "findings",
+    "facets_checked",
     "evidence",
     "checks",
     "verdict",
@@ -53,6 +54,10 @@
     "review_status": "",
     "claim_source_matrix": [],
     "source_status": [],
+    "facets_checked": [],
+    "citation_facets": [],
+    "fulltext": {},
+    "rule_review": {},
     "reviewed_candidates": [],
     "rejected_candidates": []
   },
@@ -64,17 +69,19 @@
     "findings": [
       {
         "id": "R001",
+        "type": "citation_mismatch",
+        "subtype": "design_scope_mismatch",
+        "facet": "citation_support",
         "location": {
           "path": "synthetic.md",
-          "locator": "P1"
+          "locator": "P1",
+          "section": "results"
         },
         "check_item": "论断与来源结论匹配",
         "original_quote": "synthetic source sentence",
         "issue": "Synthetic issue",
         "severity": "major",
-        "type": "citation_mismatch",
-        "subtype": "synthetic",
-        "status": "confirmed",
+        "status": "needs_recheck",
         "fix": "synthetic fix",
         "comment": "Synthetic comment",
         "evidence": {
@@ -97,7 +104,7 @@
       }
     ],
     "verdict": "major_revision",
-    "review_status": "issues",
+    "review_status": "needs_recheck",
     "evidence": [
       {
         "path": "synthetic.md",
@@ -111,12 +118,13 @@
         "claim_id": "C1",
         "claim": "synthetic claim",
         "claim_locator": "synthetic.md:P1",
+        "claim_section": "results",
         "source": "[A] synthetic.md",
         "source_locator": "synthetic.md:P1",
         "source_statement": "synthetic source sentence",
         "source_design": "synthetic design",
         "type": "citation_mismatch",
-        "subtype": "synthetic",
+        "subtype": "design_scope_mismatch",
         "fix": "synthetic fix",
         "verdict": "partial",
         "reason": "synthetic only",
@@ -147,6 +155,27 @@
         }
       }
     ],
+    "facets_checked": [
+      {"facet": "fact_consistency", "status": "partial",
+       "items": ["numeric"], "reason": "Synthetic only."},
+      {"facet": "citation_support", "status": "checked",
+       "items": ["citation resolvable", "semantic support"],
+       "evidence": ["P1"]},
+      {"facet": "method_design", "status": "partial",
+       "items": ["design scope"], "reason": "Synthetic only."},
+      {"facet": "statistical_reporting", "status": "partial",
+       "items": ["numeric consistency"], "reason": "Synthetic only."},
+      {"facet": "academic_compliance", "status": "partial",
+       "items": ["source status"], "reason": "Synthetic only."},
+      {"facet": "argument_chain", "status": "checked",
+       "items": ["uncited claims"], "evidence": ["P1"]}
+    ],
+    "citation_facets": [
+      {"facet": "citation_resolvable", "status": "pass",
+       "detail": "Synthetic only.", "evidence": ["P1"]},
+      {"facet": "design_scope_match", "status": "fail",
+       "detail": "Synthetic only.", "evidence": ["P1"]}
+    ],
     "reviewed_candidates": [
       {
         "candidate_id": "C1",
@@ -157,20 +186,26 @@
     "rejected_candidates": []
   },
   "schema_properties": {
-    "findings": "逐条问题：location、issue、severity、comment、evidence",
+    "findings": "逐条问题：location/type/subtype/facet、issue、severity、fix、evidence",
     "checks": "检查项与 pass/fail/not_checked",
     "verdict": "总体判断及边界",
     "evidence": "path+locator+quote 的逐字证据",
     "uncertainties": "无法判断、材料不足、待复核",
-    "claim_source_matrix": "claim/claim_locator/source/source_locator/verdict/type/evidence",
+    "claim_source_matrix": "claim/claim_locator/claim_section/source/source_locator/verdict/type/evidence",
     "source_status": "source/status/version_note/needs_recheck/evidence",
+    "facets_checked": "六个官方检查面的覆盖状态与 items；partial/not_checked 必须写 reason",
+    "citation_facets": "引用子面：可回查/逐字/数值/来源状态/设计范围/未引用断言/元数据/章节覆盖",
+    "review_status": "结果状态：pass/issues/needs_recheck/not_checked",
     "reviewed_candidates": "人工复核后接受/拒绝的候选及理由",
     "rejected_candidates": "脚本候选中的假阳性及拒绝理由"
   },
   "mode_metrics": [
+    "先运行 verify_citations.py 对全文分段并抽取文献/引用；不得只审短摘录。",
     "问题类型四档：missing_reference / uncited_claim / citation_mismatch / quote_mismatch；引用存在≠支持结论。",
     "claim/source/verdict 四档枚举（full/partial/none/unverifiable）；数值 claim 有 source_value/manuscript_value。",
+    "引用子面八项：citation_resolvable/quote_verbatim/numeric_consistency/source_status/design_scope_match/uncited_results/reference_metadata/section_coverage。",
     "来源状态 published/preprint/retracted/unknown；unknown 标 needs_recheck；撤稿/版本差异必须有输入材料证据。",
-    "预检状态 ok_with_candidates/ok_no_issues/missing_reference_list/no_materials/error；脚本候选必须经人工复核后才能进入 findings。"
-  ]
+    "规则只产生候选；confirmed 仅用于原文可直接对照的矛盾，其余 needs_recheck，禁止为凑数强判缺陷。"
+  ],
+  "version": "1.2.0"
 }

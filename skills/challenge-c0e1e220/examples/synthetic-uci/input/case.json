@@ -1,0 +1,21 @@
+{
+  "case_id": "SYNTH-UCI-E1E220",
+  "synthetic": true,
+  "note": "Synthetic interface example only; not a formal case answer.",
+  "output_contract": {
+    "analysis": "required",
+    "results": "required",
+    "evidence": "required",
+    "cleaned_table": "required",
+    "quality_report": "required",
+    "rule_log": "required",
+    "original_snapshot": "required",
+    "statistics_report": "required",
+    "analysis_code": "required",
+    "environment": "required",
+    "code": "required",
+    "figures": "required",
+    "validation": "required",
+    "execution": "required"
+  }
+}

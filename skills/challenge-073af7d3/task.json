@@ -152,5 +152,45 @@
     "每条趋势结论必须有 evidence_type=count/co-occurrence/qualitative/inference；count 或 co-occurrence 不得写因果措辞。",
     "代表作规则须含阶段/角色/首创工作条件；representatives 覆盖每个阶段，并解释低被引首创工作。",
     "每个研究空白必须有 basis 与 excluded_alternative（为何不是检索遗漏）。"
+  ],
+  "profile_script": "scripts/research_profile.py",
+  "runner_script": "scripts/run_skill.py",
+  "record_profile": {
+    "expected_sources": 9,
+    "expected_records": 10,
+    "record_key": "DOI, else arXiv, else normalized title+year",
+    "duplicate_rows_counted": true,
+    "access_levels": [
+      "full_text",
+      "abstract_only",
+      "metadata_only"
+    ]
+  },
+  "exit_contract": {
+    "0": "result.json written and parseable",
+    "2": "installation unusable only"
+  },
+  "profile_fields": [
+    "source_registry",
+    "records",
+    "protocol",
+    "screening_criteria",
+    "screening_log",
+    "evidence_matrix",
+    "year_counts",
+    "topic_counts",
+    "representatives",
+    "gap_analysis",
+    "profile_summary",
+    "uncertainties"
+  ],
+  "profile_outputs": [
+    "output/research-report.md",
+    "output/evidence-matrix.json",
+    "output/references.json",
+    "output/screening-protocol.json",
+    "output/source-registry.json",
+    "output/evidence-matrix.csv",
+    "output/trend-analysis.json"
   ]
 }

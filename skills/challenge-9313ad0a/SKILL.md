@@ -19,6 +19,16 @@ task.md 要求"画思维导图""知识结构图""概念图""梳理逻辑框架"�
 - 材料：论文/笔记/大纲/术语表
 - 可选：既有导图（要求在其基础上改）
 
+## 第 0 步：生成结构初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/build_mindmap.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本从材料标题和证据句生成 root/branch/leaf 三层节点、边和可编辑 SVG；
+节点都带来源标题或逐字句。模型必须复核层级、合并/拆分节点并补全讲稿式
+标签；预览 PNG 仅在 cairosvg 可用时生成，否则如实写 preview 不可用。
+
 ## 执行步骤
 
 1. **定中心与主干**：从 task.md 与材料标题确定 1 个根节点 + 3–7 个一级分支。

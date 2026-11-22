@@ -1,6 +1,6 @@
 ---
 name: review-citation-fact-check-skill
-description: 引用与事实核验：从 /input 材料中抽取文内引用与参考文献表，先运行 verify_citations.py 做可复现匹配，识别 missing_reference、uncited_claim、citation_mismatch、quote_mismatch，再由模型逐条人工复核，交付 claim_source_matrix、source_status、findings、evidence、uncertainties 与 evidence-map。review skill for citation-fact-check with a deterministic precheck, source-bound work file, evidence checks and an honest result envelope. Use for 引用与事实核验、论断-来源匹配、编造/错配检出、证据绑定、结果复核.
+description: 引用与事实核验：先运行 verify_citations.py 对实际全文做章节/段落/句子分段，抽取文内引用与参考文献表，生成 claim_source_matrix、source_status、citation_facets、fulltext 覆盖与 typed 候选；识别 missing_reference、uncited_claim、citation_mismatch、quote_mismatch，再由模型逐条人工复核，交付 findings、evidence、uncertainties 与 evidence-map。review skill for citation-fact-check with a deterministic full-text precheck, source-bound work file, evidence checks and an honest result envelope. Use for 引用与事实核验、论断-来源匹配、编造/错配检出、证据绑定、结果复核.
 ---
 
 # 引用与事实核验（review track · citation-fact-check）
@@ -10,6 +10,10 @@ description: 引用与事实核验：从 /input 材料中抽取文内引用与�
 task.md 要求“引用与事实核验、论断-来源匹配、编造/错配检出”，或 `/input/case.json`
 给出 `review` / `citation-fact-check` 相关字段时使用。核心交付是
 **claim-source 矩阵、来源状态、逐条问题与可回查证据**，不是一段泛泛建议。
+
+本 Skill 面向组织方提供的**实际全文科研文本**，不是短摘录。脚本先对全文做
+章节/段落/句子分段，再抽取引用与来源；模型复核时必须同时看论断所在章节
+（摘要/方法/结果/讨论），因为同一引用在不同章节的支持要求不同。
 
 本 Skill 的工作顺序是固定的：
 
@@ -53,6 +57,7 @@ mkdir -p /app/work /app/output
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/review-findings.json` 的字段契约 |
+| `templates/review-report-template.md` | 审查报告骨架（覆盖矩阵、claim-source、来源状态、逐条问题） |
 | `references/review-rules.md` | 四类问题的判定规则、严重度、来源状态与复核清单 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例，含人工复核字段） |
 
@@ -79,13 +84,28 @@ python3 "$SKILL_DIR/scripts/verify_citations.py" \
 脚本离线运行，支持 md/txt/json/csv/tex/bib/ris；PDF/DOCX 复用 prepare 的
 提取文本。无论输入是否为空、是否缺参考文献表，**都 exit 0**，并写出：
 
-- `work/citation-check.json`：完整确定性结果（引用、文献、矩阵、候选问题、
-  来源状态、证据、不确定性与检查项）；
+- `work/citation-check.json`：完整确定性结果（**全文分段**、引用、文献、矩阵、
+  候选问题、来源状态、`facets_checked`、`citation_facets`、证据、不确定性与
+  检查项）；
 - `work/review-candidates.json`：可合并的候选数组；
 - `output/citation-check.json`：随结果包交付的副本；
-- `output/citation-precheck.md`：给人看的预检清单。
+- `output/citation-precheck.md`：给人看的预检清单（含全文分段与覆盖矩阵）。
 
-先读这四份文件（JSON 看字段，Markdown 看全貌），再开始判断。脚本状态：
+先读这四份文件（JSON 看字段，Markdown 看全貌），再开始判断。常用参数：
+
+```bash
+# 将候选合并进 work/review-findings.json（一律写成 needs_recheck）
+python3 "$SKILL_DIR/scripts/verify_citations.py" \
+  --input /input --work /app/work --output /app/output --merge
+# 三路 synthetic 自测：成功/空输入/缺参考文献表
+python3 "$SKILL_DIR/scripts/verify_citations.py" --selftest
+```
+
+`fulltext` 字段给出每份材料的章节、段落、句子与各章节的 citation claim 数；
+`section_coverage` 子面会标出是否缺摘要/方法/结果段。缺失时只能审可确认
+部分，不得声称覆盖全文。
+
+脚本状态：
 
 | `status` | 含义 | 后续处理 |
 |---|---|---|
@@ -119,33 +139,43 @@ python3 "$SKILL_DIR/scripts/verify_citations.py" \
 |---|---|---|---|
 | `missing_reference` | 文内引用在参考文献表/`.bib` 中无对应条目，或条目只是“未提供”占位 | 正文引用行 + 文献表缺失位置 | major |
 | `uncited_claim` | 含数值/结果性表述的断言没有任何文内引用 | 断言原句 + 同段上下文 | minor；含统计量时 major |
-| `citation_mismatch` | 引用存在但不支持结论：数值不符、年份不符、因果/绝对化过度推断、来源撤稿或仅为评论 | 断言原句 + 来源可核验文本/撤稿通知 | major；撤稿 critical |
+| `citation_mismatch` | 引用存在但不支持结论：数值不符、年份不符、因果/绝对化过度推断、设计/范围不匹配、来源撤稿或仅为评论 | 断言原句 + 来源可核验文本/撤稿通知 | major；撤稿 critical |
 | `quote_mismatch` | 引号内文字无法在匹配来源中逐字找到 | 断言原句 + 来源文本 | major |
 
 ### 第 4 步：写 `work/review-findings.json`（约 25% 预算）
 
 按 `templates/work.schema.json` 写结构化工作文件。必填：
-`claim_source_matrix`, `source_status`, `findings`, `evidence`, `checks`, `verdict`,
-`review_status`（`pass/issues/needs_recheck/not_checked`）。
-建议同时写 `uncertainties`, `reviewed_candidates`, `rejected_candidates`, `precheck`。
+`claim_source_matrix`, `source_status`, `findings`, `facets_checked`, `evidence`,
+`checks`, `verdict`, `review_status`（`pass/issues/needs_recheck/not_checked`）。
+建议同时写 `citation_facets`, `fulltext`, `uncertainties`, `reviewed_candidates`,
+`rejected_candidates`, `precheck`。
 
-- `claim_source_matrix[]`：`claim_id/claim/claim_locator/source/source_locator/
-  source_statement/verdict/type/reason/evidence`；`verdict` 只用四档枚举；
+- `claim_source_matrix[]`：`claim_id/claim/claim_locator/claim_section/source/
+  source_locator/source_statement/source_design/verdict/type/subtype/reason/
+  manuscript_value/source_value/evidence`；`verdict` 只用四档枚举；
 - `source_status[]`：`source/status/version_note/needs_recheck/evidence`；
   `status` 只用 `published/preprint/retracted/unknown`，`unknown` 必须
   `needs_recheck=true`；数值型 claim 补 `source_value/manuscript_value`；
 - `findings[]`：`location{path,locator}/check_item/original_quote/issue/
   severity/type/fix/status/evidence`；`status` 用 `confirmed` 或
   `needs_recheck`，不要保留脚本的 `candidate`；
+- `facets_checked[]`：六个官方面（`fact_consistency`, `citation_support`,
+  `method_design`, `statistical_reporting`, `academic_compliance`,
+  `argument_chain`）各有 `status/items`；`partial/not_checked` 必须写 `reason`；
+- `citation_facets[]`：八个引用子面（`citation_resolvable`, `quote_verbatim`,
+  `numeric_consistency`, `source_status`, `design_scope_match`,
+  `uncited_results`, `reference_metadata`, `section_coverage`），
+  `status` 用 `pass/fail/not_checked`；
 - `evidence[]`：每条 `path + locator + quote`，quote 必须逐字可查；
-- `checks[]`：引用可回查、论断-来源匹配、数值一致性、来源状态、未引用论断
-  等检查项，`status` 用 `pass/fail/not_checked`；未检查不等于通过；
+- `checks[]`：引用可回查、论断-来源匹配、数值一致性、来源状态、未引用论断、
+  全文分段等检查项，`status` 用 `pass/fail/not_checked`；未检查不等于通过；
 - `uncertainties[]`：材料不足、仅有书目信息、无法联网核验、待人工确认。
 
 ### 第 5 步：写交给平台的主产物
 
-- `output/review-report.md`：主交付物，逐条问题、位置、严重度、修改建议、
-  覆盖范围、未检查项与限制；必须引用 finding id 与逐字引文；
+- `output/review-report.md`：主交付物，按 `templates/review-report-template.md`
+  写；逐条问题、位置、严重度、修改建议、全文覆盖、未检查项与限制；必须引用
+  finding id 与逐字引文；
 - `output/findings.json`：`findings` 数组（可带 `reviewed_candidates`）；
 - `output/evidence-map.json`：`evidence` 数组，含 path/locator/quote；
 - `output/citation-precheck.md` 与 `output/citation-check.json` 由预检脚本生成，
@@ -187,13 +217,15 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | # | 检查 | 通过标准 |
 |---|---|---|
 | G1 | 预检已运行 | `work/citation-check.json`、`output/citation-precheck.md` 存在且非空 |
-| G2 | 主产物 | `output/review-report.md` 存在、非空、与任务口径一致 |
-| G3 | 必填字段 | `claim_source_matrix`, `source_status`, `findings`, `evidence`, `checks`, `verdict`, `review_status` 齐全 |
-| G4 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
-| G5 | 专项 | 每条引用可回查；论断与来源结论匹配；四类问题类型使用正确 |
-| G6 | 来源状态 | `published/preprint/retracted/unknown` 合法；unknown 标 needs_recheck |
-| G7 | 边界 | 未报告、冲突、失败、未检查项写入 `uncertainties`，区分错误/证据不足/建议 |
-| G8 | 产物与契约 | 声明的每个 artifact 真实存在；result.json 可解析，case_id 与输入一致 |
+| G2 | 全文分段 | `fulltext` 记录章节/段落/句子与各章节 citation claim；不得只审摘要 |
+| G3 | 主产物 | `output/review-report.md` 存在、非空、与任务口径一致 |
+| G4 | 必填字段 | `claim_source_matrix`, `source_status`, `findings`, `facets_checked`, `evidence`, `checks`, `verdict`, `review_status` 齐全 |
+| G5 | 证据 | 每条关键判断有 path/locator/quote；quote 逐字可查 |
+| G6 | 专项 | 每条引用可回查；论断与来源结论匹配；四类问题类型与 `design_scope_mismatch` 使用正确 |
+| G7 | 覆盖 | 六个官方面与八个引用子面都有状态；未检查项有 reason |
+| G8 | 来源状态 | `published/preprint/retracted/unknown` 合法；unknown 标 needs_recheck |
+| G9 | 边界与误报 | 未报告、冲突、失败、未检查项写入 `uncertainties`；引用存在不等于支持结论；不为凑数强判缺陷 |
+| G10 | 产物与契约 | 声明的每个 artifact 真实存在；result.json 可解析，case_id 与输入一致 |
 
 ## 评分维度对照
 
@@ -212,6 +244,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | 材料为空/不可读 | `input_error` 或 `partial`；不生成伪候选/结论；记录缺口 |
 | 只有摘要/部分材料 | 只交付可确认部分；正文标“基于摘要”；`status=partial` |
 | 缺参考文献表 | 预检状态 `missing_reference_list`；每条引用记 `missing_reference`，并写 uncertainty |
+| 无章节标题/只有连续正文 | `fulltext.sections` 可能只有 `body`；`section_coverage` 标 `partial`，报告中说明无法按章节核对的范围 |
+| 缺摘要/方法/结果段 | 对应 facet 标 `partial/not_checked` 并写 reason；不把缺失写成通过 |
 | 引用标签无法解析 | 保留原引用串，矩阵 `verdict=unverifiable`，写 uncertainty，不猜对应文献 |
 | 仅有书目信息、无摘要/引文 | 矩阵 `unverifiable`；人工回查原文，不把“引用存在”写成“支持结论” |
 | 数值在来源中找不到 | 记 `citation_mismatch/numeric_mismatch`；人工确认是否在来源其他段落 |
@@ -282,8 +316,8 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
-- 版本 `1.1.0`：prepare/finalize 单入口 + `verify_citations.py` 确定性预检 +
-  模型人工复核 + 证据/字段/产物审计。
+- 版本 `1.2.0`：prepare/finalize 单入口 + `verify_citations.py` 全文分段/
+  引用抽取/覆盖矩阵/typed 候选 + `--merge` + 模型人工复核 + 证据/字段/产物审计。
 - 不联网：参考文献真实性、DOI、撤稿与最新版本只能在 `/input` 材料范围内核验；
   不伪造在线查询结果。
 - 预检是启发式：引用正则、作者-年份匹配和数值比较可能漏检或误报，必须人工复核。

@@ -42,7 +42,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_THRESHOLD = 0.7
-SKIP_NAMES = {"case.json", "task.md"}
+SKIP_NAMES = {"case.json", "task.md", "task-note.md", "taxonomy.md",
+              "manifest.md", "readme.md", "instructions.md"}
 SKIP_PARTS = {"environment", ".ocr", "__pycache__", ".git"}
 TEXT_EXTENSIONS = {".md", ".txt", ".csv", ".tsv", ".json", ".jsonl", ".yaml",
                    ".yml", ".toml", ".xml", ".html", ".tex", ".latex", ".rst",

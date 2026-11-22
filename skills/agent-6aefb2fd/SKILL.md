@@ -364,3 +364,12 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
   不伪造在线查询结果。
 - 证据校验是逐字匹配启发式，不能替代语义蕴含判断。
 - 示例是 synthetic 接口样例，不是正式案例答案。
+## 第 1.5 步：UCI 多步骤分析初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/uci_profile.py"   --input /input --work /app/work --output /app/output --mode multi-step
+```
+
+脚本识别 UCI Concrete/Iris/Wine 快照或 CSV/SQLite，执行可复算的列画像、缺失/
+重复、分组统计与结果表，并合并到 `work/analysis-plan.json`。模型必须复核步骤/
+中间结果和列语义，保留可恢复点。

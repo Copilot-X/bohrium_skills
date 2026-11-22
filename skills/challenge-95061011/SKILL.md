@@ -9,6 +9,17 @@ description: Compare and integrate multiple scientific documents in a fixed case
 
 输入含 `documents[]` / 多篇论文 / 多份材料，要求「比较」「整合」「综述」「异同分析」时使用。
 
+## 第 0 步：生成比较表初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/compare_documents.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本对每篇文档按研究问题/数据/方法/指标/结论/局限六维抽取一句逐字证据，
+未报告写 `not_reported`，并生成 agreements/divergences/gaps 与
+`comparison-table.json`、`synthesis.md`、`result.json` 初稿。模型必须复核
+每个单元格的口径、指标单位和条件，不能把词面命中当结论。
+
 ## 执行步骤
 
 1. **盘点文档**：`doc_id → 标题 → 类型（研究/综述/标准/数据）→ 可读范围`。
@@ -76,6 +87,7 @@ description: Compare and integrate multiple scientific documents in a fixed case
 
 | 文件 | 作用 |
 |---|---|
+| `scripts/compare_documents.py` | **本题专项**：六维逐文档证据句、not_reported、agreements/divergences/gaps 初稿 |
 | `scripts/inspect_input.py` | 盘点多文档输入与可读范围 |
 | `scripts/validate_result.py` | 校验 comparison_table、synthesis、conflicts 与 result.json |
 | `references/00-protocol.md` | 统一运行契约 |

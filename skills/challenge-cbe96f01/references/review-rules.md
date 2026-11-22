@@ -143,10 +143,74 @@
 
 ## 10. 本题指标与字段
 
-- 问题：`location/check_item/original_quote/issue/severity/type/fix/status/evidence`；
+- 问题：`location/check_item/original_quote/issue/severity/type/subtype/facet/
+  fix/status/evidence`；
 - 检查项：`checks[].item/status(pass|fail|not_checked)/detail`；
-- 矩阵：`claim_id/claim/claim_locator/source/source_locator/source_statement/
-  verdict/type/reason/evidence`；
+- 矩阵：`claim_id/claim/claim_locator/claim_section/source/source_locator/
+  source_statement/source_design/verdict/type/subtype/reason/manuscript_value/
+  source_value/evidence`；
 - 来源状态：`source/status/version_note/needs_recheck/status_basis/evidence`；
+- 覆盖：`facets_checked[]`（六个官方面）与 `citation_facets[]`（八个引用子面）；
 - 判断：区分事实错误、证据不足与改进建议；给出可执行修复；
 - 边界：不替代机构审查；材料不足写 `uncertainties` 与人工复核点。
+
+## 11. 全文分段与章节覆盖
+
+`verify_citations.py` 先按标题识别 abstract/introduction/methods/results/
+discussion/conclusion/limitations/references，并输出：
+
+- `fulltext.sections`：全文识别到的章节；
+- `fulltext.documents[]`：每份材料的章节、段落、句子与 citation claim 数；
+- `fulltext.claims_by_section` / `citations_by_section`：各章节的引用负担；
+- `citation_facets[].facet=section_coverage`：是否缺摘要/方法/结果段。
+
+规则：
+
+1. 章节缺失时，相关 facet 只能 `partial/not_checked`，不能写 `checked/pass`；
+2. 没有标题的连续正文，locator 仍用行号；`section_coverage` 标 `partial`；
+3. 同一引用出现在摘要、方法、结果、讨论时，要分别建矩阵行或说明是同一
+   论断的重复引用；不要只审摘要；
+4. 超长全文按章节分块；报告中写清覆盖范围。
+
+## 12. 具体引用子面（citation_facets）
+
+| 子面 | 通过标准 | 失败/降级条件 |
+|---|---|---|
+| `citation_resolvable` | 每个文内引用都能映射到条目/键/作者-年份 | 无条目、占位条目、键无法解析 |
+| `quote_verbatim` | 引号内文字在来源可核验文本中逐字可查 | 找不到、只在其他段落出现、来源无文本（`not_checked`） |
+| `numeric_consistency` | 正文数值命中来源数值集合，方向一致 | 数值缺失、方向相反、样本量/百分比不符 |
+| `source_status` | published/preprint/retracted/unknown 合法，通知有原文 | 撤稿仍作依据、版本差异未说明、unknown 未标 needs_recheck |
+| `design_scope_match` | 来源设计与论断强度匹配 | 横断面/定性/评论被用来支持干预/因果结论 |
+| `uncited_results` | 含数值/结果动词的断言都有引用 | 关键结果无引用；方法/限制说明可排除 |
+| `reference_metadata` | 条目含年份与期刊/会议/DOI | 缺年份、缺出处、占位说明 |
+| `section_coverage` | 摘要/方法/结果等关键章节可识别并核对 | 缺章节、只有摘要、扫描件无文本 |
+
+`facets_checked[]` 的六个官方面与这些子面不是一一对应：例如
+`citation_support` 汇总可回查、语义支持、逐字、设计、未引用与来源状态；
+`fact_consistency`/`statistical_reporting` 关注数值；`method_design` 关注
+来源设计与论断强度；`academic_compliance` 关注撤稿/版本/元数据。
+
+## 13. 误报抑制与“不强判缺陷”
+
+1. 引用存在不等于支持结论；但也不能因为“来源是综述/评论”就一律判错，
+   要看它在句中是背景、定义、方法依据还是结果证据。
+2. 数值在来源其他段落/表格出现时，先扩大核对范围，再决定是否保留候选。
+3. 来源只有书目信息时，`verdict=unverifiable`，不要用“未找到”推出“编造”。
+4. 引用只作背景铺垫时，不应按结果证据要求它支持强因果结论；可降为
+   `suggestion` 或删除候选。
+5. 撤稿/版本差异必须引用输入中的通知原文；没有通知就写“在输入范围内
+   未发现”，不要声称已在线确认。
+6. 同一引用支撑多个不同论断时分别建行；不要把多个论断合并成一个
+   “引用错误”。
+
+## 14. 预检候选处置
+
+1. 运行 `verify_citations.py --merge` 后，导入的候选一律
+   `status=needs_recheck`，编号 `A01...`；
+2. 逐条回原文确认 quote、来源文本与数值；确认的改 `confirmed`，不成立的
+   写入 `rejected_candidates` 并说明原因；
+3. 脚本未覆盖的语义问题（断章取义、偷换结论、循环论证、间接引用当直接
+   证据）由模型补入 `findings`；
+4. 低置信度候选可留在 `uncertainties`，不要为凑数保留；
+5. 预检原始文件 `output/citation-check.json`、`output/citation-precheck.md`
+   不得篡改；人工补充写到 `output/manual-review.md`。

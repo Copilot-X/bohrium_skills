@@ -1,73 +1,235 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "论文逻辑与论证审查 work file",
+  "description": "Run scripts/logic_review.py first, review every candidate, then write this file. Quotes must be verbatim from the full-text material.",
   "type": "object",
   "required": [
     "case_id",
     "summary",
     "claim_inventory",
-    "findings",
     "cross_section_checks",
+    "findings",
+    "facets_checked",
+    "review_status",
     "evidence"
   ],
   "properties": {
     "case_id": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "Must equal /input/case.json case_id"
     },
     "mode": {
       "type": "string",
-      "description": "task-specific field"
+      "const": "logic-review"
     },
     "summary": {
       "type": "string",
-      "description": "task-specific field"
+      "description": "审查范围、全文规模、材料边界与总体判断（不代替逐条 findings）"
+    },
+    "precheck": {
+      "type": "string",
+      "description": "Path to the deterministic precheck, normally output/logic-check.json"
+    },
+    "claim_inventory": {
+      "type": "array",
+      "description": "作者主张、引用观点与假设的逐条清单",
+      "items": {
+        "type": "object",
+        "required": ["id", "claim", "type", "section", "speaker", "support",
+                     "strength", "locator", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "claim": {"type": "string"},
+          "type": {
+            "type": "string",
+            "enum": ["causal", "mediation", "association", "generalization",
+                     "proof", "result", "prediction", "definition",
+                     "assumption", "background", "substantive"]
+          },
+          "section": {"type": "string"},
+          "speaker": {"type": "string", "enum": ["author", "cited", "assumption"]},
+          "support": {"type": "string", "enum": ["full", "partial", "none", "unverifiable"]},
+          "strength": {
+            "type": "string",
+            "enum": ["descriptive", "associative", "suggestive", "causal",
+                     "absolute", "assumption"]
+          },
+          "locator": {
+            "type": "object",
+            "required": ["path", "locator"],
+            "properties": {
+              "path": {"type": "string"},
+              "locator": {"type": "string"}
+            }
+          },
+          "support_basis": {"type": "string"},
+          "evidence": {}
+        }
+      }
+    },
+    "cross_section_checks": {
+      "type": "array",
+      "description": "摘要/引言承诺在方法/结果中是否交付；一致性用五档枚举",
+      "items": {
+        "type": "object",
+        "required": ["promise", "promise_locator", "delivery", "delivery_locator",
+                     "consistency", "evidence"],
+        "properties": {
+          "promise": {"type": "string"},
+          "promise_locator": {"type": "string"},
+          "delivery": {"type": "string"},
+          "delivery_locator": {"type": "string"},
+          "consistency": {
+            "type": "string",
+            "enum": ["delivered", "partial", "not_delivered", "contradicted",
+                     "unverifiable"]
+          },
+          "note": {"type": "string"},
+          "evidence": {}
+        }
+      }
     },
     "findings": {
       "type": "array",
-      "description": "task-specific field required by this sub-challenge",
+      "description": "逐条问题：位置、逐字原文、严重度、类型、影响、修订、误报检查",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["id", "facet", "subfacet", "locator", "original_quote",
+                     "severity", "type", "status", "impact", "fix",
+                     "false_positive_check", "evidence"],
+        "properties": {
+          "id": {"type": "string"},
+          "facet": {
+            "type": "string",
+            "enum": ["fact_consistency", "citation_support", "method_design",
+                     "statistical_reporting", "argument_chain",
+                     "academic_compliance"]
+          },
+          "subfacet": {"type": "string"},
+          "rule_id": {"type": "string"},
+          "locator": {
+            "type": "object",
+            "required": ["path", "locator"],
+            "properties": {
+              "path": {"type": "string"},
+              "locator": {"type": "string"}
+            }
+          },
+          "original_quote": {"type": "string"},
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "major", "minor", "info"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["error", "insufficient_evidence", "norm_violation",
+                     "suggestion"]
+          },
+          "status": {"type": "string", "enum": ["confirmed", "needs_recheck"]},
+          "impact": {"type": "string"},
+          "fix": {"type": "string"},
+          "false_positive_check": {"type": "string"},
+          "claim_id": {"type": "string"},
+          "speaker": {"type": "string"},
+          "support": {"type": "string"},
+          "evidence": {}
+        }
       }
+    },
+    "facets_checked": {
+      "type": "array",
+      "description": "六个官方检查面的覆盖状态；partial/not_checked/not_applicable 必须有 reason",
+      "items": {
+        "type": "object",
+        "required": ["facet", "status", "items"],
+        "properties": {
+          "facet": {
+            "type": "string",
+            "enum": ["fact_consistency", "citation_support", "method_design",
+                     "statistical_reporting", "argument_chain",
+                     "academic_compliance"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["checked", "partial", "not_applicable", "not_checked"]
+          },
+          "items": {"type": "array", "items": {"type": "string"}},
+          "reason": {"type": "string"},
+          "evidence": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "logic_facets": {
+      "type": "array",
+      "description": "六个逻辑专项面的覆盖状态",
+      "items": {
+        "type": "object",
+        "required": ["facet", "status", "items"],
+        "properties": {
+          "facet": {
+            "type": "string",
+            "enum": ["claim_extraction", "evidence_support", "reasoning_chain",
+                     "causal_inference", "cross_section_consistency",
+                     "severity_and_fix"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["checked", "partial", "not_applicable", "not_checked"]
+          },
+          "items": {"type": "array", "items": {"type": "string"}},
+          "reason": {"type": "string"},
+          "evidence": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "review_status": {
+      "type": "string",
+      "description": "稿件结论，不是流程状态",
+      "enum": ["pass", "issues", "needs_recheck", "not_checked"]
+    },
+    "not_checked": {
+      "type": "array",
+      "description": "未检查项及原因；与 uncertainties 对应",
+      "items": {"type": "string"}
     },
     "checks": {
       "type": "array",
-      "description": "检查项与 pass/fail/not_checked",
+      "description": "检查项与 pass/fail/not_checked；未检查不等于通过",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["item", "status"],
+        "properties": {
+          "item": {"type": "string"},
+          "status": {"type": "string", "enum": ["pass", "fail", "not_checked"]},
+          "detail": {"type": "string"}
+        }
       }
     },
     "verdict": {
       "type": "string",
-      "description": "总体判断及边界"
+      "description": "总体判断、修订建议级别及边界"
     },
     "evidence": {
       "type": "array",
       "description": "path+locator+quote 的逐字证据",
       "items": {
-        "type": "object"
+        "type": "object",
+        "required": ["path", "locator", "quote"],
+        "properties": {
+          "path": {"type": "string"},
+          "locator": {"type": "string"},
+          "quote": {"type": "string"}
+        }
       }
     },
     "uncertainties": {
       "type": "array",
       "description": "无法判断、材料不足、待复核",
-      "items": {
-        "type": "object"
-      }
+      "items": {"type": "object"}
     },
-    "claim_inventory": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
-      }
-    },
-    "cross_section_checks": {
-      "type": "array",
-      "description": "task-specific field required by this sub-challenge",
-      "items": {
-        "type": "object"
-      }
+    "rule_review": {
+      "type": "object",
+      "description": "logic_review.py 预检元信息：候选数、合并数、预检路径"
     }
   }
 }

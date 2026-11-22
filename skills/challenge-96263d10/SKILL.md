@@ -18,6 +18,17 @@ description: 学术格式与模板适配：把稿件逐项适配到给定期刊/
 - 稿件：`.md`/`.docx`/`.tex`
 - 字体清单：以 `font-discovery` 探测结果为准
 
+## 第 0 步：生成格式适配初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/adapt_manuscript.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本抽取稿件结构，按模板/指南检查章节、摘要/关键词、声明、参考文献与字体，
+用 `make_docx.py` 生成真实 `manuscript.docx`，并写
+`work/requirements.json`、`output/format-report.json` 与初版 `result.json`。
+它只做格式判定与排版，不改科学内容；缺失项必须保留为 `missing`，不能写成 pass。
+
 ## 执行步骤
 
 1. **抽取要求**：把模板与指南拆成可判定的条目，写入 `/app/work/requirements.json`：

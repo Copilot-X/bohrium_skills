@@ -41,6 +41,7 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
+| `scripts/uci_charts.py` | **本题专项**：从 CSV/SQLite 数值列生成真实 SVG + 纯 stdlib PNG + 图注/清单/数据溯源 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/analysis-plan.json` 的字段契约 |
@@ -64,6 +65,16 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成图表初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/uci_charts.py"   --input /input --work /app/work --output /app/output --x <x_col> --y <y_col>
+```
+
+脚本从 CSV/TSV/SQLite 选择数值列，生成 `figures/figure1.svg`、纯 stdlib 编码的
+`figure1.png`、图注、figure-manifest 与 analysis-plan 初稿，包含轴名、范围、
+点数和数据溯源。模型必须核对图型/编码/单位/图例是否适合题面，再补解释。
 
 ### 第 2 步：写 `work/analysis-plan.json`（约 60% 预算）
 

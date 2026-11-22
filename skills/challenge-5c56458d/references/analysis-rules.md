@@ -44,7 +44,25 @@
 - 代码/查询：真实执行，保留 `execution.log` 或查询语句；失败不伪造结果。
 - 查询可复跑；结果与问题对应；权限/空结果明确；字段映射可核对。
 
-## 7. 本题执行器协议（db_query.py）
+## 7. 本题执行器协议（uci_profile.py，首选）
+
+- 直接读取真实数据：SQLite 表结构或 CSV/TSV/JSON/XLSX 表头；按列签名识别
+  Concrete/Iris/Wine，不依赖文件名标签。
+- 建立 `work/uci-snapshot.sqlite` 派生快照（含源文件 SHA-256 清单）；主表
+  来自提供的 SQLite 时，在同一原库上以只读模式执行查询。
+- 解析输入 `data-dictionary.md` 的逐条字段；缺失字段写入
+  `work/uci-dictionary.md` 并标注“未在提供的数据字典中描述”。
+- 逐列做缺失/重复/异常值/范围/疑似哨兵检查，只标记不删除。
+- 自动生成并按数据集执行一条只读 SELECT；若 `work/query.sql` 已存在且合法，
+  优先执行它；执行报错时记录错误并回退自动查询。
+- 输出 `query.sql`、`result-table.csv`、`results.json`、`execution.log`、
+  `analysis-report.md`，并回填 `query/sql_sha256/snapshot/schema_mapping/
+  row_count_check/empty_result/permissions/results/evidence/sql_text/
+  result_table/field_mapping/empty_result_handling/snapshot_version`。
+- 生成 `work/analysis.py`（与 `output/analysis-code.py` 一致），finalize 会
+  再次真实执行，保证结果可复跑。
+
+## 8. 手写 SQL 兼容路径（db_query.py）
 
 - 先 `--inspect` 读取真实 schema；SQLite 快照直接只读打开，纯 CSV 会载入
   `work/csv-snapshot.sqlite`（列类型按样本推断），表名取文件 stem 的小写

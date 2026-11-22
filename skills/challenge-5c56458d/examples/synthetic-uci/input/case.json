@@ -1,0 +1,12 @@
+{
+  "case_id": "SYNTH-UCI-5C56458D",
+  "synthetic": true,
+  "note": "Synthetic interface example only; not a formal case answer.",
+  "output_contract": {
+    "sql_text": "required",
+    "result_table": "required",
+    "field_mapping": "required",
+    "empty_result_handling": "required",
+    "snapshot_version": "required"
+  }
+}

@@ -1,64 +1,135 @@
 {
+  "_note": "Synthetic interface example only; not a formal case result. All quotes come from the synthetic audit fixture sentence.",
   "case_id": "SYNTH-REVIEW",
   "mode": "logic-review",
   "summary": "Synthetic example only.",
-  "findings": [
-    {
-      "id": "L001",
-      "locator": {
-        "path": "synthetic.md",
-        "locator": "P1"
-      },
-      "original_quote": "synthetic source sentence",
-      "severity": "major",
-      "type": "logic_gap",
-      "status": "open",
-      "fix": "synthetic fix",
-      "false_positive_check": "cited view vs author claim checked",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
-    }
-  ],
-  "checks": [
-    {
-      "item": "synthetic check",
-      "status": "pass",
-      "detail": "synthetic only"
-    }
-  ],
-  "verdict": "major_revision",
-  "evidence": [
-    {
-      "path": "synthetic.md",
-      "locator": "P1",
-      "quote": "synthetic source sentence"
-    }
-  ],
-  "uncertainties": [],
   "claim_inventory": [
     {
       "id": "C1",
-      "claim": "synthetic claim",
+      "claim": "synthetic source sentence",
       "type": "causal",
       "section": "Discussion",
       "speaker": "author",
-      "support": "partial",
-      "strength": "suggestive",
-      "evidence": {
-        "path": "synthetic.md",
-        "locator": "P1",
-        "quote": "synthetic source sentence"
-      }
+      "support": "none",
+      "strength": "causal",
+      "locator": {"path": "synthetic.md", "locator": "P1"},
+      "support_basis": "Synthetic only.",
+      "evidence": {"path": "synthetic.md", "locator": "P1",
+                   "quote": "synthetic source sentence"}
+    },
+    {
+      "id": "C2",
+      "claim": "synthetic source sentence",
+      "type": "association",
+      "section": "Results",
+      "speaker": "cited",
+      "support": "unverifiable",
+      "strength": "associative",
+      "locator": {"path": "synthetic.md", "locator": "P1"},
+      "support_basis": "Synthetic only; cited view is not an author defect.",
+      "evidence": {"path": "synthetic.md", "locator": "P1",
+                   "quote": "synthetic source sentence"}
+    },
+    {
+      "id": "C3",
+      "claim": "synthetic source sentence",
+      "type": "assumption",
+      "section": "Methods",
+      "speaker": "assumption",
+      "support": "unverifiable",
+      "strength": "assumption",
+      "locator": {"path": "synthetic.md", "locator": "P1"},
+      "support_basis": "Synthetic assumption; not a defect.",
+      "evidence": {"path": "synthetic.md", "locator": "P1",
+                   "quote": "synthetic source sentence"}
     }
   ],
   "cross_section_checks": [
     {
       "promise": "synthetic promise",
+      "promise_locator": "P1",
       "delivery": "synthetic delivery",
-      "consistency": "partial"
+      "delivery_locator": "P1",
+      "consistency": "not_delivered",
+      "note": "Synthetic only.",
+      "evidence": [
+        {"path": "synthetic.md", "locator": "P1",
+         "quote": "synthetic source sentence"}
+      ]
     }
-  ]
+  ],
+  "findings": [
+    {
+      "id": "L001",
+      "facet": "argument_chain",
+      "subfacet": "causal_inference",
+      "rule_id": "causal_from_observational_design",
+      "locator": {"path": "synthetic.md", "locator": "P1"},
+      "original_quote": "synthetic source sentence",
+      "severity": "major",
+      "type": "error",
+      "status": "needs_recheck",
+      "impact": "Synthetic impact; a cited view or assumption is not judged as an author defect.",
+      "fix": "Synthetic fix targeting P1: rewrite the causal sentence or add design evidence.",
+      "false_positive_check": "Cited view vs author claim checked; synthetic only.",
+      "claim_id": "C1",
+      "speaker": "author",
+      "support": "none",
+      "evidence": [
+        {"path": "synthetic.md", "locator": "P1",
+         "quote": "synthetic source sentence"}
+      ]
+    }
+  ],
+  "facets_checked": [
+    {"facet": "fact_consistency", "status": "partial",
+     "items": ["numbers", "direction"], "reason": "Synthetic only."},
+    {"facet": "citation_support", "status": "checked",
+     "items": ["cited view strength"], "evidence": ["P1"]},
+    {"facet": "method_design", "status": "checked",
+     "items": ["design", "randomization"], "evidence": ["P1"]},
+    {"facet": "statistical_reporting", "status": "partial",
+     "items": ["significance"], "reason": "Synthetic only."},
+    {"facet": "argument_chain", "status": "checked",
+     "items": ["claim inventory", "promise-delivery", "causal inference"],
+     "evidence": ["P1"]},
+    {"facet": "academic_compliance", "status": "not_applicable",
+     "items": ["out of scope"], "reason": "Synthetic interface example only."}
+  ],
+  "logic_facets": [
+    {"facet": "claim_extraction", "status": "checked",
+     "items": ["speaker", "support", "strength"], "evidence": ["P1"]},
+    {"facet": "evidence_support", "status": "checked",
+     "items": ["claim-evidence alignment"], "evidence": ["P1"]},
+    {"facet": "reasoning_chain", "status": "checked",
+     "items": ["premise-conclusion"], "evidence": ["P1"]},
+    {"facet": "causal_inference", "status": "checked",
+     "items": ["causal vs design"], "evidence": ["P1"]},
+    {"facet": "cross_section_consistency", "status": "partial",
+     "items": ["promise-delivery"], "reason": "Synthetic only."},
+    {"facet": "severity_and_fix", "status": "checked",
+     "items": ["severity", "fix", "false-positive check"], "evidence": ["L001"]}
+  ],
+  "review_status": "needs_recheck",
+  "not_checked": ["academic_compliance: out of scope for this synthetic example"],
+  "checks": [
+    {"item": "full-text segmentation", "status": "pass", "detail": "Synthetic only."},
+    {"item": "claim inventory", "status": "pass", "detail": "Synthetic only."},
+    {"item": "cross-section promise/delivery", "status": "not_checked",
+     "detail": "Synthetic only."}
+  ],
+  "verdict": "Synthetic example only; major_revision placeholder.",
+  "evidence": [
+    {"path": "synthetic.md", "locator": "P1", "quote": "synthetic source sentence"}
+  ],
+  "uncertainties": [
+    {"item": "synthetic_only", "reason": "Interface example, not a case result",
+     "impact": "No scientific conclusion", "action": "Do not reuse as an answer"}
+  ],
+  "rule_review": {
+    "script": "scripts/logic_review.py",
+    "candidates": 1,
+    "merged": 1,
+    "note": "Synthetic only; candidates need model review."
+  }
 }

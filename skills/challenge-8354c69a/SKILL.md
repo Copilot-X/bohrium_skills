@@ -38,6 +38,7 @@ mkdir -p /app/work /app/output
 | 文件 | 作用 |
 |---|---|
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
+| `scripts/trace_analyzer.py` | **本题专项**：读取 CSV/TSV/JSON/XLSX 轨迹/workbook，按 trace/run 分组算趋势与稳健异常，写五段初稿与产物 |
 | `scripts/fam_tracks.py` | 盘点、证据/字段/产物审计；本 mode 额外做五段与因果闸门 |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
@@ -58,6 +59,17 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 入口盘点 `/input`，提取文本/JSON/CSV，写 `work/inventory.json` 与
 `work/materials.json`，生成 `work/experiment-plan.json` 骨架和暂定 `result.json`。
 先读 `work/materials.json` 与 `task.md`，确认数据文件、字段、单位、批次日志与缺失项。
+
+## 第 1.5 步：生成轨迹/workbook 初稿（推荐，先保证不空转）
+
+```bash
+python3 "$SKILL_DIR/scripts/trace_analyzer.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本会读取 CSV/TSV/JSON 表（有 openpyxl 时也读 XLSX），按 trace/run/sample
+分组，计算斜率、方向、均值/中位数与 median/MAD 稳健异常，把逐行证据写入
+`work/trace-evidence.md`，并生成五段 work 与四个声明产物。它只写**关联**，
+不写因果；模型必须复核 trace/单位/批次，补上原因候选与后续实验判读。
 
 ## 第 2 步：写 `work/experiment-plan.json`（约 60% 预算）
 

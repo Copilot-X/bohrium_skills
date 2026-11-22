@@ -1515,6 +1515,72 @@ def _materialize_declared_outputs(ctx, work, deliverable_path, work_name):
     return changed
 
 
+def _nested_get(data, dotted):
+    current = data
+    for part in str(dotted).split("."):
+        if not isinstance(current, dict) or part not in current:
+            return None
+        current = current[part]
+    return current
+
+
+def _merge_json_outputs(ctx, work):
+    """Fill empty work fields from task-specific output JSON files.
+
+    The deterministic scripts write real result JSON (findings, matrices,
+    recommendations, evidence).  If the model ran the script but did not copy
+    the values into the work file, finalize can reuse them instead of reporting
+    an empty answer.  Existing non-empty work values are never overwritten.
+    """
+    if not isinstance(work, dict):
+        return work
+    config = _config(ctx)
+    required = list(config.get("required_fields") or [])
+    contract = ctx.contract if isinstance(ctx.contract, dict) else {}
+    wanted = list(dict.fromkeys(required + list(contract) + [
+        "findings", "evidence", "checks", "verdict", "review_status",
+        "compliance_matrix", "compliance_checklist", "guideline_source",
+        "claim_source_matrix", "source_status", "facets_checked",
+        "recommendations", "parameters", "validation_experiment",
+    ]))
+    aliases = {
+        "validation_experiment": ["validation_plan", "validation",
+                                  "design.validation_plan"],
+        "parameters": ["detection.parameters", "dataset.parameters",
+                       "parameter_columns"],
+        "facets_checked": ["coverage", "extraction.facets"],
+        "review_status": ["status", "verdict"],
+        "compliance_checklist": ["checklist", "compliance.checklist"],
+    }
+    payloads = []
+    for path in sorted(ctx.output.glob("*.json")):
+        if path.name == "result.json":
+            continue
+        data = S.load_json(path, {})
+        if isinstance(data, dict):
+            payloads.append(data)
+    for key in wanted:
+        if work.get(key) not in (None, "", [], {}):
+            continue
+        value = None
+        for data in payloads:
+            if key in data and data.get(key) not in (None, "", [], {}):
+                value = data[key]
+                break
+        if value is None:
+            for alias in aliases.get(key, []):
+                for data in payloads:
+                    candidate = _nested_get(data, alias)
+                    if candidate not in (None, "", [], {}):
+                        value = candidate
+                        break
+                if value is not None:
+                    break
+        if value is not None:
+            work[key] = value
+    return work
+
+
 def _fallback_work(ctx):
     """Build an honest, quote-only draft when the model wrote no work file.
 
@@ -1538,7 +1604,22 @@ def _fallback_work(ctx):
                 "type": "extracted_quote",
                 "evidence": item,
             })
-    if not evidence:
+    # If a task-specific script already wrote structured output JSON, reuse it
+    # instead of discarding that work.  Only values the script actually wrote
+    # are copied; nothing is invented.
+    merged = {}
+    for path in sorted(ctx.output.glob("*.json")):
+        if path.name == "result.json":
+            continue
+        data = S.load_json(path, {})
+        if not isinstance(data, dict):
+            continue
+        for key, value in data.items():
+            if key in ("case_id", "status", "task_status") or value in (
+                    None, "", [], {}):
+                continue
+            merged.setdefault(key, value)
+    if not evidence and not merged:
         return {}
     config = _config(ctx)
     work = {
@@ -1555,6 +1636,9 @@ def _fallback_work(ctx):
             "action": "write the work file described in SKILL.md and rerun finalize",
         }],
     }
+    for key, value in merged.items():
+        if key not in work or work.get(key) in (None, "", [], {}):
+            work[key] = value
     for field in config.get("required_fields") or []:
         if field in work:
             continue
@@ -1595,6 +1679,7 @@ def finalize(ctx):
             "the deliverable is a partial draft, not a task answer",
             "write %s and rerun finalize" % work_name)
 
+    _merge_json_outputs(ctx, work)
     required = _config(ctx).get("required_fields") or []
     missing = [field for field in required if field not in work and not (
         deliverable_path.is_file() and field in S.load_json(deliverable_path, {}))]

@@ -148,6 +148,574 @@ INCOMPATIBLE_DESIGN_RE = re.compile(
     r"editorial|commentary|case report|animal|in vitro|"
     r"横断面|观察性|调查|未设干预|动物|体外", re.I)
 
+# --- full-text claim / cross-section helpers ---
+STAT_RE = re.compile(r"\d+(?:\.\d+)?\s*(?:%|‰|percent)|p\s*[=<>]|"
+                     r"r\s*=|β\s*=|95\s*%|置信区间", re.I)
+RESULT_CUE_RE = re.compile(
+    r"\b(?:we\s+found|we\s+observed|results?\s+(?:show|showed|indicate|"
+    r"indicated)|all\s+participants|significantly?\s+(?:improved|increased|"
+    r"decreased|reduced)|was\s+associated\s+with|correlated\s+with)\b|"
+    r"结果(?:显示|表明)|发现|显著(?:提高|降低|增加|减少)", re.I)
+DISCLAIMER_RE = re.compile(
+    r"(synthetic\s+only|fabricated|not\s+a\s+real\s+paper|for\s+audit\s+"
+    r"testing|仅供测试|示例|虚构)", re.I)
+AIM_RE = re.compile(
+    r"\b(?:we\s+(?:investigated|examined|tested|aimed|sought|hypothesi[sz]ed)|"
+    r"this\s+study\s+(?:aims?|investigates?|examines?|tests?)|"
+    r"our\s+(?:aim|objective|hypothesis))\b|研究目的|本研究|我们(?:研究|检验|假设)",
+    re.I)
+CAUSAL_CLAIM_RE = re.compile(
+    r"\b(?:caus(?:e|es|ed|ing)|lead(?:s|ing)?\s+to|result(?:s|ed)?\s+in|"
+    r"due\s+to|driv(?:e|es|ing))\b|导致|引起|造成|使得", re.I)
+MECHANISM_RE = re.compile(
+    r"\b(?:mediat(?:e|es|ed|ion|ing)|mechanism|pathway|indirect\s+effect)\b|"
+    r"中介|机制|通路", re.I)
+GENERAL_CLAIM_RE = re.compile(
+    r"\b(?:generaliz(?:e|es|ed|able|ation)|all\s+(?:young\s+)?adults|"
+    r"everyone|all\s+populations|universally|broadly\s+applicable)\b|"
+    r"普遍适用|所有(?:年轻)?成年人|推广到|适用于所有|所有人", re.I)
+PROOF_CLAIM_RE = re.compile(
+    r"\b(?:prove[sd]?|establish(?:es|ed)?|demonstrat(?:e|es|ed)|"
+    r"confirm(?:s|ed)?|definitive(?:ly)?)\b|证明|证实|确定", re.I)
+HEDGE_CLAIM_RE = re.compile(
+    r"\b(?:may|might|could|suggest(?:s|ed|ive)?|possibly|likely|"
+    r"potentially|associated|association|correlat\w*|preliminary)\b|"
+    r"可能|或许|提示|相关|关联|初步", re.I)
+ASSUMPTION_CLAIM_RE = re.compile(
+    r"\b(?:we\s+assum(?:e|ed)|assum(?:e|ption|ing)|hypothetical(?:ly)?|"
+    r"if\s+we\s+assume|suppose)\b|假设|假定|设想", re.I)
+CITED_CLAIM_RE = re.compile(
+    r"\b(?:previous\s+work|prior\s+work|studies?\s+have|researchers?\s+have|"
+    r"\w+\s+et\s+al\.?|according\s+to|as\s+reported\s+by)\b|"
+    r"已有研究|前人研究|据.*报道", re.I)
+DEFINITION_CLAIM_RE = re.compile(
+    r"\b(?P<term>[A-Za-z][A-Za-z'\-\s]{1,50}?)\s+(?:was|is|are|were)\s+"
+    r"(?:defined|operationali[sz]ed|conceptualized)\s+as\s+(?P<definition>.+)",
+    re.I)
+CIRCULAR_MEASURE_RE = re.compile(
+    r"(?:defined|operationali[sz]ed|conceptualized)\s+as\s+([^.]+?)\s+"
+    r"(?:and|;)\s*(?:was|is|were|are)?\s*(?:measured|assessed|indexed|"
+    r"operationali[sz]ed)\s+by\s+([^.]+)", re.I)
+NO_ANALYSIS_RE = re.compile(
+    r"\b(?:did\s+not|didn't|no|not)\s+(?:conduct|perform|run|test|model)\w*"
+    r"[^.\n]{0,60}\b(?:mediation|mediat(?:e|or)|path\s+analysis|"
+    r"longitudinal|follow[- ]up)\b|"
+    r"(?:mediation|follow[- ]up)\s+(?:was\s+)?not\s+"
+    r"(?:conducted|tested|performed|collected)|"
+    r"未.{0,12}(?:中介|随访|纵向)|没有.{0,12}(?:中介|随访)", re.I)
+CONTROL_RE = re.compile(
+    r"\b(?:control\s+group|waitlist|comparison\s+group|active\s+control|"
+    r"randomi[sz]ed|crossover|within[- ]subject|between[- ]subject)\b|"
+    r"对照组|等待组|随机|交叉设计|组内|组间", re.I)
+REGISTRATION_RE = re.compile(
+    r"\b(?:clinicaltrials\.gov|ISRCTN|trial\s+registration|registered\s+"
+    r"protocol|pre[- ]?registration|prospero)\b|注册|试验注册|预注册", re.I)
+
+
+def claim_inventory(parsed):
+    """Extract author/cited/assumption claims with support cues."""
+    claims = []
+    scope = (paras_in(parsed, "abstract") + paras_in(parsed, "introduction")
+             + paras_in(parsed, "results") + paras_in(parsed, "discussion")
+             + paras_in(parsed, "conclusion"))
+    design_para, design_sentence, design_state = design_evidence(parsed)
+    for para, sentence in sentence_items(scope):
+        if DISCLAIMER_RE.search(sentence) or len(norm_space(sentence)) < 18:
+            continue
+        low = sentence.lower()
+        if ASSUMPTION_CLAIM_RE.search(sentence):
+            speaker, kind = "assumption", "assumption"
+        elif CITED_CLAIM_RE.search(sentence) and not re.search(
+                r"\b(?:we|our|this\s+study|these\s+findings)\b", low):
+            speaker, kind = "cited", "cited"
+        elif MECHANISM_RE.search(sentence):
+            speaker, kind = "author", "mediation"
+        elif GENERAL_CLAIM_RE.search(sentence):
+            speaker, kind = "author", "generalization"
+        elif CAUSAL_CLAIM_RE.search(sentence) and not HEDGE_CLAIM_RE.search(sentence):
+            speaker, kind = "author", "causal"
+        elif PROOF_CLAIM_RE.search(sentence):
+            speaker, kind = "author", "proof"
+        elif re.search(r"associat|correlat|related|predict|相关|关联|预测", low, re.I):
+            speaker, kind = "author", "association"
+        elif AIM_RE.search(sentence) or re.search(r"hypothes|假设|是否", low):
+            speaker, kind = "author", "prediction"
+        elif STAT_RE.search(sentence) or RESULT_CUE_RE.search(sentence):
+            speaker, kind = "author", "result"
+        elif DEFINITION_CLAIM_RE.search(sentence):
+            speaker, kind = "author", "definition"
+        else:
+            continue
+        if kind == "assumption":
+            support = "unverifiable"
+        elif speaker == "cited":
+            support = "unverifiable"
+        elif kind == "generalization":
+            support = "none" if sample_sentence(parsed)[0] is not None else "unverifiable"
+        elif kind in ("causal", "mediation", "proof"):
+            if design_state in ("nonrandom", "observational"):
+                support = "none"
+            elif design_state in ("randomized", "intervention"):
+                support = "partial"
+            else:
+                support = "unverifiable"
+        elif kind == "result":
+            support = "partial" if design_state != "" else "unverifiable"
+        else:
+            support = "unverifiable"
+        strength = ("absolute" if PROOF_CLAIM_RE.search(sentence)
+                    or GENERAL_CLAIM_RE.search(sentence)
+                    else "causal" if kind == "causal"
+                    else "associative" if kind in ("association", "mediation")
+                    else "suggestive" if HEDGE_CLAIM_RE.search(sentence)
+                    else "assumption" if kind == "assumption"
+                    else "descriptive")
+        claims.append({
+            "id": "C%03d" % (len(claims) + 1),
+            "claim": sentence,
+            "type": kind,
+            "section": para.get("section") or "body",
+            "speaker": speaker,
+            "support": support,
+            "strength": strength,
+            "locator": {"path": para.get("path"), "locator": para.get("locator")},
+            "evidence": unit(para, sentence),
+        })
+        if len(claims) >= 160:
+            break
+    return claims
+
+
+def sample_sentence(parsed):
+    for para, sentence in sentence_items(
+            paras_in(parsed, "methods") + paras_in(parsed, "abstract")):
+        if re.search(r"\b(?:participants?|students?|patients?|subjects?|"
+                     r"volunteers?|employees?)\b|参与者|学生|患者|受试者|员工",
+                     sentence, re.I) and re.search(r"\d+|single|one\s+site|"
+                                                   r"单中心|一家", sentence, re.I):
+            return para, sentence
+    return None, None
+
+
+def rule_circular_definition(parsed):
+    findings = []
+    for para, sentence in sentence_items(parsed["paragraphs"]):
+        match = CIRCULAR_MEASURE_RE.search(sentence) or DEFINITION_CLAIM_RE.search(sentence)
+        if not match:
+            continue
+        measure = re.search(
+            r"(?:measured|assessed|indexed|operationali[sz]ed)\s+by\s+([^.]+)",
+            sentence, re.I)
+        if not measure:
+            continue
+        definition = match.group(1)
+        left = {w.lower() for w in re.findall(r"[A-Za-z][A-Za-z'\-]{3,}", definition)}
+        right = {w.lower() for w in re.findall(r"[A-Za-z][A-Za-z'\-]{3,}",
+                                               measure.group(1))}
+        overlap = sorted(left & right)
+        generic = {"ability", "maintain", "level", "degree", "score", "scale",
+                   "measure", "participants", "people", "performance", "task"}
+        specific = [w for w in overlap if w not in generic]
+        if not overlap or (len(specific) < 1 and len(overlap) < 2):
+            continue
+        findings.append(finding(
+            "circular_definition", "argument_chain", unit(para, sentence),
+            [unit(para, sentence)], "major", "error",
+            "confirmed" if len(overlap) >= 2 else "needs_recheck",
+            "high" if len(overlap) >= 2 else "medium",
+            "构念定义与测量使用同一组词（%s），形成循环定义；变量无法独立于"
+            "结果被测量。" % ", ".join(overlap[:4]),
+            "给出独立于结果的操作性定义（工具、评分规则、信度），并说明定义与"
+            "测量为何不是同一件事；若使用同一指标，讨论共同方法偏差。",
+            "已提取定义句与测量句的词项重叠；若只是领域通用词且测量工具另有"
+            "独立来源，应删除本候选。"))
+    return findings
+
+
+def rule_abstract_body_alignment(parsed):
+    findings = []
+    abstract = paras_in(parsed, "abstract")
+    results = paras_in(parsed, "results")
+    if not abstract or not results:
+        return findings
+    abstract_hit = None
+    for para, sentence in sentence_items(abstract):
+        if re.search(r"significant|improved|effective|reduced|increased|"
+                     r"显著|改善|有效|提高|降低", sentence, re.I):
+            abstract_hit = (para, sentence)
+            break
+    if abstract_hit is None:
+        return findings
+    result_hit = None
+    for para, sentence in sentence_items(results):
+        if re.search(r"not\s+significant|no\s+significant|不显著|无显著",
+                     sentence, re.I):
+            result_hit = (para, sentence, "not_significant")
+            break
+        p_match = re.search(r"p\s*[=<>]\s*(0?\.\d+|\d+(?:\.\d+)?)", sentence, re.I)
+        if p_match:
+            try:
+                value = float(p_match.group(1))
+            except ValueError:
+                continue
+            if value >= 0.05:
+                result_hit = (para, sentence, "p_ge_05")
+                break
+    if result_hit is None:
+        return findings
+    findings.append(finding(
+        "abstract_body_direction_conflict", "fact_consistency",
+        unit(abstract_hit[0], abstract_hit[1]),
+        [unit(abstract_hit[0], abstract_hit[1]),
+         unit(result_hit[0], result_hit[1])],
+        "major", "error", "needs_recheck", "medium",
+        "摘要给出显著/改善结论，但结果段首个或主要检验未达显著阈值"
+        "（%s）；两处口径需要统一。" % result_hit[2],
+        "摘要只报告预先设定的主分析及其 p 值；若结果段主分析不显著，摘要不得"
+        "写显著改善，或明确标注为次要/校正后分析。",
+        "已核对两处是否来自不同结局、不同分析集或不同检验；若是不同分析，"
+        "仍须在摘要标明口径，不能并列为主结果。"))
+    return findings
+
+
+def rule_conclusion_exceeds_results(parsed):
+    findings = []
+    results = paras_in(parsed, "results")
+    conclusion = paras_in(parsed, "discussion") + paras_in(parsed, "conclusion")
+    if not results or not conclusion:
+        return findings
+    result_significant = any(
+        SIG_RE.search(sentence) and not NEG_SIG_RE.search(sentence)
+        for _para, sentence in sentence_items(results))
+    result_any = any(STAT_RE.search(sentence) for _para, sentence in sentence_items(results))
+    for para, sentence in sentence_items(conclusion):
+        if not re.search(r"significant|effective|improved|reduced|increased|"
+                         r"causes?|proves?|显著|有效|改善|降低|提高|导致|证明",
+                         sentence, re.I):
+            continue
+        if HEDGE_CLAIM_RE.search(sentence) or re.search(
+                r"cannot|no\s+causal|无法|不能", sentence, re.I):
+            continue
+        if result_significant:
+            continue
+        evidence = [unit(para, sentence)]
+        if result_any:
+            for result_para, result_sentence in sentence_items(results):
+                if STAT_RE.search(result_sentence):
+                    evidence.append(unit(result_para, result_sentence))
+                    break
+        findings.append(finding(
+            "conclusion_exceeds_results", "argument_chain", unit(para, sentence),
+            evidence,
+            "major", "error", "needs_recheck", "medium",
+            "讨论/结论使用显著、有效或因果措辞，但结果段没有对应的显著结果；"
+            "结论强度超出结果。" if result_any else
+            "讨论/结论使用显著、有效或因果措辞，但结果段没有可核对的统计结果；"
+            "结论强度缺少结果支撑。",
+            "把结论句降级为关联/探索性表述，或在结果段补充对应分析；若结论"
+            "依赖次要分析，明确标注并讨论其局限。",
+            "已检索结果段的显著性与统计量；若显著结果在补充材料中，应删除本"
+            "候选或降为材料缺口。"))
+        break
+    return findings
+
+
+def rule_promise_delivery(parsed):
+    findings = []
+    promise = None
+    for para, sentence in sentence_items(
+            paras_in(parsed, "abstract") + paras_in(parsed, "introduction")):
+        if MECHANISM_RE.search(sentence) or re.search(
+                r"follow[- ]up|longitudinal|over\s+time|随访|纵向|长期", sentence, re.I):
+            promise = (para, sentence)
+            break
+    if promise is None:
+        return findings
+    text = full_text = " ".join(p.get("text") or "" for p in parsed["paragraphs"])
+    delivered = bool(MECHANISM_RE.search(text) and re.search(
+        r"indirect\s+effect|path\s+coefficient|bootstrap|中介效应|路径系数", text, re.I))
+    delivered = delivered or bool(re.search(
+        r"follow[- ]up|longitudinal|随访|纵向", text, re.I) and
+        not NO_ANALYSIS_RE.search(text))
+    explicit_missing = None
+    for para, sentence in sentence_items(parsed["paragraphs"]):
+        if NO_ANALYSIS_RE.search(sentence):
+            explicit_missing = (para, sentence)
+            break
+    if delivered and not explicit_missing:
+        return findings
+    evidence = [unit(promise[0], promise[1])]
+    if explicit_missing:
+        evidence.append(unit(explicit_missing[0], explicit_missing[1]))
+    findings.append(finding(
+        "promise_not_delivered", "argument_chain", unit(promise[0], promise[1]),
+        evidence, "major", "insufficient_evidence",
+        "confirmed" if explicit_missing else "needs_recheck",
+        "high" if explicit_missing else "medium",
+        "引言/摘要承诺机制或纵向分析，但方法/结果没有对应交付"
+        + ("（方法明确说明未做）" if explicit_missing else "。"),
+        "补充承诺的分析与结果；若无法完成，改写引言承诺并在局限段说明。",
+        "已核对全文是否在别处报告该分析；若结果在补充材料中，应删除本候选"
+        "或降为材料缺口。"))
+    return findings
+
+
+def rule_control_group(parsed):
+    methods = paras_in(parsed, "methods")
+    if not methods:
+        return []
+    text = " ".join(p.get("text") or "" for p in methods)
+    if not re.search(r"intervention|training|treatment|干预|训练|治疗", text, re.I):
+        return []
+    if CONTROL_RE.search(text):
+        return []
+    para = methods[0]
+    sentence = (para.get("sentences") or sentence_units(para.get("text")))[0]
+    return [finding(
+        "control_group_missing", "method_design", unit(para, sentence),
+        [unit(para, sentence)], "major", "insufficient_evidence",
+        "needs_recheck", "medium",
+        "方法段描述干预/训练，但没有可识别的对照、等待组或组内/组间比较；"
+        "效果无法与时间或练习效应区分。",
+        "补充对照组/等待组或明确 within-subject 设计及其顺序平衡；若为单臂"
+        "可行性研究，明确声明并降低效果结论强度。",
+        "已检索 control/waitlist/comparison/within-subject 等表述；若对照在"
+        "补充材料中，应删除本候选。")]
+
+
+def rule_registration(parsed):
+    methods = paras_in(parsed, "methods")
+    if not methods:
+        return []
+    text = " ".join(p.get("text") or "" for p in parsed["paragraphs"])
+    if not re.search(r"randomi[sz]|trial|随机|试验", text, re.I):
+        return []
+    if REGISTRATION_RE.search(text):
+        return []
+    para = methods[0]
+    sentence = (para.get("sentences") or sentence_units(para.get("text")))[0]
+    return [finding(
+        "trial_registration_missing", "academic_compliance",
+        unit(para, sentence), [unit(para, sentence)],
+        "minor", "norm_violation", "needs_recheck", "low",
+        "材料描述随机/试验设计，但未见试验注册或预注册声明；读者无法核对"
+        "主结局与分析计划。",
+        "补充注册平台、注册号与日期；若为探索性研究，明确声明未注册及原因。",
+        "已检索 clinicaltrials.gov/ISRCTN/注册/预注册；若声明在投稿系统或"
+        "补充文件，应删除本候选。")]
+
+
+def cross_section_checks(parsed, claims, findings):
+    checks = []
+    abstract = " ".join(p.get("text") or "" for p in paras_in(parsed, "abstract"))
+    intro = " ".join(p.get("text") or "" for p in paras_in(parsed, "introduction"))
+    methods = " ".join(p.get("text") or "" for p in paras_in(parsed, "methods"))
+    results = " ".join(p.get("text") or "" for p in paras_in(parsed, "results"))
+    discussion = " ".join(p.get("text") or "" for p in paras_in(parsed, "discussion")
+                          + paras_in(parsed, "conclusion"))
+    if MECHANISM_RE.search(abstract + " " + intro):
+        promise_para, promise_sentence = None, None
+        for para, sentence in sentence_items(paras_in(parsed, "abstract")
+                                             + paras_in(parsed, "introduction")):
+            if MECHANISM_RE.search(sentence):
+                promise_para, promise_sentence = para, sentence
+                break
+        delivery_para, delivery_sentence = None, None
+        if re.search(r"indirect\s+effect|path\s+coefficient|bootstrap|中介效应|"
+                     r"路径系数", methods + " " + results, re.I):
+            for para, sentence in sentence_items(paras_in(parsed, "methods")
+                                                 + paras_in(parsed, "results")):
+                if re.search(r"indirect\s+effect|path\s+coefficient|bootstrap|"
+                             r"中介效应|路径系数", sentence, re.I):
+                    delivery_para, delivery_sentence = para, sentence
+                    break
+            consistency = "delivered"
+        else:
+            for para, sentence in sentence_items(parsed["paragraphs"]):
+                if NO_ANALYSIS_RE.search(sentence):
+                    delivery_para, delivery_sentence = para, sentence
+                    break
+            consistency = "contradicted" if delivery_sentence else "not_delivered"
+        checks.append({
+            "promise": "分析中介/机制或纵向变化",
+            "promise_locator": (promise_para or {}).get("locator", ""),
+            "delivery": "方法/结果报告对应分析" if consistency == "delivered"
+                        else "方法明确未做" if consistency == "contradicted"
+                        else "未找到对应分析",
+            "delivery_locator": (delivery_para or {}).get("locator", ""),
+            "consistency": consistency,
+            "note": "跨章节核对：引言承诺的分析是否交付。",
+            "evidence": [u for u in [
+                unit(promise_para, promise_sentence) if promise_sentence else None,
+                unit(delivery_para, delivery_sentence) if delivery_sentence else None,
+            ] if u],
+        })
+    design_para, design_sentence, design_state = design_evidence(parsed)
+    causal_claims = [c for c in claims if c["type"] in ("causal", "proof")
+                     and c["section"] in ("discussion", "conclusion")]
+    if causal_claims and design_state:
+        checks.append({
+            "promise": "讨论中的因果/证明结论",
+            "promise_locator": causal_claims[0]["locator"]["locator"],
+            "delivery": "方法段为 %s 设计" % design_state,
+            "delivery_locator": (design_para or {}).get("locator", "")
+            if design_para else "",
+            "consistency": "contradicted" if design_state == "nonrandom"
+                           else "partial",
+            "note": "跨章节核对：推断强度是否超出方法设计。",
+            "evidence": [causal_claims[0]["evidence"], unit(design_para, design_sentence)]
+                        if design_para else [causal_claims[0]["evidence"]],
+        })
+    if "abstract" in parsed["section_names"] and "results" in parsed["section_names"]:
+        abs_hit = next(((p, s) for p, s in sentence_items(paras_in(parsed, "abstract"))
+                        if re.search(r"significant|improved|effective|显著|改善|有效",
+                                     s, re.I)), None)
+        res_hit = next(((p, s) for p, s in sentence_items(paras_in(parsed, "results"))
+                        if re.search(r"not\s+significant|不显著|p\s*[=<>]\s*0?\.\d+",
+                                     s, re.I)), None)
+        if abs_hit and res_hit:
+            p_match = re.search(r"p\s*[=<>]\s*(0?\.\d+)", res_hit[1])
+            p_value = float(p_match.group(1)) if p_match else None
+            consistency = ("contradicted" if re.search(
+                r"not\s+significant|不显著", res_hit[1], re.I) or
+                (p_value is not None and p_value >= 0.05) else "delivered")
+            checks.append({
+                "promise": "摘要结论与正文结果一致",
+                "promise_locator": abs_hit[0].get("locator", ""),
+                "delivery": "结果段 %s" % res_hit[1][:90],
+                "delivery_locator": res_hit[0].get("locator", ""),
+                "consistency": consistency,
+                "note": "跨章节核对：摘要的显著/改善结论是否由结果段同一分析支持。",
+                "evidence": [unit(abs_hit[0], abs_hit[1]), unit(res_hit[0], res_hit[1])],
+            })
+    return checks
+
+
+def build_facet_subchecks(parsed, claims, findings, checks, refs, assets):
+    have = set(parsed["section_names"])
+    full_text = " ".join(p.get("text") or "" for p in parsed["paragraphs"])
+    p_sentences = [s for _p, s in sentence_items(parsed["paragraphs"])
+                   if STAT_RE.search(s)]
+    effect = bool(EFFECT_RE.search(full_text))
+    ci = bool(CI_RE.search(full_text))
+    test = bool(TEST_RE.search(full_text))
+    has_human = bool(HUMAN_RE.search(full_text))
+    result_paras = paras_in(parsed, "results")
+    methods = paras_in(parsed, "methods")
+
+    def locs(paras, limit=5):
+        return [p.get("locator") for p in paras[:limit] if p.get("locator")]
+
+    rows = [
+        {"facet": "structure_completeness",
+         "status": "checked" if {"abstract", "methods", "results"} <= have
+         else "partial",
+         "items": ["abstract/methods/results/discussion/conclusion",
+                   "缺失章节", "章节层级"],
+         "evidence": locs(parsed["paragraphs"]),
+         "reason": "" if {"abstract", "methods", "results"} <= have
+         else "缺少关键章节"},
+        {"facet": "abstract_body_alignment",
+         "status": "checked" if {"abstract", "results"} <= have else "partial",
+         "items": ["p 值", "样本量", "结论方向"],
+         "evidence": locs(paras_in(parsed, "abstract") + result_paras),
+         "reason": "" if {"abstract", "results"} <= have else "缺摘要或结果段"},
+        {"facet": "term_consistency",
+         "status": "checked" if any(
+             DEFINITION_CLAIM_RE.search(s) for _p, s in
+             sentence_items(parsed["paragraphs"])) else "not_checked",
+         "items": ["定义句", "同一术语多定义", "定义与测量"],
+         "evidence": [p.get("locator") for p, s in sentence_items(parsed["paragraphs"])
+                      if DEFINITION_CLAIM_RE.search(s)][:5],
+         "reason": "" if any(
+             DEFINITION_CLAIM_RE.search(s) for _p, s in
+             sentence_items(parsed["paragraphs"])) else "未找到显式定义句"},
+        {"facet": "citation_resolvable",
+         "status": "checked" if refs else "not_checked",
+         "items": ["引用编号/键", "条目存在", "元数据完整"],
+         "evidence": [ref["para"].get("locator") for ref in refs.values()][:5],
+         "reason": "" if refs else "缺少参考文献段"},
+        {"facet": "design_and_allocation",
+         "status": "checked" if methods else "not_checked",
+         "items": ["设计类型", "随机化/分配隐藏", "对照", "盲法"],
+         "evidence": locs(methods),
+         "reason": "" if methods else "缺少方法段"},
+        {"facet": "sample_size_justification",
+         "status": "checked" if (SAMPLE_CALC_RE.search(full_text)
+                                 or SAMPLE_NO_CALC_RE.search(full_text))
+         else "partial",
+         "items": ["先验样本量/效能", "入组/分析集", "停止规则"],
+         "evidence": locs(methods),
+         "reason": "" if (SAMPLE_CALC_RE.search(full_text)
+                          or SAMPLE_NO_CALC_RE.search(full_text))
+         else "未找到样本量计算说明"},
+        {"facet": "statistical_completeness",
+         "status": "checked" if result_paras and p_sentences else "partial",
+         "items": ["效应量", "95% CI", "检验统计量", "精确 p 值",
+                   "多重比较", "缺失数据"],
+         "evidence": locs(result_paras) or locs(parsed["paragraphs"]),
+         "reason": "" if result_paras and p_sentences else "缺结果段或统计量"},
+        {"facet": "causal_boundary",
+         "status": "checked" if methods else "not_checked",
+         "items": ["因果措辞 vs 设计", "时间顺序", "替代解释", "外推边界"],
+         "evidence": [row["locator"]["locator"] for row in findings
+                      if row.get("facet") == "argument_chain"][:5],
+         "reason": "" if methods else "缺少方法段"},
+        {"facet": "ethics_and_consent",
+         "status": "checked" if (not has_human or ETHICS_RE.search(full_text))
+         else "partial",
+         "items": ["伦理审批", "知情同意", "豁免依据"],
+         "evidence": locs(methods),
+         "reason": "" if (not has_human or ETHICS_RE.search(full_text))
+         else "涉及人类参与者但未见伦理/同意声明"},
+        {"facet": "data_and_code_availability",
+         "status": "checked" if DATA_RE.search(full_text) else "partial",
+         "items": ["数据可用性", "代码可用性", "受控访问条件"],
+         "evidence": [p.get("locator") for p in parsed["paragraphs"]
+                      if DATA_RE.search(p.get("text") or "")][:5],
+         "reason": "" if DATA_RE.search(full_text) else "未见数据可用性声明"},
+        {"facet": "conflict_of_interest",
+         "status": "checked" if COI_RE.search(full_text) else "partial",
+         "items": ["利益冲突声明", "资助来源"],
+         "evidence": [p.get("locator") for p in parsed["paragraphs"]
+                      if COI_RE.search(p.get("text") or "")][:5],
+         "reason": "" if COI_RE.search(full_text) else "未见利益冲突声明"},
+        {"facet": "reporting_and_registration",
+         "status": "checked" if REGISTRATION_RE.search(full_text) else "partial",
+         "items": ["试验注册", "报告指南", "分析计划"],
+         "evidence": [p.get("locator") for p in parsed["paragraphs"]
+                      if REGISTRATION_RE.search(p.get("text") or "")][:5],
+         "reason": "" if REGISTRATION_RE.search(full_text)
+         else "未见注册/预注册声明（若适用）"},
+    ]
+    return rows
+
+
+def build_fulltext_coverage(parsed, claims, matrix, assets):
+    stats = {}
+    for para in parsed["paragraphs"]:
+        section = para.get("section") or "body"
+        item = stats.setdefault(section, {"paragraphs": 0, "sentences": 0,
+                                          "chars": 0, "locators": []})
+        item["paragraphs"] += 1
+        item["sentences"] += len(para.get("sentences") or [])
+        item["chars"] += len(para.get("text") or "")
+        if len(item["locators"]) < 5:
+            item["locators"].append(para.get("locator"))
+    doc = parsed
+    return {
+        "sections": parsed["section_names"],
+        "section_stats": stats,
+        "paragraphs": len(parsed["paragraphs"]),
+        "sentences": sum(len(p.get("sentences") or []) for p in parsed["paragraphs"]),
+        "captions": len(parsed["captions"]),
+        "chars": doc.get("chars", 0),
+        "claims": len(claims),
+        "claim_sections": sorted({c.get("section") for c in claims}),
+        "citation_rows": len(matrix),
+        "assets": assets[:10],
+    }
+
 
 def now_iso():
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -295,6 +863,7 @@ def parse_document(doc):
         para = {"id": pid, "path": doc.get("path") or "material",
                 "section": current[0], "sections": list(current),
                 "text": content, "kind": kind, "locator": where,
+                "sentences": sentence_units(content),
                 "line_start": first_line, "line_end": end_line or 0}
         paragraphs.append(para)
         if kind == "caption":
@@ -338,7 +907,7 @@ def parse_document(doc):
         if name not in ordered:
             ordered.append(name)
     return {"paragraphs": paragraphs, "section_names": ordered,
-            "captions": captions}
+            "captions": captions, "chars": len(text), "lines": len(lines)}
 
 
 def paragraph_stats(para):
@@ -1217,6 +1786,12 @@ def analyze_documents(docs, assets, case_id, synthetic=False):
     gaps.extend(figure_gaps)
     findings.extend(rule_compliance(parsed, full_text))
     findings.extend(rule_number_consistency(parsed))
+    findings.extend(rule_circular_definition(parsed))
+    findings.extend(rule_abstract_body_alignment(parsed))
+    findings.extend(rule_conclusion_exceeds_results(parsed))
+    findings.extend(rule_promise_delivery(parsed))
+    findings.extend(rule_control_group(parsed))
+    findings.extend(rule_registration(parsed))
     findings = dedupe_findings(findings)
     if len(findings) > 40:
         findings = findings[:40]
@@ -1229,6 +1804,12 @@ def analyze_documents(docs, assets, case_id, synthetic=False):
         })
     citation_count = len(matrix)
     coverage = build_coverage(parsed, findings, gaps, citation_count, assets)
+    claims = claim_inventory(parsed)
+    references = parse_references(parsed)[0]
+    section_checks = cross_section_checks(parsed, claims, findings)
+    facet_subchecks = build_facet_subchecks(parsed, claims, findings,
+                                             section_checks, references, assets)
+    fulltext_coverage = build_fulltext_coverage(parsed, claims, matrix, assets)
     not_checked = ["%s: %s" % (row["facet"], row.get("reason"))
                    for row in coverage
                    if row["status"] in ("not_checked", "partial") and row.get("reason")]
@@ -1278,17 +1859,25 @@ def analyze_documents(docs, assets, case_id, synthetic=False):
         },
         "findings": findings,
         "claim_source_matrix": matrix,
+        "claim_inventory": claims,
+        "cross_section_checks": section_checks,
+        "fulltext_coverage": fulltext_coverage,
+        "facet_subchecks": facet_subchecks,
         "coverage": coverage,
         "structure_gaps": gaps,
         "not_checked": not_checked,
         "uncertainties": uncertainties,
         "stats": {
             "documents": len(docs), "paragraphs": len(parsed["paragraphs"]),
+            "sentences": fulltext_coverage.get("sentences", 0),
             "captions": len(parsed["captions"]), "findings": len(findings),
             "confirmed": sum(1 for f in findings if f["status"] == "confirmed"),
             "needs_recheck": sum(1 for f in findings
                                  if f["status"] == "needs_recheck"),
             "claim_source_rows": len(matrix),
+            "claims": len(claims),
+            "cross_section_checks": len(section_checks),
+            "facet_subchecks": len(facet_subchecks),
             "assets": len(assets),
         },
         "limits": [
@@ -1313,6 +1902,10 @@ def merge_into_work(auto, work_path, min_confidence="medium"):
     work.setdefault("findings", [])
     work.setdefault("facets_checked", [])
     work.setdefault("claim_source_matrix", [])
+    work.setdefault("claim_inventory", [])
+    work.setdefault("cross_section_checks", [])
+    work.setdefault("facet_subchecks", [])
+    work.setdefault("fulltext_coverage", {})
     work.setdefault("evidence", [])
     work.setdefault("uncertainties", [])
     work.setdefault("not_checked", [])
@@ -1324,6 +1917,11 @@ def merge_into_work(auto, work_path, min_confidence="medium"):
         work["facets_checked"] = []
     if not isinstance(work["claim_source_matrix"], list):
         work["claim_source_matrix"] = []
+    for field in ("claim_inventory", "cross_section_checks", "facet_subchecks"):
+        if not isinstance(work[field], list):
+            work[field] = []
+    if not isinstance(work["fulltext_coverage"], dict):
+        work["fulltext_coverage"] = {}
 
     threshold = CONFIDENCE_RANK.get(min_confidence, 2)
     candidates = [row for row in auto.get("findings") or []
@@ -1387,6 +1985,29 @@ def merge_into_work(auto, work_path, min_confidence="medium"):
         if key not in matrix_keys:
             work["claim_source_matrix"].append(dict(row))
             matrix_keys.add(key)
+
+    claim_keys = {norm_space(row.get("claim")) for row in work["claim_inventory"]
+                  if isinstance(row, dict)}
+    for row in auto.get("claim_inventory") or []:
+        key = norm_space(row.get("claim"))
+        if key and key not in claim_keys:
+            work["claim_inventory"].append(dict(row))
+            claim_keys.add(key)
+    cross_keys = {(norm_space(row.get("promise")), row.get("consistency"))
+                  for row in work["cross_section_checks"] if isinstance(row, dict)}
+    for row in auto.get("cross_section_checks") or []:
+        key = (norm_space(row.get("promise")), row.get("consistency"))
+        if key not in cross_keys:
+            work["cross_section_checks"].append(dict(row))
+            cross_keys.add(key)
+    subcheck_keys = {row.get("facet") for row in work["facet_subchecks"]
+                     if isinstance(row, dict)}
+    for row in auto.get("facet_subchecks") or []:
+        if row.get("facet") not in subcheck_keys:
+            work["facet_subchecks"].append(dict(row))
+            subcheck_keys.add(row.get("facet"))
+    if not work.get("fulltext_coverage"):
+        work["fulltext_coverage"] = auto.get("fulltext_coverage") or {}
 
     uncertainty_items = {str(item.get("item") or item)
                          for item in work["uncertainties"] if isinstance(item, dict)}

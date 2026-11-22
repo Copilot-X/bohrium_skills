@@ -16,12 +16,26 @@ description: 公式解析与数学推理：把公式转写为 LaTeX，建立符�
 | `references/formula-reasoning-playbook.md` | 转写、建符号表、推导、量纲检查前 | 先读；按其中三查/字段/失败模式执行 |
 | `templates/formula-analysis.json` | 结果骨架 | 复制结构，替换为真实公式与符号 |
 | `templates/symbol-table.md` | 建符号表时 | 逐符号填含义/单位/范围/状态，未知符号显式登记 |
+| `scripts/mathml_extract.py` | C01/C03 提供 publisher/source XML 时 | 先运行：从 MathML 提取公式、eq_id、来源定位与符号；C02 无公式时明确报告缺失 |
 | `scripts/check_formula_analysis.py` | 交付前 | `python3 {SKILL_DIR}/scripts/check_formula_analysis.py --result /app/output/result.json --input /input/case.json --json` |
 | `scripts/validate_result.py` | 通用契约校验 | `python3 {SKILL_DIR}/scripts/validate_result.py /app/output/result.json --input /input` |
 
 `{SKILL_DIR}` 通常为 `/skills/weekly-skill`。校验器会检查 LaTeX 括号/环境平衡、
 推导步骤字段、量纲字段，并用安全算术复算 `computation` 与 `result.value` 是否一致。
 不要为了让校验通过而改结果数值；应先修公式或计算。
+
+## 第 0 步：有 XML 时先做确定性提取
+
+```bash
+python3 "$SKILL_DIR/scripts/mathml_extract.py"   --input /input --work /app/work --output /app/output
+```
+
+C01/C03 的 `publisher-source.xml` / `source-formulas.xml` 含真实 MathML；
+脚本会提取公式、eq_id、MathML 路径、LaTeX 与符号，写
+`work/mathml-formulas.json` 和 `output/source-formulas.json`。模型在此基础上
+逐符号补含义/单位/范围，再做推导与数值核验。C02 没有公式表示时，脚本会
+报告 `missing_formula_branch=true`，必须交付 `partial/insufficient_evidence`，
+不得反推公式或把未知填 0。
 
 ## 执行步骤
 

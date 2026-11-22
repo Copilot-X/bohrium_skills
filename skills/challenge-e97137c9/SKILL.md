@@ -38,16 +38,50 @@ mkdir -p /app/work /app/output
 
 | 文件 | 作用 |
 |---|---|
-| `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
+| `scripts/run_skill.py` | **一键入口**：prepare → research_profile → finalize → 契约补全；空输入/缺字段/缺产物仍写合法 `result.json` |
+| `scripts/research_profile.py` | **研究 profile 执行器**：解析 9 来源/10 记录、固定问题、前瞻性筛选协议、证据矩阵、主题/冲突/空白/综述结构草稿与全部声明产物 |
+| `scripts/run_case.py` | 分步入口：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
-| `task.json` | family/mode/profile、工作文件、产物与必填字段 |
+| `task.json` | family/mode/profile、工作文件、产物、必填字段与 `record_profile` |
 | `templates/work.schema.json` | `work/research-plan.json` 的字段契约 |
 | `references/research-rules.md` | 文献综述 的可执行规则与失败模式 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
+## 研究 profile（9 来源 / 10 记录）
+
+题面末尾的固定数据版本是 **9 actual sources / 10 records**：9 份真实来源材料、10 条唯一文献记录（重复导出行单列，不占唯一名额），固定研究问题，前瞻性筛选/检索协议，逐字来源证据，以及显式的有界场景。
+
+`scripts/research_profile.py` 的确定性步骤：
+
+1. **来源注册**：只计实际来源文档（排除 `task.md`、`case.json`、README、检索/约束注记），记录 sha256、字符数与记录映射。
+2. **记录注册**：从 CSV/JSON/BibTeX/正文题录解析；重复行标 `duplicate_of`；仅摘要/题录与缺字段单列；不补造记录。
+3. **固定问题**：优先 `case.json` 的 `research_question`/`question`，其次 task.md 的 `Topic`/`Research question`；缺失写 `to_confirm`。
+4. **前瞻性筛选协议**：Boolean 检索式、数据库/范围、纳排规则、逐条 `screening_log`；默认 `executed=false` 并说明只筛选所提供语料；计数必须闭合。
+5. **证据矩阵**：每条记录至少一个 `path + locator + quote`；quote 逐字可查；`output/evidence-matrix.json` 与 `.csv` 同步。
+6. **综述结构**：`themes`（每个主题至少 2 条记录）、`findings`（`support=full/partial/none/unverifiable` 与 `strength`）、`conflict_check`（冲突并列）、`synthesis.conclusions`、`coverage` 六面、`gaps`（含替代解释与 `why_not_omission`）、`review_structure`（逐节草稿与引用记录）。
+7. **产物**：`output/research-report.md`、`output/evidence-matrix.json`、`output/references.json`、`output/screening-protocol.json`、`output/source-registry.json`、`output/evidence-matrix.csv`、`output/review-structure.json`、`output/domain-audit.json`。
+
+实际来源数不是 9 或唯一记录不是 10 时，写入 `profile_summary`、`domain-audit.json` 与 `uncertainties`，不填充占位记录。
+
 ## 工作流
+
+### 第 0 步：一条命令生成可复核初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/run_skill.py" \
+  --input /input --work /app/work --output /app/output
+```
+
+它依次执行 prepare、`research_profile.py` 确定性抽取/分析、finalize，并检查：
+
+1. 3 个声明产物与额外 profile 产物都存在；
+2. `output_contract` 的每个键都有真实内容或明确的 partial 指针；
+3. 输入为空/不可读时仍写合法 `result.json`（`status=input_error`）、退出码 0；
+4. 声明输出缺失时自动重跑抽取/补写并重新 finalize。
+
+随后读 `output/research-report.md`、`work/domain-status.json` 与 `output/domain-audit.json`，用剩余预算校正主题边界与转述；不要删除已生成的逐字证据。
 
 ### 第 1 步：prepare（约 10% 预算）
 
@@ -232,6 +266,9 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 | G5 | 专项 | 按维度分组；每篇转述准确；空白由证据推出 |
 | G6 | 产物 | 声明的每个 artifact 路径真实存在 |
 | G7 | 契约 | result.json 可解析，case_id 与输入一致 |
+| G8 | 研究 profile | `source_registry`/`records`/`screening_log`/`evidence_matrix` 齐全；来源数与唯一记录数如实写入 `profile_summary` |
+| G9 | 筛选计数 | `identified - duplicates = screened` 且 `screened - excluded = included`；`full_text >= included` |
+| G10 | 综述结构 | 每个主题至少 2 条记录；`findings` 有 `support`/`strength`；`conflict_check.checked`；`coverage` 六面状态合法；`review_structure` 逐节有记录/证据数 |
 
 ## 评分维度对照
 
@@ -360,6 +397,11 @@ python3 "$SKILL_DIR/scripts/run_case.py" finalize \
 
 ## 版本与限制
 
+- 版本 `2.0.0`：新增 `scripts/research_profile.py` 与 `scripts/run_skill.py`，
+  直接处理题面固定的 9 来源/10 记录：来源注册、记录注册（重复/仅摘要
+  单列）、固定问题、前瞻性筛选协议、逐条证据矩阵、主题归纳、冲突证据、
+  研究空白、综述结构草稿与全部声明产物；计数不闭合时降级并写入
+  uncertainties。
 - 版本 `1.0.0`：单入口 + 共享引擎 + `fam_tracks`；模型写内容，脚本做
   证据/字段/产物审计。
 - 不联网：检索/追踪/数据库类任务只使用 `/input` 提供的材料或导出；

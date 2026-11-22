@@ -59,6 +59,7 @@ mkdir -p /app/work /app/output
 | `templates/work.schema.json` | `work/library-plan.json` 的字段契约 |
 | `references/library-rules.md` | 文件检索 的可执行规则与失败模式 |
 | `scripts/build_library_index.py` | **语义检索前必跑**：建立路径/版本/章节/行号/别名/重复/不可读索引 |
+| `scripts/search_library.py` | **本题专项初稿**：按查询/过滤器检索索引块，输出排序命中、逐字片段与 no_result |
 | `scripts/check_library_plan.py` | **finalize 前必跑**：硬过滤、no_result、版本、引用逐字与契约产物检查 |
 | `examples/synthetic-input.json` | synthetic 输入示意（非正式案例） |
 
@@ -79,6 +80,17 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成检索初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/build_library_index.py" --input /input   --out /app/work/library-index-build.json --json
+python3 "$SKILL_DIR/scripts/search_library.py"   --input /input --work /app/work --output /app/output --top-k 5
+```
+
+第二个脚本按 `case.json` 的 queries/filters 检索索引块，输出 rank/path/version/
+locator/snippet/score 与逐字证据；无结果明确写 `no_result`。模型必须复核过滤
+条件、版本冲突与排序理由，不能只交词面命中。
 
 ### 第 2 步：写 `work/library-plan.json`（约 60% 预算）
 

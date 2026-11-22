@@ -285,6 +285,25 @@
         }
       }
     },
+    "claim_inventory": {
+      "type": "array",
+      "description": "全文主张清单：speaker(author/cited/assumption)、type、section、support、strength、locator、evidence",
+      "items": {"type": "object"}
+    },
+    "cross_section_checks": {
+      "type": "array",
+      "description": "摘要/引言承诺-交付核对；consistency 五档枚举",
+      "items": {"type": "object"}
+    },
+    "fulltext_coverage": {
+      "type": "object",
+      "description": "全文分段统计：sections/section_stats/paragraphs/sentences/chars/captions/claims"
+    },
+    "facet_subchecks": {
+      "type": "array",
+      "description": "具体审稿面：结构/摘要-正文/术语/引用/设计/样本量/统计/因果/伦理/数据/COI/注册",
+      "items": {"type": "object"}
+    },
     "coverage_summary": {
       "type": "object",
       "description": "可选的覆盖统计：facets/findings/evidence/report 完整性"

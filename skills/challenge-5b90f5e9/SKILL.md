@@ -41,6 +41,7 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 文本/证据/数字审计、result.json 信封、DOCX/PDF 辅助 |
 | `scripts/parsers.py` | JSON/CSV/PDF/DOCX/TeX 材料提取 |
+| `scripts/systematic_screen.py` | **本题专项**：有限记录集的去重、双规则纳排、仲裁队列与 PRISMA 计数闭合 |
 | `scripts/fam_tracks.py` | 本 track 的盘点、证据校验、可选 Python 执行与产物登记 |
 | `task.json` | family/mode/profile、工作文件、产物与必填字段 |
 | `templates/work.schema.json` | `work/search-plan.json` 的字段契约 |
@@ -64,6 +65,17 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 3. 写 `output/README-partial.md` 与 provisional `result.json`。
 
 先读 `work/materials.json` 与 `task.md`，确认材料边界和缺失项。
+
+### 第 1.5 步：生成 PRISMA 初稿（推荐）
+
+```bash
+python3 "$SKILL_DIR/scripts/systematic_screen.py"   --input /input --work /app/work --output /app/output
+```
+
+脚本对提供的有限记录集做 DOI/标题去重，用 strict/lenient 两个规则 profile 独立
+纳排；一致时给 final，分歧进 `arbitration`，并计算 identified/duplicates/
+screened/excluded/included 的闭合计数。它不冒充真人双筛；所有仲裁项必须由模型/
+人工逐条裁决。
 
 ### 第 2 步：写 `work/search-plan.json`（约 60% 预算）
 

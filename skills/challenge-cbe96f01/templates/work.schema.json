@@ -9,6 +9,7 @@
     "claim_source_matrix",
     "source_status",
     "findings",
+    "facets_checked",
     "evidence",
     "checks",
     "verdict",
@@ -159,6 +160,57 @@
           "evidence": {}
         }
       }
+    },
+    "facets_checked": {
+      "type": "array",
+      "description": "六个官方检查面的覆盖状态；partial/not_checked 必须有 reason",
+      "items": {
+        "type": "object",
+        "required": ["facet", "status", "items"],
+        "properties": {
+          "facet": {
+            "type": "string",
+            "enum": ["fact_consistency", "citation_support", "method_design",
+                     "statistical_reporting", "academic_compliance",
+                     "argument_chain"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["checked", "partial", "not_applicable", "not_checked"]
+          },
+          "items": {"type": "array", "items": {"type": "string"}},
+          "reason": {"type": "string"},
+          "evidence": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    },
+    "citation_facets": {
+      "type": "array",
+      "description": "八个引用子面：可回查/逐字/数值/来源状态/设计范围/未引用断言/元数据/章节覆盖",
+      "items": {
+        "type": "object",
+        "required": ["facet", "status", "detail"],
+        "properties": {
+          "facet": {
+            "type": "string",
+            "enum": ["citation_resolvable", "quote_verbatim",
+                     "numeric_consistency", "source_status",
+                     "design_scope_match", "uncited_results",
+                     "reference_metadata", "section_coverage"]
+          },
+          "status": {"type": "string", "enum": ["pass", "fail", "not_checked"]},
+          "detail": {"type": "string"},
+          "evidence": {"type": "array"}
+        }
+      }
+    },
+    "fulltext": {
+      "type": "object",
+      "description": "全文分段统计：sections/documents/paragraphs/sentences/claims_by_section"
+    },
+    "rule_review": {
+      "type": "object",
+      "description": "verify_citations.py 预检元信息：候选数、合并数、预检路径"
     },
     "reviewed_candidates": {
       "type": "array",
