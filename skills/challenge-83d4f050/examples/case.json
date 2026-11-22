@@ -1,0 +1,281 @@
+{
+  "case_id": "SYN-PATHWAY-INTERFACE",
+  "figure_id": "Fig.2",
+  "workorder": "biological_mechanism_pathway",
+  "title": "L1-R1-K1-K2-T1-G1 signaling with feedback",
+  "canvas": {
+    "width_mm": 180,
+    "height_mm": 118,
+    "direction": "LR",
+    "font_family": "Liberation Sans",
+    "font_size_pt": 8
+  },
+  "naming": {
+    "gene_style": "italic",
+    "protein_style": "roman",
+    "alias_policy": "One canonical label per node; aliases are metadata only.",
+    "complex_policy": "A complex is one node unless a subunit has an independent edge."
+  },
+  "compartments": [
+    {
+      "id": "C1",
+      "label": "Extracellular",
+      "order": 0,
+      "fill": "#e8f2fb",
+      "source": {"path": "paper.txt", "locator": "line 2"}
+    },
+    {
+      "id": "C2",
+      "label": "Plasma membrane",
+      "order": 1,
+      "fill": "#f1f1f1",
+      "source": {"path": "paper.txt", "locator": "line 2"}
+    },
+    {
+      "id": "C3",
+      "label": "Cytoplasm",
+      "order": 2,
+      "fill": "#f7f7f7",
+      "source": {"path": "paper.txt", "locator": "line 4"}
+    },
+    {
+      "id": "C4",
+      "label": "Nucleus",
+      "order": 3,
+      "fill": "#f1eef8",
+      "source": {"path": "paper.txt", "locator": "line 7"}
+    }
+  ],
+  "molecules": [
+    {
+      "id": "M1",
+      "label": "L1",
+      "entity_kind": "protein",
+      "type": "ligand",
+      "compartment": "C1",
+      "rank": 0,
+      "order": 0,
+      "source": {"path": "paper.txt", "locator": "line 2",
+                 "quote": "ligand L1 bound receptor R1 at the plasma membrane"}
+    },
+    {
+      "id": "M2",
+      "label": "R1",
+      "entity_kind": "protein",
+      "type": "receptor",
+      "compartment": "C2",
+      "rank": 1,
+      "order": 0,
+      "sublabel": "receptor",
+      "source": {"path": "paper.txt", "locator": "line 2",
+                 "quote": "ligand L1 bound receptor R1 at the plasma membrane"}
+    },
+    {
+      "id": "M3",
+      "label": "K1",
+      "entity_kind": "protein",
+      "type": "kinase",
+      "compartment": "C3",
+      "rank": 2,
+      "order": 0,
+      "source": {"path": "paper.txt", "locator": "line 4",
+                 "quote": "Activated R1 activated K1 in the cytoplasm"}
+    },
+    {
+      "id": "M4",
+      "label": "K2",
+      "entity_kind": "protein",
+      "type": "kinase",
+      "compartment": "C3",
+      "rank": 3,
+      "order": 0,
+      "sublabel": "p-K2",
+      "source": {"path": "paper.txt", "locator": "line 5",
+                 "quote": "K1 phosphorylated kinase K2"}
+    },
+    {
+      "id": "M5",
+      "label": "T1",
+      "entity_kind": "protein",
+      "type": "tf",
+      "compartment": "C3",
+      "rank": 4,
+      "order": 0,
+      "sublabel": "cytoplasmic",
+      "source": {"path": "paper.txt", "locator": "line 6",
+                 "quote": "K2 phosphorylated transcription factor T1"}
+    },
+    {
+      "id": "M6",
+      "label": "T1",
+      "entity_kind": "protein",
+      "type": "tf",
+      "compartment": "C4",
+      "rank": 5,
+      "order": 0,
+      "sublabel": "nuclear",
+      "source": {"path": "paper.txt", "locator": "line 7",
+                 "quote": "Phosphorylated T1 was imported into the nucleus"}
+    },
+    {
+      "id": "M7",
+      "label": "G1",
+      "entity_kind": "gene",
+      "type": "gene",
+      "compartment": "C4",
+      "rank": 6,
+      "order": 0,
+      "source": {"path": "paper.txt", "locator": "line 8",
+                 "quote": "Nuclear T1 bound the G1 promoter and activated G1 transcription"}
+    },
+    {
+      "id": "M8",
+      "label": "P1",
+      "entity_kind": "protein",
+      "type": "phosphatase",
+      "compartment": "C3",
+      "rank": 3,
+      "order": 1,
+      "source": {"path": "paper.txt", "locator": "line 9",
+                 "quote": "Phosphatase P1 dephosphorylated K2 and suppressed K2 activity"}
+    },
+    {
+      "id": "M9",
+      "label": "I1",
+      "entity_kind": "protein",
+      "type": "protein",
+      "compartment": "C3",
+      "rank": 2,
+      "order": 1,
+      "source": {"path": "paper.txt", "locator": "line 10",
+                 "quote": "Inhibitor I1 expression was associated with lower K1 activity"}
+    }
+  ],
+  "interactions": [
+    {
+      "id": "I1",
+      "from": "M1",
+      "to": "M2",
+      "effect": "bind",
+      "mechanism": "ligand-receptor binding",
+      "label": "binds",
+      "kind": "reported",
+      "source": {"path": "paper.txt", "locator": "line 2",
+                 "quote": "ligand L1 bound receptor R1"}
+    },
+    {
+      "id": "I2",
+      "from": "M2",
+      "to": "M3",
+      "effect": "activate",
+      "mechanism": "receptor-mediated kinase activation",
+      "label": "+",
+      "kind": "reported",
+      "evidence_strength": "strong",
+      "source": {"path": "paper.txt", "locator": "line 4",
+                 "quote": "Activated R1 activated K1"}
+    },
+    {
+      "id": "I3",
+      "from": "M3",
+      "to": "M4",
+      "effect": "modify",
+      "mechanism": "phosphorylation of the K2 activation loop",
+      "label": "P",
+      "kind": "reported",
+      "evidence_strength": "strong",
+      "source": {"path": "paper.txt", "locator": "line 5",
+                 "quote": "K1 phosphorylated kinase K2"}
+    },
+    {
+      "id": "I4",
+      "from": "M4",
+      "to": "M5",
+      "effect": "modify",
+      "mechanism": "phosphorylation of T1",
+      "label": "P",
+      "kind": "reported",
+      "evidence_strength": "moderate",
+      "source": {"path": "paper.txt", "locator": "line 6",
+                 "quote": "Phosphorylated K2 phosphorylated transcription factor T1"}
+    },
+    {
+      "id": "I5",
+      "from": "M5",
+      "to": "M6",
+      "effect": "translocate",
+      "mechanism": "nuclear import of phosphorylated T1",
+      "label": "import",
+      "kind": "reported",
+      "evidence_strength": "strong",
+      "source": {"path": "paper.txt", "locator": "line 7",
+                 "quote": "Phosphorylated T1 was imported into the nucleus"}
+    },
+    {
+      "id": "I6",
+      "from": "M6",
+      "to": "M7",
+      "effect": "activate",
+      "mechanism": "promoter binding and transcription",
+      "label": "+",
+      "kind": "reported",
+      "evidence_strength": "strong",
+      "source": {"path": "paper.txt", "locator": "line 8",
+                 "quote": "Nuclear T1 bound the G1 promoter and activated G1 transcription"}
+    },
+    {
+      "id": "I7",
+      "from": "M8",
+      "to": "M4",
+      "effect": "inhibit",
+      "mechanism": "dephosphorylation of K2",
+      "label": "-",
+      "kind": "reported",
+      "evidence_strength": "moderate",
+      "route": "curve",
+      "source": {"path": "paper.txt", "locator": "line 9",
+                 "quote": "Phosphatase P1 dephosphorylated K2 and suppressed K2 activity"}
+    },
+    {
+      "id": "I8",
+      "from": "M9",
+      "to": "M3",
+      "effect": "inferred",
+      "base_effect": "inhibit",
+      "mechanism": "association with lower K1 activity",
+      "label": "-",
+      "kind": "inferred",
+      "evidence_strength": "weak",
+      "source": {"path": "paper.txt", "locator": "line 10",
+                 "quote": "Inhibitor I1 expression was associated with lower K1 activity"}
+    }
+  ],
+  "legend": {
+    "edge_semantics": [
+      {"effect": "activate", "label": "activation"},
+      {"effect": "inhibit", "label": "inhibition"},
+      {"effect": "bind", "label": "binding"},
+      {"effect": "translocate", "label": "translocation"},
+      {"effect": "modify", "label": "modification (P)"},
+      {"effect": "inferred", "label": "inferred / uncertain"}
+    ]
+  },
+  "data_encoding": [
+    {"channel": "none", "maps_to": "no quantitative value is reported",
+     "values": {}, "unit": null,
+     "source": {"path": "paper.txt", "locator": "lines 2-10"}}
+  ],
+  "omitted": [
+    {"item": "AKT branch",
+     "reason": "Mentioned once without any tested relation; no edge-level source."}
+  ],
+  "conflicts": [],
+  "uncertainty": [
+    "M5 and M6 are two pool/state nodes of the same entity T1; they are split only to show nuclear import."
+  ],
+  "disclaimers": [
+    "I8 is inferred from an association, not from a direct perturbation."
+  ],
+  "caption": "L1 binding to R1 activates a K1-K2 kinase cascade that phosphorylates T1, promotes its nuclear import and activates G1; P1 and I1 provide negative regulation.",
+  "alt_text": "Four-compartment pathway: extracellular L1 binds plasma-membrane R1, which activates cytoplasmic K1 and K2; K2 phosphorylates T1, T1 is imported into the nucleus, binds the G1 promoter and activates transcription; P1 inhibits K2 and I1 is inferred to inhibit K1."
+}

@@ -1,0 +1,11 @@
+Synthetic pathway source for the interface example. Not a formal answer.
+In starved cells, ligand L1 bound receptor R1 at the plasma membrane.
+L1 binding activated R1 and promoted recruitment of kinase K1 to the membrane.
+Activated R1 activated K1 in the cytoplasm.
+K1 phosphorylated kinase K2 at its activation loop.
+Phosphorylated K2 phosphorylated transcription factor T1 in the cytoplasm.
+Phosphorylated T1 was imported into the nucleus.
+Nuclear T1 bound the G1 promoter and activated G1 transcription.
+Phosphatase P1 dephosphorylated K2 and suppressed K2 activity.
+Inhibitor I1 expression was associated with lower K1 activity.
+An additional AKT branch was mentioned once but was not tested.
