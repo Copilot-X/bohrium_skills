@@ -3225,6 +3225,7 @@ def write_outputs(plan, output, contract, fill_only=False):
         "rows": plan.get("evidence_matrix") or [],
         "matrix": plan.get("evidence_matrix") or [],
         "records": plan.get("records") or [],
+        "claims": plan.get("novelty_claims") or [],
         "counts": plan.get("profile_summary") or {},
     }
     if emit_json(output / "evidence-matrix.json", matrix_payload, fill_only):
@@ -3315,7 +3316,9 @@ def write_outputs(plan, output, contract, fill_only=False):
         "script": "research_profile.py",
         "mode": mode,
         "source_count": (plan.get("profile_summary") or {}).get("sources_supplied"),
+        "sources": (plan.get("profile_summary") or {}).get("sources_supplied"),
         "record_count": (plan.get("profile_summary") or {}).get("records_identified"),
+        "records_extracted": (plan.get("profile_summary") or {}).get("records_unique"),
         "unique_record_count": (plan.get("profile_summary") or {}).get("records_unique"),
         "evidence_matrix_rows": len(plan.get("evidence_matrix") or []),
         "evidence_count": len(plan.get("evidence") or []),

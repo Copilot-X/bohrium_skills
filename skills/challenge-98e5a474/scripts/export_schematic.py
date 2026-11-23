@@ -343,6 +343,10 @@ def try_matplotlib(fmt, svg, target, dpi):
         import warnings
         import matplotlib
         matplotlib.use("Agg", force=True)
+        # Embed TrueType subsets instead of Type-3 glyphs so the exported
+        # PDF passes journal font-embedding checks.
+        matplotlib.rcParams["pdf.fonttype"] = 42
+        matplotlib.rcParams["ps.fonttype"] = 42
         logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
         import matplotlib.pyplot as plt
         from matplotlib import colors as mcolors

@@ -93,6 +93,25 @@ python3 "$SKILL_DIR/scripts/compare_svg.py" \
 （`audit_unavailable` / `audit_failed`）与 `uncertainty`，继续手工核对。
 不要为了过 checker 删减真实内容或编造字段。
 
+### 第 4.2 步（约 5% 预算）：导出质量审计
+
+```bash
+python3 "$SKILL_DIR/scripts/qa_report.py" \
+  --svg /app/output/figures/fig1.svg \
+  --png /app/output/preview/fig1.png --pdf /app/output/figures/fig1.pdf \
+  --entities /app/work/entities.json \
+  --out /app/output/qa-report.json --json
+```
+
+- 检查真实文件而不是自述：PNG 签名/尺寸/pHYs 实际 DPI、PDF 签名/字体是否嵌入/
+  MediaBox、SVG 的 `<text>`/命名分组/viewBox/外部引用、图例是否覆盖关系语义。
+- 导出优先 `cairosvg`/`rsvg-convert`/`inkscape`；只有三者都不可用才用
+  matplotlib 回退，脚本已设 `pdf.fonttype=42` 嵌入 TrueType 子集。
+- 有 warning（如 `png_no_phys_dpi`、`pdf_fonts_not_embedded`）时，在
+  `uncertainty` 如实记录，不能写"已满足期刊导出要求"。
+- `assemble_result.py` 会自动把 `qa-report.json` 列入 `artifacts`，并把检查结果
+  写进 `compliance_checks.export_qa`。
+
 ### 第 4.5 步（约 5% 预算）：用脚本组装契约完整的 result.json
 
 ```bash
@@ -140,7 +159,8 @@ echo "SKILL_DIR=$SKILL_DIR"
 | `templates/entities.json` | 新建模式起步 | 可选；复制后替换，模板来源是示例，不能当证据 |
 | `scripts/build_schematic.py` | 想用表驱动出图时 | `python3 "$SKILL_DIR/scripts/build_schematic.py" --entities /app/work/entities.json --out /app/output/figures/fig1.svg --json`；结构错误返回 JSON（exit 2），不会 traceback |
 | `scripts/export_schematic.py` | 需要 PDF/PNG 或降级预览 | 见第 4 步；探测 cairosvg/rsvg/inkscape/matplotlib；全不可用时生成 HTML 预览并报 `export_unavailable` |
-| `scripts/assemble_result.py` | 组装 result.json | 见第 4.5 步；从实体表/SVG/导出报告生成全部字段与 media 别名；支持 `--self-test` |
+| `scripts/qa_report.py` | 导出质量审计 | 见第 4.2 步；PNG 实际 DPI、PDF 字体嵌入、SVG 结构、图例覆盖语义；写 `output/qa-report.json` |
+| `scripts/assemble_result.py` | 组装 result.json | 见第 4.5 步；从实体表/SVG/导出报告生成全部字段与 media 别名；自动合并 qa-report；支持 `--self-test` |
 | `scripts/check_schematic_result.py` | 交付前自查 | 见第 4 步；缺文件/空表也返回可读 JSON |
 | `scripts/compare_svg.py` | 编辑模式核对改动范围 | 先写 `/app/work/workorder.json`：`{"targets":["E2"],"add":["E6"],"remove":["E3"],"source":"task.md §…"}` |
 | `README.md` | 安装/接口/限制速查 | 与 SKILL.md 同步维护的简明说明 |
@@ -170,7 +190,8 @@ echo "SKILL_DIR=$SKILL_DIR"
     {"role": "editable", "path": "figures/fig1.svg", "format": "svg"},
     {"role": "export", "path": "figures/fig1.pdf", "format": "pdf"},
     {"role": "preview", "path": "preview/fig1.png", "format": "png",
-     "width_px": 2126, "height_px": 1063, "dpi": 300}
+     "width_px": 2126, "height_px": 1063, "dpi": 300},
+    {"role": "qa", "path": "qa-report.json", "format": "json"}
   ],
   "element_source_map": [
     {"element_id": "E1", "maps_to": {"path": "materials/method.md", "locator": "§2.1"},
@@ -198,7 +219,8 @@ echo "SKILL_DIR=$SKILL_DIR"
   "change_log": [{"action": "modified", "element_id": "E2",
                   "detail": "按工单更新标签；其余元素保持不变"}],
   "support_files_used": ["scripts/build_schematic.py",
-                         "scripts/export_schematic.py"],
+                         "scripts/export_schematic.py",
+                         "scripts/qa_report.py"],
   "editable_source": {"path": "figures/fig1.svg", "format": "svg"},
   "export_artifact": {"path": "figures/fig1.pdf", "format": "pdf"},
   "content_map": [

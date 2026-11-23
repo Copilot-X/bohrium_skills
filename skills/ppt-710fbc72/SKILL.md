@@ -54,15 +54,24 @@ task.md 给出**模板**（`.pptx`/`.potx`）并要求"按模板做""适配格�
    python3 /skills/weekly-skill/scripts/make_pptx.py \
      --spec /app/work/deck-spec.json --out /app/work/deck_base.pptx --json
    ```
+   `make_pptx.py` 把标题/副标题/正文写成**真实占位符**
+   （`<p:ph type="title|ctrTitle|subTitle">` / `<p:ph idx="1">`），
+   不是一排绝对坐标文本框；基础 deck 自带 fallback 几何，套模板后由版式接管。
 7. **套用模板**（关键步骤）：
    ```bash
    python3 /skills/weekly-skill/scripts/pptx_edit.py apply-template /app/work/deck_base.pptx \
      --template materials/template.pptx --layout "Title and Content" \
      --out /app/output/deck.pptx --json
    ```
-   返回 `fidelity`：
+   这一步不是只改 `slideLayout` 关系：脚本复制模板的母版/版式/主题，
+   修正 presentation 的母版 `r:id`（避免悬空关系），并把 slide 中带
+   `<p:ph>` 的形状的显式 `<a:xfrm>` 删除，使**几何由模板版式真实继承**。
+   返回 `fidelity` 与 `placeholder_inheritance`：
    - `master+layouts+theme` = 完整继承；
    - `theme-only` = 只继承主题（模板多母版/多主题时），必须在 `uncertainty` 说明；
+   - `placeholder_inheritance.count` = 真正交给版式定位的占位符数；
+     为 0 表示模板没有可匹配的占位符，必须在 `format_check.violations` 记录，
+     不能声称"已套用版式"；
    - `ok=false` = 套用会破坏包，已自动回滚，此时交付基础 deck 并 `status=partial`。
 8. **格式合规核对**：`/app/work/format-check.json`
    ```json
@@ -86,6 +95,8 @@ task.md 给出**模板**（`.pptx`/`.potx`）并要求"按模板做""适配格�
   "deck": {"path": "deck.pptx", "slide_count": 12,
            "template": "materials/template.pptx",
            "template_fidelity": "master+layouts+theme",
+           "placeholder_inheritance": {"count": 24,
+                                       "unique": ["title:None", "body:1"]},
            "aspect_ratio": "16:9"},
   "artifacts": [
     {"role": "editable", "path": "deck.pptx", "format": "pptx"},
@@ -140,6 +151,8 @@ task.md 给出**模板**（`.pptx`/`.potx`）并要求"按模板做""适配格�
 
 - [ ] 版式名来自真实审计，不是猜测
 - [ ] `template_fidelity` 如实填写
+- [ ] `placeholder_inheritance.count > 0`，且能在 deck 中查到 slide 占位符无显式 xfrm
+- [ ] presentation 的 `sldMasterId r:id` 在 rels 中真实存在（无悬空关系）
 - [ ] 字体替换表完整，无模板外字体残留
 - [ ] 字号不低于下限
 - [ ] 图片未拉伸、未遮挡文字

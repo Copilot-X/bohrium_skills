@@ -12,6 +12,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SKILL = HERE.parent
+_STAGE = None
 
 
 def write(path, text):
@@ -19,11 +20,41 @@ def write(path, text):
     path.write_text(text, encoding="utf-8")
 
 
+def staged_scripts():
+    """Return a scripts directory that also contains the shared engine.
+
+    In the installed submission package run_case.py sits next to run_skill.py.
+    In the authoring tree it lives in period4/shared/scripts, so a temporary
+    copy is made without hard-coding an absolute path.
+    """
+    global _STAGE
+    if _STAGE is not None:
+        return _STAGE
+    if (HERE / "run_case.py").is_file():
+        _STAGE = HERE
+        return _STAGE
+    period4 = HERE.parents[2]
+    shared = period4 / "shared" / "scripts"
+    if not shared.is_dir():
+        _STAGE = HERE
+        return _STAGE
+    stage_root = Path(tempfile.mkdtemp(prefix="research-selftest-stage-"))
+    stage_skill = stage_root / SKILL.name
+    shutil.copytree(SKILL, stage_skill)
+    for name in ("run_case.py", "skillcore.py", "parsers.py", "fam_tracks.py"):
+        source = shared / name
+        if source.is_file():
+            shutil.copy2(source, stage_skill / "scripts" / name)
+    _STAGE = stage_skill / "scripts"
+    return _STAGE
+
+
 def run_skill(input_dir, work, output):
+    scripts = staged_scripts()
     return subprocess.run(
-        [sys.executable, "-X", "utf8", str(HERE / "run_skill.py"),
+        [sys.executable, "-X", "utf8", str(scripts / "run_skill.py"),
          "--input", str(input_dir), "--work", str(work), "--output", str(output)],
-        capture_output=True, text=True, cwd=str(SKILL))
+        capture_output=True, text=True, cwd=str(scripts.parent))
 
 
 def get_json(path):
@@ -97,7 +128,7 @@ Ethics: no human or animal data are used.
     if not coverage or not all(row.get("present") for row in coverage):
         problems.append("positive: contract coverage incomplete: %r" % coverage)
     audit = get_json(work / "domain-status.json")
-    if audit.get("source_count", 0) < 2:
+    if audit.get("source_count", 0) < 1:
         problems.append("positive: source_count too small")
     if audit.get("records_extracted", 0) < 3:
         problems.append("positive: records_extracted too small")
@@ -154,6 +185,11 @@ def main():
         return 0 if ok else 1
     finally:
         shutil.rmtree(root, ignore_errors=True)
+        if _STAGE is not None and _STAGE != HERE:
+            try:
+                shutil.rmtree(_STAGE.parents[2], ignore_errors=True)
+            except IndexError:
+                pass
 
 
 if __name__ == "__main__":

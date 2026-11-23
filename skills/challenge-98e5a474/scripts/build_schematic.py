@@ -663,9 +663,9 @@ class Diagram:
             marker = style["marker"]
             marker_attr = ' marker-end="url(#%s)"' % marker if marker != "none" else ""
             self.emit('<path d="M%.2f,%.2f L%.2f,%.2f" fill="none" stroke="%s" '
-                      'stroke-width="%.2f"%s%s/>'
+                      'stroke-width="%.2f"%s%s data-kind=%s/>'
                       % (x, y, x + size * 2.2, y, style["color"],
-                         style["width"], dash, marker_attr))
+                         style["width"], dash, marker_attr, quoteattr(kind)))
             self.text(x + size * 2.7, y + size * 0.34, label, size, anchor="start")
             x += size * 2.7 + text_width(label, size) + size * 2.0
         self.emit('</g>')

@@ -175,6 +175,17 @@ STAT_RE = re.compile(
 DISCLAIMER_RE = re.compile(
     r"(synthetic\s+only|fabricated|not\s+a\s+real\s+paper|for\s+audit\s+"
     r"testing|\u4ec5\u4f9b\u6d4b\u8bd5|\u793a\u4f8b|\u865a\u6784)", re.I)
+OWN_RESULT_RE = re.compile(
+    r"\b(?:we|our)\s+(?:found|observed|report|reported|show|showed|"
+    r"measured|tested|randomi[sz]ed|assigned|analy[sz]ed|interviewed)\b|"
+    r"\bin\s+this\s+study\b|\bparticipants?\s+(?:in\s+our|showed|reported|"
+    r"were\s+(?:assigned|randomi[sz]ed))\b|"
+    r"\u672c\u7814\u7a76|\u6211\u4eec\u53d1\u73b0|\u6211\u4eec\u7684\u7ed3\u679c|\u53c2\u4e0e\u8005", re.I)
+EXTERNAL_OR_GENERAL_RE = re.compile(
+    r"\b(?:all|everyone|universal|generaliz\w*|previous|prior|studies|"
+    r"literature|reported\s+by|according\s+to)\b|"
+    r"\u6240\u6709|\u666e\u904d|\u5df2\u6709\u7814\u7a76|\u6587\u732e|"
+    r"\u636e.*\u62a5\u9053", re.I)
 
 SECTION_HEADING_RE = re.compile(
     r"^\s{0,3}(?:#{1,6}\s*)?(?:\d+(?:\.\d+)*[.)]?\s*)?"
@@ -1776,10 +1787,21 @@ def analyze(input_dir, work_dir, output_dir, only_material=None):
             continue
         if DISCLAIMER_RE.search(sentence):
             continue
-        if len(norm_space(sentence)) < 24:
+        section = section_for_locator(doc, locator)
+        if section in ("methods", "results"):
+            # Own results/methods are supported by the paper's data, not by a
+            # citation; do not report them as uncited external claims.
             continue
-        if not (STAT_RE.search(sentence) or
-                (CLAIM_VERB_RE.search(sentence) and len(sentence.split()) >= 6)):
+        if OWN_RESULT_RE.search(sentence) or re.search(
+                r"\b(?:we\s+(?:investigated|examined|tested|hypothesi[sz]ed)|"
+                r"this\s+study\s+(?:aims?|investigates?)|研究目的|本研究)\b|"
+                r"hypothes|假设|是否", sentence, re.I):
+            continue
+        if not (STAT_RE.search(sentence)
+                or EXTERNAL_OR_GENERAL_RE.search(sentence)):
+            # A bare interpretation/inference is not an uncited external fact.
+            continue
+        if len(norm_space(sentence)) < 24:
             continue
         finding_counter += 1
         claim_evidence = evidence(doc["path"], locator, sentence)

@@ -98,7 +98,7 @@ def main(argv=None):
     ctx = make_context(args, config)
     try:
         if args.command == "inspect":
-            ctx.load()
+            ctx.load(ocr=bool(config.get("ocr", True)))
             ctx.write_context()
             S.print_json({"case_id": ctx.case_id, "files": len(ctx.inv),
                           "documents": [{"path": d.get("rel_path"),
@@ -108,7 +108,7 @@ def main(argv=None):
             return 0
 
         if args.command == "prepare":
-            ctx.load()
+            ctx.load(ocr=bool(config.get("ocr", True)))
             ctx.write_context()
             payload = module.prepare(ctx)
             if payload is None:
@@ -119,7 +119,7 @@ def main(argv=None):
             return 0
 
         if args.command == "finalize":
-            ctx.load()
+            ctx.load(ocr=bool(config.get("ocr", True)))
             ctx.write_context()
             payload = module.finalize(ctx)
             S.print_json({"command": "finalize", "case_id": ctx.case_id,
@@ -129,7 +129,7 @@ def main(argv=None):
             return 0
 
         if args.command == "run":
-            ctx.load()
+            ctx.load(ocr=bool(config.get("ocr", True)))
             ctx.write_context()
             module.prepare(ctx)
             payload = module.finalize(ctx)

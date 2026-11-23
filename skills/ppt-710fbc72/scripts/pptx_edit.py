@@ -414,6 +414,68 @@ def _layout_parts(tmpl):
     return parts
 
 
+def _ph_shapes(xml):
+    """Placeholders declared by a slide or layout, with their geometry flag."""
+    out = []
+    for m in re.finditer(r"<p:sp\b.*?</p:sp>", xml, re.S):
+        block = m.group(0)
+        ph = re.search(r"<p:ph\b([^>]*)/>", block)
+        if not ph:
+            continue
+        attrs = dict(re.findall(r'(\w+)="([^"]*)"', ph.group(1)))
+        out.append({
+            "type": attrs.get("type") or "body",
+            "idx": attrs.get("idx"),
+            "xfrm": bool(re.search(r"<a:xfrm\b.*?</a:xfrm>", block, re.S)),
+        })
+    return out
+
+
+def _inherit_placeholders(slide_xml, layout_xml):
+    """Drop an explicit xfrm from slide placeholders so the layout owns geometry.
+
+    PowerPoint resolves placeholder position/size from the layout only when the
+    slide shape has no explicit <a:xfrm>.  Matching by (type, idx) keeps the
+    inheritance real instead of merely rewriting the layout relationship.
+    """
+    targets = {(p["type"], p["idx"]) for p in _ph_shapes(layout_xml) if p["xfrm"]}
+    inherited = []
+
+    def match(type_name, idx):
+        # A deck made from a generic template may use ctrTitle/subTitle while
+        # the supplied template only declares title/body.  Prefer an exact match,
+        # then the standard fallback roles.
+        candidates = [(type_name, idx)]
+        if type_name == "ctrTitle":
+            candidates += [("title", None), ("title", "0")]
+        elif type_name == "subTitle":
+            candidates += [("body", "1"), ("body", None)]
+        elif type_name in ("obj", "body"):
+            candidates += [("body", "1"), ("body", None)]
+        elif type_name == "title":
+            candidates += [("title", "0")]
+        for key in candidates:
+            if key in targets:
+                return key
+        return None
+
+    def repl(m):
+        block = m.group(0)
+        ph = re.search(r"<p:ph\b([^>]*)/>", block)
+        if not ph:
+            return block
+        attrs = dict(re.findall(r'(\w+)="([^"]*)"', ph.group(1)))
+        key = match(attrs.get("type") or "body", attrs.get("idx"))
+        if key is None:
+            return block
+        new = re.sub(r"<a:xfrm\b.*?</a:xfrm>", "", block, count=1, flags=re.S)
+        if new != block:
+            inherited.append({"type": key[0], "idx": key[1]})
+        return new
+
+    return re.sub(r"<p:sp\b.*?</p:sp>", repl, slide_xml, flags=re.S), inherited
+
+
 def apply_template(deck_path, template_path, out_path=None, layout_name=None):
     deck = read_parts(deck_path)
     original = dict(deck)
@@ -458,25 +520,40 @@ def apply_template(deck_path, template_path, out_path=None, layout_name=None):
                     raw = raw.replace(f"../media/{old}\"", f"../media/{new}\"")
                 deck[name] = raw.encode("utf-8")
 
+    # Reuse the Id of the existing master relationship.  Hard-coding rIdMaster
+    # while the package already points at slideMaster1 through another Id leaves
+    # <p:sldMasterId r:id="rIdMaster"> dangling.
+    prels_name = "ppt/_rels/presentation.xml.rels"
+    prels = deck.get(prels_name, b"").decode("utf-8", "replace")
+    master_rid = None
+    for m in re.finditer(r"<Relationship\b([^>]*)/>", prels):
+        attrs = dict(re.findall(r'(\w+)="([^"]*)"', m.group(1)))
+        target = attrs.get("Target", "").lstrip("/")
+        if (attrs.get("Type", "").endswith("/slideMaster")
+                and target.endswith("slideMasters/slideMaster1.xml")):
+            master_rid = attrs.get("Id")
+            break
+    if master_rid is None:
+        master_rid = "rIdMaster"
+        prels = prels.replace(
+            "</Relationships>",
+            f'<Relationship Id="{master_rid}" Type="{R_NS}/slideMaster" '
+            f'Target="slideMasters/slideMaster1.xml"/></Relationships>')
+        deck[prels_name] = prels.encode("utf-8")
+
     pres = deck["ppt/presentation.xml"].decode("utf-8", "replace")
-    pres = re.sub(
-        r"<p:sldMasterIdLst>.*?</p:sldMasterIdLst>",
-        '<p:sldMasterIdLst><p:sldMasterId id="2147483648" r:id="rIdMaster"/></p:sldMasterIdLst>',
-        pres, flags=re.S)
+    master_id_xml = (f'<p:sldMasterIdLst><p:sldMasterId id="2147483648" '
+                     f'r:id="{master_rid}"/></p:sldMasterIdLst>')
+    if re.search(r"<p:sldMasterIdLst>.*?</p:sldMasterIdLst>", pres, re.S):
+        pres = re.sub(r"<p:sldMasterIdLst>.*?</p:sldMasterIdLst>", master_id_xml,
+                      pres, flags=re.S)
+    elif "<p:sldIdLst>" in pres:
+        pres = pres.replace("<p:sldIdLst>", master_id_xml + "<p:sldIdLst>", 1)
     tpres = tmpl.get("ppt/presentation.xml", b"").decode("utf-8", "replace")
     sz = re.search(r"<p:sldSz\b[^>]*/>", tpres)
     if sz:
         pres = re.sub(r"<p:sldSz\b[^>]*/>", sz.group(0), pres)
     deck["ppt/presentation.xml"] = pres.encode("utf-8")
-
-    prels_name = "ppt/_rels/presentation.xml.rels"
-    prels = deck.get(prels_name, b"").decode("utf-8", "replace")
-    if "slideMasters/slideMaster1.xml" not in prels:
-        prels = prels.replace(
-            "</Relationships>",
-            f'<Relationship Id="rIdMaster" Type="{P_NS}/slideMaster" '
-            f'Target="slideMasters/slideMaster1.xml"/></Relationships>')
-        deck[prels_name] = prels.encode("utf-8")
 
     layouts = _layout_parts(tmpl)
     layout_file = None
@@ -498,7 +575,14 @@ def apply_template(deck_path, template_path, out_path=None, layout_name=None):
     if not layout_file:
         return {"ok": False, "error": "template has no slide layout"}
 
+    layout_xml = deck.get(f"ppt/slideLayouts/{layout_file}", b"").decode("utf-8", "replace")
+    inherited = []
     for slide in ordered_slides(deck):
+        xml = deck[slide].decode("utf-8", "replace")
+        xml, got = _inherit_placeholders(xml, layout_xml)
+        if got:
+            deck[slide] = xml.encode("utf-8")
+            inherited.extend(got)
         folder, fname = slide.rsplit("/", 1)
         rels = f"{folder}/_rels/{fname}.rels"
         if rels not in deck:
@@ -520,6 +604,12 @@ def apply_template(deck_path, template_path, out_path=None, layout_name=None):
     info = inspect(out)
     return {"ok": True, "out": str(out), "fidelity": "master+layouts+theme",
             "layout": layout_file, "layout_count": len(layouts),
+            "master_rid": master_rid,
+            "placeholder_inheritance": {
+                "count": len(inherited),
+                "unique": sorted({f'{x["type"]}:{x["idx"]}' for x in inherited}),
+                "note": "slide placeholders without explicit xfrm inherit layout geometry",
+            },
             "theme_fonts": info.get("theme_fonts", []),
             "theme_colors": info.get("theme_colors", []),
             "slide_size": info.get("slide_size")}

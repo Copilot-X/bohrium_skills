@@ -96,9 +96,27 @@ def tx_body(paragraphs, anchor="t"):
     return "".join(out)
 
 
-def shape(shape_id, name, x, y, cx, cy, paragraphs, anchor="t"):
+def shape(shape_id, name, x, y, cx, cy, paragraphs, anchor="t", ph=None):
+    """Build a text shape.
+
+    ``ph`` marks the shape as a real layout placeholder (``{"type": ...,
+    "idx": ...}``).  A placeholder keeps a fallback xfrm so the base deck also
+    renders without a template; apply-template removes the xfrm so the slide
+    inherits the template layout's geometry instead of merely pointing at it.
+    """
+    ph_xml = ""
+    if ph is not None:
+        bits = []
+        if ph.get("type"):
+            bits.append(f'type="{ph["type"]}"')
+        if ph.get("idx") is not None:
+            bits.append(f'idx="{int(ph["idx"])}"')
+        ph_xml = f'<p:ph {" ".join(bits)}/>' if bits else "<p:ph/>"
+        c_nv = "<p:cNvSpPr/>"
+    else:
+        c_nv = '<p:cNvSpPr txBox="1"/>'
     return (f'<p:sp><p:nvSpPr><p:cNvPr id="{shape_id}" name="{escape(name)}"/>'
-            f'<p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>'
+            f'{c_nv}<p:nvPr>{ph_xml}</p:nvPr></p:nvSpPr>'
             f'<p:spPr><a:xfrm><a:off x="{x}" y="{y}"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm>'
             f'<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></p:spPr>'
             f'{tx_body(paragraphs, anchor)}</p:sp>')
@@ -136,21 +154,25 @@ class Deck:
         if kind == "title":
             title = shape(sid, "Title", margin, int(cy * 0.30), cx - 2 * margin, int(cy * 0.18),
                           [{"text": s.get("title", ""), "size": 40, "bold": True,
-                            "bullet": False, "color": "1F3864"}], anchor="b")
+                            "bullet": False, "color": "1F3864"}], anchor="b",
+                          ph={"type": "ctrTitle"})
             shapes.append(title); sid += 1
             sub = shape(sid, "Subtitle", margin, int(cy * 0.52), cx - 2 * margin, int(cy * 0.20),
                         [{"text": s.get("subtitle", ""), "size": 20, "bullet": False,
-                          "color": "595959"}], anchor="t")
+                          "color": "595959"}], anchor="t",
+                        ph={"type": "subTitle", "idx": 1})
             shapes.append(sub); sid += 1
         elif kind == "section":
             shapes.append(shape(sid, "Section", margin, int(cy * 0.40), cx - 2 * margin, int(cy * 0.20),
                                 [{"text": s.get("title", ""), "size": 32, "bold": True,
-                                  "bullet": False, "color": "1F3864"}], anchor="b"))
+                                  "bullet": False, "color": "1F3864"}], anchor="b",
+                                ph={"type": "title"}))
             sid += 1
         else:
             shapes.append(shape(sid, "Title", margin, int(cy * 0.06), cx - 2 * margin, int(cy * 0.14),
                                 [{"text": s.get("title", ""), "size": 28, "bold": True,
-                                  "bullet": False, "color": "1F3864"}], anchor="b"))
+                                  "bullet": False, "color": "1F3864"}], anchor="b",
+                                ph={"type": "title"}))
             sid += 1
             img = s.get("image")
             if img and Path(img).exists():
@@ -173,7 +195,7 @@ class Deck:
                     [{"text": b if isinstance(b, str) else b.get("text", ""),
                       "size": 18, "bullet": True,
                       "level": 0 if isinstance(b, str) else b.get("level", 0)}
-                     for b in bullets], anchor="t"))
+                     for b in bullets], anchor="t", ph={"idx": 1}))
                 sid += 1
             if s.get("caption"):
                 shapes.append(shape(sid, "Caption", margin, int(cy * 0.86), cx - 2 * margin,
@@ -218,7 +240,7 @@ class Deck:
                 '</p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:notes>')
 
     def slide_rels(self, index):
-        rels = [("rId1", P_NS + "/slideLayout", "../slideLayouts/slideLayout1.xml")]
+        rels = [("rId1", R_NS + "/slideLayout", "../slideLayouts/slideLayout1.xml")]
         s = self.slides[index]
         if s.get("image") and Path(s["image"]).exists():
             # images are appended to self.media in slide order, one per slide
@@ -230,7 +252,7 @@ class Deck:
                 ext = "jpeg"
             rels.append(("rIdImg1", R_NS + "/image",
                          f"../media/image{global_ordinal}.{ext}"))
-        rels.append(("rIdNotes", P_NS + "/notesSlide",
+        rels.append(("rIdNotes", R_NS + "/notesSlide",
                      f"../notesSlides/notesSlide{index + 1}.xml"))
         return self._rels(rels)
 
@@ -250,12 +272,12 @@ class Deck:
 
     def presentation_rels(self):
         rels = [
-            ("rIdMaster", P_NS + "/slideMaster", "slideMasters/slideMaster1.xml"),
-            ("rIdNotesMaster", P_NS + "/notesMaster", "notesMasters/notesMaster1.xml"),
-            ("rIdTheme", A_NS + "/theme", "theme/theme1.xml"),
+            ("rIdMaster", R_NS + "/slideMaster", "slideMasters/slideMaster1.xml"),
+            ("rIdNotesMaster", R_NS + "/notesMaster", "notesMasters/notesMaster1.xml"),
+            ("rIdTheme", R_NS + "/theme", "theme/theme1.xml"),
         ]
         for i in range(len(self.slides)):
-            rels.append((f"rIdS{i + 1}", P_NS + "/slide", f"slides/slide{i + 1}.xml"))
+            rels.append((f"rIdS{i + 1}", R_NS + "/slide", f"slides/slide{i + 1}.xml"))
         return self._rels(rels)
 
     @staticmethod
@@ -433,24 +455,24 @@ class Deck:
             zf.writestr("ppt/theme/theme1.xml", self.theme_xml())
             zf.writestr("ppt/slideMasters/slideMaster1.xml", self.slide_master_xml())
             zf.writestr("ppt/slideMasters/_rels/slideMaster1.xml.rels", self._rels([
-                ("rIdLayout", P_NS + "/slideLayout", "../slideLayouts/slideLayout1.xml"),
-                ("rIdTheme", A_NS + "/theme", "../theme/theme1.xml"),
+                ("rIdLayout", R_NS + "/slideLayout", "../slideLayouts/slideLayout1.xml"),
+                ("rIdTheme", R_NS + "/theme", "../theme/theme1.xml"),
             ]))
             zf.writestr("ppt/slideLayouts/slideLayout1.xml", self.slide_layout_xml())
             zf.writestr("ppt/slideLayouts/_rels/slideLayout1.xml.rels", self._rels([
-                ("rIdMaster", P_NS + "/slideMaster", "../slideMasters/slideMaster1.xml"),
+                ("rIdMaster", R_NS + "/slideMaster", "../slideMasters/slideMaster1.xml"),
             ]))
             zf.writestr("ppt/notesMasters/notesMaster1.xml", self.notes_master_xml())
             zf.writestr("ppt/notesMasters/_rels/notesMaster1.xml.rels", self._rels([
-                ("rIdTheme", A_NS + "/theme", "../theme/theme1.xml"),
+                ("rIdTheme", R_NS + "/theme", "../theme/theme1.xml"),
             ]))
             for i in range(len(self.slides)):
                 zf.writestr(f"ppt/slides/slide{i + 1}.xml", self.slide_xml(i))
                 zf.writestr(f"ppt/slides/_rels/slide{i + 1}.xml.rels", self.slide_rels(i))
                 zf.writestr(f"ppt/notesSlides/notesSlide{i + 1}.xml", self.notes_xml(i))
                 zf.writestr(f"ppt/notesSlides/_rels/notesSlide{i + 1}.xml.rels", self._rels([
-                    ("rIdSlide", P_NS + "/slide", f"../slides/slide{i + 1}.xml"),
-                    ("rIdNotesMaster", P_NS + "/notesMaster", "../notesMasters/notesMaster1.xml"),
+                    ("rIdSlide", R_NS + "/slide", f"../slides/slide{i + 1}.xml"),
+                    ("rIdNotesMaster", R_NS + "/notesMaster", "../notesMasters/notesMaster1.xml"),
                 ]))
             for name, raw in self.media:
                 zf.writestr(f"ppt/media/{name}", raw)

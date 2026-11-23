@@ -624,23 +624,30 @@ def build(input_dir, work_dir, output_dir, threshold, apply_plan, materialize):
         meta = manifest.get(item["path"])
         text = extract_text(input_dir / item["path"])
         quote, path_used, locator = "", "", ""
-        if meta and meta.get("_line"):
-            quote = meta["_line"]
-            path_used = meta["_source"]
-            locator = meta["_locator"]
-        else:
+        for line_no, line in enumerate(text.split("\n"), 1):
+            candidate = norm(line)
+            if re.match(r"^(title|authors?|first_author|year|doi|journal|venue|"
+                        r"version|project|abstract|keywords?)\s*:", candidate, re.I):
+                quote, path_used, locator = candidate, item["path"], "L%d" % line_no
+                break
+        if not quote:
             for line_no, line in enumerate(text.split("\n"), 1):
                 candidate = norm(line)
                 if 8 <= len(candidate) <= 240 and not candidate.startswith("|"):
-                    quote = candidate
-                    path_used = item["path"]
-                    locator = "L%d" % line_no
+                    quote, path_used, locator = candidate, item["path"], "L%d" % line_no
                     break
         if not quote:
             quote = ledger_rows[item["id"]]
             path_used = "work/library-evidence.md"
             locator = item["id"]
         item["evidence"] = {"path": path_used, "locator": locator, "quote": quote}
+        if meta and meta.get("_line"):
+            item["metadata_provenance"] = {
+                "path": meta["_source"], "locator": meta["_locator"],
+                "quote": meta["_line"],
+                "fields": sorted(key for key in meta
+                                 if not key.startswith("_")),
+            }
         evidence.append(item["evidence"])
 
     operations = []

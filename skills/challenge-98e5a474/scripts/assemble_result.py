@@ -303,6 +303,8 @@ def assemble(entities_path, svg_path, root, export_path=None, out_path=None,
         raise SystemExit("SVG is missing: %s" % svg_path)
     base = Path(root)
     export_report = load_json(export_path, {}) if export_path else {}
+    qa_path = base / "qa-report.json"
+    qa = load_json(qa_path, {}) if qa_path.is_file() else {}
     measured = svg_checks(svg_path)
     pdf, png, html, exceptions = find_export(base, svg_path, export_report)
     if not measured["xml_valid"]:
@@ -344,6 +346,9 @@ def assemble(entities_path, svg_path, root, export_path=None, out_path=None,
         artifacts.append(png)
     if html:
         artifacts.append(html)
+    if qa:
+        artifacts.append({"role": "qa", "path": rel(qa_path, base),
+                          "format": "json", "bytes": qa_path.stat().st_size})
     checks = {
         "xml_valid": measured["xml_valid"],
         "text_as_text": measured["text_as_text"],
@@ -365,7 +370,18 @@ def assemble(entities_path, svg_path, root, export_path=None, out_path=None,
         "dpi": (png or {}).get("dpi") or dpi,
         "dpi_source": (png or {}).get("exported_by") or "not_exported",
     }
+    if qa:
+        compliance["export_qa"] = qa.get("checks") or {}
+        compliance["export_qa_status"] = qa.get("status")
+        compliance["export_qa_warnings"] = qa.get("warnings") or []
     uncertainties = []
+    for warning in (qa.get("warnings") or []):
+        uncertainties.append({
+            "item": "export_qa",
+            "reason": warning,
+            "impact": "the export is usable but a journal requirement is not met",
+            "action": "fix the export or record the limitation explicitly",
+        })
     for exception in exceptions:
         uncertainties.append({"item": exception.get("code"),
                               "reason": exception.get("detail", ""),
@@ -410,6 +426,7 @@ def assemble(entities_path, svg_path, root, export_path=None, out_path=None,
         ],
         "support_files_used": ["scripts/build_schematic.py",
                                "scripts/export_schematic.py",
+                               "scripts/qa_report.py",
                                "scripts/assemble_result.py"],
         "editable_source": {"path": rel(svg_path, base), "format": "svg"},
         "export_artifact": ({"path": pdf["path"], "format": "pdf"}
