@@ -19,7 +19,9 @@ task.md 要求“翻译摘要/全文/图注/回复信”“中英对照”“术
 
 - `/input/case.json`：`case_id`、`direction`、`output_contract`；字段原样保留。
 - `/input/task.md`：语言方向、文体、读者、输出形态、术语表、字数、英式/美式。
-- `/input` 下的原文：`.pdf/.md/.txt/.tex/.docx/.json`。
+- `/input` 下的原文：`.pdf/.md/.txt/.tex/.docx/.json`。本题默认**关闭 OCR**：
+  PDF 先走文字层/`pdftotext`，无可读文字时直接 `partial/input_error`，
+  避免逐页 OCR 在 900 秒预算内超时。
   PDF 由 `scripts/parsers.py` 依次尝试 PyMuPDF、`pdftotext -raw`、`pypdf`；
   扫描页尝试 `pdftoppm` + `tesseract`，失败会如实记录，不猜文字。
 - 可选：作者术语表、期刊风格、已有译文（润色模式）。
@@ -37,6 +39,8 @@ mkdir -p /app/work /app/output
 | `scripts/run_case.py` | **唯一入口**：prepare / finalize / run / inspect |
 | `scripts/skillcore.py` | 切段、分句、数字/引用/情态/术语审计、result.json 信封 |
 | `scripts/parsers.py` | PDF/DOCX/TeX/JSON/CSV 文本与结构提取 |
+| `scripts/batch_translate.py` | **预算内批处理**：把 segments 切成 12 段/批，模型只填 target |
+| `scripts/assemble_translation.py` | 汇总 batch JSON，生成 translation.md/bilingual.md/glossary |
 | `scripts/fam_translate.py` | 本任务的分段、对齐、术语与保真检查 |
 | `task.json` | 指定 family、模块、profile 与输出契约 |
 | `templates/segments.schema.json` | `work/segments.json` 字段说明 |
@@ -75,37 +79,34 @@ python3 "$SKILL_DIR/scripts/run_case.py" prepare \
 如果原文不可读或切不出任何段落，入口写 `input_error` 并退出 0；
 不要编造原文。
 
-### 第 2 步：模型写译文（约 60% 预算）
+### 第 2 步：按批写译文（预算内，不要整篇重写）
 
-打开 `work/segments.json`，按 `P001…` 顺序写两个文件：
+长文最容易失败的原因是模型每轮重写整份译文，64 次请求/900 秒很快耗尽。
+本题固定使用批处理：
 
-1. `/app/output/translation.md`：完整纯译文，段落顺序与原文一致；
-2. `/app/output/bilingual.md`：每个 `## Pxxx` 下写
-   `- **Source (zh):** ...` 与 `- **Target (en):** ...`。
-
-同时写 `/app/work/glossary.json`（5–20 条锁定术语）：
-
-```json
-{
-  "terms": [
-    {"source": "氧空位", "target": "oxygen vacancy",
-     "aliases": ["oxygen vacancies"], "note": "全文统一"}
-  ]
-}
+```bash
+python3 "$SKILL_DIR/scripts/batch_translate.py" --work /app/work --output /app/output --size 12
 ```
 
-硬规则（详见 `references/translation-rules.md`）：
+脚本会在 `work/translation-batches/` 生成 `batch-001.json`…，每个文件只有
+12 个 segment，字段为 `segment_id/source/target`。模型**只填 target**：
 
-- **不增不删**：不归纳成摘要，不添加原文没有的解释、数据或结论；
-- **数字与单位**：值、有效数字、范围、百分数、样本量、年份不变；
-- **引用与编号**：`[12]`、`(Smith et al., 2020)`、`Fig. 2a`、`Table 1`、
-  `Eq. (3)` 的位置与编号不漂移；
-- **否定与情态**：`may < suggest < show < prove` 不升级；
-  `associated with` 不改成 `causes`；
-- **术语一致**：同一术语全文一种译法；锁定术语只用 `target`/`aliases`；
-- **结构不变**：段落不合并、不拆分、不重排；标题层级、图注、表注、脚注留在原位；
-- **不确定就标注**：给译法并括注原文，写入 `work/translation-notes.json`
-  的 `flags`，不要静默猜。
+1. 每次读 2–4 个 batch，按 segment 顺序翻译，保持数字/单位/引用/图表编号/
+   否定与情态/术语一致；
+2. 把填好的 JSON 原样写回，不合并、不重排、不删 segment；
+3. 不要在每轮重写 `translation.md`/`bilingual.md`，这两个文件最后由脚本生成。
+
+同时写 `/app/work/glossary.json`（5–20 条锁定术语）；没有把握的术语在
+`target` 中保留原文并写入 `work/translation-notes.json` 的 `flags`。
+
+填完所有 batch 后运行：
+
+```bash
+python3 "$SKILL_DIR/scripts/assemble_translation.py" --work /app/work --output /app/output
+```
+
+它会生成 `output/translation.md`、`output/bilingual.md` 和 glossary；若有空
+target，会列出 `missing_ids`，必须补齐后再 finalize。
 
 ### 第 3 步：finalize（约 30% 预算）
 

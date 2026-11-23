@@ -5,5 +5,6 @@
   "profile": "reading",
   "title": "阅读03｜文献翻译",
   "description": "source-bound academic translation",
-  "version": "1.1.0"
+  "version": "1.1.0",
+  "ocr": false
 }

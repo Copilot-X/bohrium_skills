@@ -2,17 +2,16 @@
 # -*- coding: utf-8 -*-
 """Export an editable SVG to real PDF/PNG, with a portable fallback.
 
-The primary renderers are cairosvg, rsvg-convert and Inkscape, exactly like the
-older per-skill exporters.  When none of them exists, this script can draw the
-SVG's own primitives with matplotlib.  Matplotlib is an *optional* fallback:
-it is imported through importlib only after a runtime probe, so the script
-stays usable on a standard-library-only image.
+The primary renderers are cairosvg, rsvg-convert and Inkscape.  When none of
+them exists, this module redraws the SVG's own primitives with matplotlib, so
+the export is still a real vector PDF plus a raster PNG (never a placeholder).
+Every output is checked by magic bytes and dimensions; an invalid file is
+removed before the next renderer is attempted.
 
-Nothing is fabricated.  Every output is checked by magic bytes and dimensions;
-an invalid file is removed before the next renderer is attempted.
+The same functions are imported by run_case.py.
 
 Usage:
-    python3 svg_export.py --svg figures/fig1.svg --outdir /app/output \
+    python3 export.py --svg figures/fig1.svg --outdir /app/output \
         --formats pdf,png --dpi 300 --basename fig1 --json
 
 Exit codes:
@@ -628,29 +627,20 @@ def render_matplotlib(root, out_pdf, out_png=None, dpi=300):
     return True, {"renderer": "matplotlib-svg-fallback", "png": png_ok}
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Export SVG to real PDF/PNG")
-    ap.add_argument("--svg", required=True)
-    ap.add_argument("--outdir", default=None)
-    ap.add_argument("--out-pdf", default=None)
-    ap.add_argument("--out-png", default=None)
-    ap.add_argument("--formats", default="pdf,png")
-    ap.add_argument("--dpi", type=int, default=300)
-    ap.add_argument("--basename", default=None)
-    ap.add_argument("--json", action="store_true")
-    args = ap.parse_args()
-
+def export_all(svg_path, outdir, basename=None, formats=("pdf", "png"), dpi=300,
+               out_pdf=None, out_png=None):
+    """Render `svg_path` to the requested formats; return a JSON-safe report."""
+    svg_path = Path(svg_path)
     try:
-        raw, root = read_svg(args.svg)
+        raw, root = read_svg(svg_path)
         width, height, _ = svg_box(root)
     except ExportError as exc:
-        return emit(exc.as_dict(), 2)
+        return exc.as_dict()
 
-    svg_path = Path(args.svg)
-    outdir = Path(args.outdir) if args.outdir else svg_path.parent
+    outdir = Path(outdir) if outdir else svg_path.parent
     outdir.mkdir(parents=True, exist_ok=True)
-    base = args.basename or svg_path.stem
-    formats = [f.strip().lower() for f in args.formats.split(",") if f.strip()]
+    base = basename or svg_path.stem
+    wanted_formats = [f.strip().lower() for f in formats if f.strip()]
     outputs = {}
     attempts = []
     tools = {"cairosvg": importlib.util.find_spec("cairosvg") is not None,
@@ -659,10 +649,10 @@ def main():
              "matplotlib": importlib.util.find_spec("matplotlib") is not None}
 
     wanted = []
-    if "pdf" in formats:
-        wanted.append(("pdf", Path(args.out_pdf) if args.out_pdf else outdir / (base + ".pdf")))
-    if "png" in formats:
-        wanted.append(("png", Path(args.out_png) if args.out_png else outdir / (base + ".png")))
+    if "pdf" in wanted_formats:
+        wanted.append(("pdf", Path(out_pdf) if out_pdf else outdir / (base + ".pdf")))
+    if "png" in wanted_formats:
+        wanted.append(("png", Path(out_png) if out_png else outdir / (base + ".png")))
 
     for fmt, target in wanted:
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -672,7 +662,7 @@ def main():
                            ("inkscape", export_inkscape)):
             if not tools.get(name):
                 continue
-            ok, detail = func(svg_path, target, fmt, args.dpi)
+            ok, detail = func(svg_path, target, fmt, dpi)
             attempts.append({"format": fmt, "tool": name, "ok": ok, "detail": detail})
             if ok:
                 done = True
@@ -681,7 +671,7 @@ def main():
             tmp_pdf = target if fmt == "pdf" else None
             preview_png = outdir / (base + ".png")
             tmp_png = target if fmt == "png" else preview_png
-            ok, detail = render_matplotlib(root, tmp_pdf, tmp_png, args.dpi)
+            ok, detail = render_matplotlib(root, tmp_pdf, tmp_png, dpi)
             attempts.append({"format": fmt, "tool": "matplotlib",
                              "ok": bool(ok), "detail": detail})
             if ok:
@@ -701,8 +691,8 @@ def main():
                 except OSError:
                     pass
 
-    result = {
-        "ok": bool(outputs.get("pdf") or outputs.get("png")),
+    return {
+        "ok": bool(outputs.get("pdf") and outputs.get("png")),
         "svg": str(svg_path),
         "width_px": round(width, 2),
         "height_px": round(height, 2),
@@ -714,7 +704,26 @@ def main():
         "exceptions": [] if outputs else [{"code": "export_unavailable",
                                            "detail": "no renderer produced a valid PDF/PNG"}],
     }
-    return emit(result, 0 if result["ok"] else 1)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Export SVG to real PDF/PNG")
+    ap.add_argument("--svg", required=True)
+    ap.add_argument("--outdir", default=None)
+    ap.add_argument("--out-pdf", default=None)
+    ap.add_argument("--out-png", default=None)
+    ap.add_argument("--formats", default="pdf,png")
+    ap.add_argument("--dpi", type=int, default=300)
+    ap.add_argument("--basename", default=None)
+    ap.add_argument("--json", action="store_true")
+    args = ap.parse_args()
+
+    result = export_all(
+        args.svg, args.outdir, basename=args.basename,
+        formats=[f for f in args.formats.split(",") if f.strip()],
+        dpi=args.dpi, out_pdf=args.out_pdf, out_png=args.out_png)
+    return emit(result, 0 if result.get("ok") else
+                (2 if result.get("error_code") else 1))
 
 
 if __name__ == "__main__":
